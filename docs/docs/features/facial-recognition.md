@@ -22,7 +22,7 @@ Additional actions you can do include:
 
 - Changing the feature photo of the person
 - Hiding the faces of a person from the Explore page and detail view
-- Setting a person's date of birth, so that the age of the person can be shown at the time the photo was taken
+- Setting a person's date of birth, so that the age of the person can be shown at the time the photo was taken. Facial recognition never assigns a face to a person born after the photo was taken, and setting the date of birth releases automatically recognized faces from photos taken before it so they can be matched to someone else. This helps with siblings who look alike as babies.
 - Merging two or more detected people into one person
 - Favoriting a person to pin them to the top of the list
 

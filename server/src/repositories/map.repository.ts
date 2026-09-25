@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { getName } from 'i18n-iso-countries';
+import { alpha3ToAlpha2, getName } from 'i18n-iso-countries';
 import { Expression, Insertable, Kysely, NotNull, sql, SqlBool } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { createReadStream, existsSync } from 'node:fs';
@@ -148,40 +148,58 @@ export class MapRepository {
   async reverseGeocode(point: GeoPoint): Promise<ReverseGeocodeResult> {
     this.logger.debug(`Request: ${point.latitude},${point.longitude}`);
 
-    const response = await this.db
-      .selectFrom('geodata_places')
-      .selectAll()
-      .where(
-        sql`earth_box(ll_to_earth_public(${point.latitude}, ${point.longitude}), ${reverseGeocodeMaxDistance})`,
-        '@>',
-        sql`ll_to_earth_public(latitude, longitude)`,
-      )
-      .orderBy(
-        sql`(earth_distance(ll_to_earth_public(${point.latitude}, ${point.longitude}), ll_to_earth_public(latitude, longitude)))`,
-      )
-      .limit(1)
-      .executeTakeFirst();
+    // The nearest populated place is found by great-circle distance alone, which can select a place on
+    // the far side of a national border (e.g. a point at Everest base camp on the Tibetan side is 22km
+    // from Lobuche in Nepal, but 56km from the nearest place in China). The country polygon is the
+    // authority on which country the point is actually in, so it is used to reject such matches.
+    // Both lookups are issued together so the check costs no extra round trip.
+    const [response, ne_response] = await Promise.all([
+      this.db
+        .selectFrom('geodata_places')
+        .selectAll()
+        .where(
+          sql`earth_box(ll_to_earth_public(${point.latitude}, ${point.longitude}), ${reverseGeocodeMaxDistance})`,
+          '@>',
+          sql`ll_to_earth_public(latitude, longitude)`,
+        )
+        .orderBy(
+          sql`(earth_distance(ll_to_earth_public(${point.latitude}, ${point.longitude}), ll_to_earth_public(latitude, longitude)))`,
+        )
+        .limit(1)
+        .executeTakeFirst(),
+      this.db
+        .selectFrom('naturalearth_countries')
+        .selectAll()
+        .where('coordinates', '@>', sql<string>`point(${point.longitude}, ${point.latitude})`)
+        .limit(1)
+        .executeTakeFirst(),
+    ]);
+
+    const boundaryCountryCode = ne_response ? alpha3ToAlpha2(ne_response.admin_a3) : undefined;
 
     if (response) {
-      this.logger.verboseFn(() => `Raw: ${JSON.stringify(response, null, 2)}`);
-
       const { countryCode, name: city, admin1Name } = response;
-      const country = getName(countryCode, 'en') ?? null;
-      const state = admin1Name;
+      // A place is only rejected on a definite disagreement. When the point falls outside every country
+      // polygon there is nothing to check it against, so the nearest place is kept as before.
+      const isAcrossBorder = boundaryCountryCode !== undefined && boundaryCountryCode !== countryCode;
 
-      return { country, state, city };
+      if (!isAcrossBorder) {
+        this.logger.verboseFn(() => `Raw: ${JSON.stringify(response, null, 2)}`);
+
+        const country = getName(countryCode, 'en') ?? null;
+        const state = admin1Name;
+
+        return { country, state, city };
+      }
+
+      this.logger.debug(
+        `Discarding nearest place "${city}" (${countryCode}) for lat: ${point.latitude}, lon: ${point.longitude}: it lies in a different country than the point (${boundaryCountryCode}). Falling back to country boundaries.`,
+      );
+    } else {
+      this.logger.log(
+        `Empty response from database for city reverse geocoding lat: ${point.latitude}, lon: ${point.longitude}. Likely cause: no nearby large populated place (500+ within ${reverseGeocodeMaxDistance / 1000}km). Falling back to country boundaries.`,
+      );
     }
-
-    this.logger.log(
-      `Empty response from database for city reverse geocoding lat: ${point.latitude}, lon: ${point.longitude}. Likely cause: no nearby large populated place (500+ within ${reverseGeocodeMaxDistance / 1000}km). Falling back to country boundaries.`,
-    );
-
-    const ne_response = await this.db
-      .selectFrom('naturalearth_countries')
-      .selectAll()
-      .where('coordinates', '@>', sql<string>`point(${point.longitude}, ${point.latitude})`)
-      .limit(1)
-      .executeTakeFirst();
 
     if (!ne_response) {
       this.logger.log(

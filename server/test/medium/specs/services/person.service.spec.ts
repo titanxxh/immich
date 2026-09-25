@@ -2,7 +2,7 @@ import { Kysely } from 'kysely';
 import { DateTime } from 'luxon';
 import { AssetEditAction, MirrorAxis } from 'src/dtos/editing.dto';
 import { AssetFaceCreateDto } from 'src/dtos/person.dto';
-import { AssetFileType, JobName } from 'src/enum';
+import { AssetFileType, JobName, SourceType } from 'src/enum';
 import { AccessRepository } from 'src/repositories/access.repository';
 import { AssetEditRepository } from 'src/repositories/asset-edit.repository';
 import { AssetJobRepository } from 'src/repositories/asset-job.repository';
@@ -324,6 +324,58 @@ describe(PersonService.name, () => {
       expect(user2People).toEqual([expect.objectContaining({ personGroupId: person2.personGroupId })]);
       await expect(ctx.get(PersonRepository).getFaces(asset.id, { viewingUserId: asset.ownerId })).resolves.toEqual([
         expect.objectContaining({ personGroupId: person2.personGroupId }),
+      ]);
+    });
+  });
+
+  describe('update', () => {
+    it('should unassign machine learning faces taken before the date of birth', async () => {
+      const { sut, ctx } = setup();
+      const jobMock = ctx.getMock(JobRepository);
+      jobMock.queueAll.mockResolvedValue();
+      const { user } = await ctx.newUser();
+      const { person } = await ctx.newPerson({ ownerId: user.id });
+      const { personGroupId } = person;
+
+      const newFace = async (localDateTime: string, sourceType = SourceType.MachineLearning) => {
+        const { asset } = await ctx.newAsset({
+          ownerId: user.id,
+          fileCreatedAt: new Date(localDateTime),
+          localDateTime: new Date(localDateTime),
+        });
+        const { assetFace } = await ctx.newAssetFace({ assetId: asset.id, personGroupId, sourceType });
+        return assetFace.id!;
+      };
+
+      const beforeBirth = await newFace('2025-06-17T12:00:00.000Z');
+      const beforeBirthManual = await newFace('2025-06-17T12:00:00.000Z', SourceType.Manual);
+      // taken early in the morning of the birth date in UTC+8, which is the previous day in UTC
+      const { asset: birthMorning } = await ctx.newAsset({
+        ownerId: user.id,
+        fileCreatedAt: new Date('2025-06-17T23:00:00.000Z'),
+        localDateTime: new Date('2025-06-18T07:00:00.000Z'),
+      });
+      const { assetFace: birthMorningFace } = await ctx.newAssetFace({ assetId: birthMorning.id, personGroupId });
+      const afterBirth = await newFace('2025-07-01T12:00:00.000Z');
+
+      const auth = factory.auth({ user });
+      await sut.update(auth, personGroupId, { birthDate: '2025-06-18' });
+
+      const faces = await ctx.database
+        .selectFrom('asset_face')
+        .select(['id', 'personGroupId'])
+        .where('id', 'in', [beforeBirth, beforeBirthManual, birthMorningFace.id!, afterBirth])
+        .execute();
+      const personOf = Object.fromEntries(faces.map((face) => [face.id, face.personGroupId]));
+
+      expect(personOf).toEqual({
+        [beforeBirth]: null,
+        [beforeBirthManual]: personGroupId,
+        [birthMorningFace.id!]: personGroupId,
+        [afterBirth]: personGroupId,
+      });
+      expect(jobMock.queueAll).toHaveBeenCalledWith([
+        { name: JobName.FacialRecognition, data: { id: beforeBirth, deferred: false } },
       ]);
     });
   });
