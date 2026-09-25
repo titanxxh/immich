@@ -127,6 +127,33 @@ export class PersonRepository {
       .execute();
   }
 
+  /**
+   * Unassigns machine learning faces of a person group from assets taken before the given date,
+   * compared against the local time of the asset. Returns the ids of the unassigned faces.
+   */
+  @GenerateSql({ params: [{ personGroupId: DummyValue.UUID, takenBefore: DummyValue.DATE }] })
+  async unassignFacesTakenBefore({
+    personGroupId,
+    takenBefore,
+  }: {
+    personGroupId: string;
+    takenBefore: Date;
+  }): Promise<string[]> {
+    const faces = await this.db
+      .updateTable('asset_face')
+      .set({ personGroupId: null })
+      .from('asset')
+      .whereRef('asset_face.assetId', '=', 'asset.id')
+      .where('asset_face.personGroupId', '=', personGroupId)
+      .where('asset_face.sourceType', '=', SourceType.MachineLearning)
+      .where('asset_face.deletedAt', 'is', null)
+      .where('asset.localDateTime', '<', takenBefore)
+      .returning('asset_face.id')
+      .execute();
+
+    return faces.map(({ id }) => id);
+  }
+
   @GenerateSql({ params: [[DummyValue.UUID], DummyValue.UUID] })
   @Chunked()
   async delete(personGroupIds: string[], ownerId?: string) {
@@ -384,7 +411,7 @@ export class PersonRepository {
           eb
             .selectFrom('asset')
             .innerJoin('user', 'user.id', 'asset.ownerId')
-            .select(['asset.ownerId', 'asset.visibility', 'asset.fileCreatedAt', 'user.clusterGroupId'])
+            .select(['asset.ownerId', 'asset.visibility', 'asset.localDateTime', 'user.clusterGroupId'])
             .whereRef('asset.id', '=', 'asset_face.assetId'),
         ).as('asset'),
       )

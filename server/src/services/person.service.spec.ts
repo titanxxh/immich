@@ -218,6 +218,7 @@ describe(PersonService.name, () => {
 
       mocks.person.getByGroupId.mockResolvedValue(person);
       mocks.person.update.mockResolvedValue(person);
+      mocks.person.unassignFacesTakenBefore.mockResolvedValue([]);
       mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
 
       await expect(sut.update(auth, person.personGroupId, { birthDate: '1976-06-30' })).resolves.toEqual({
@@ -234,9 +235,75 @@ describe(PersonService.name, () => {
         personGroupId: person.personGroupId,
         birthDate: '1976-06-30',
       });
+      expect(mocks.person.unassignFacesTakenBefore).toHaveBeenCalledWith({
+        personGroupId: person.personGroupId,
+        takenBefore: new Date('1976-06-30'),
+      });
       expect(mocks.job.queue).not.toHaveBeenCalled();
       expect(mocks.job.queueAll).not.toHaveBeenCalled();
       expect(mocks.access.person.checkOwnerAccess).toHaveBeenCalledWith(auth.user.id, new Set([person.personGroupId]));
+    });
+
+    it('should queue facial recognition for faces taken before the date of birth', async () => {
+      const auth = AuthFactory.create();
+      const person = PersonFactory.create({ birthDate: new Date('2025-06-18') });
+
+      mocks.person.getByGroupId.mockResolvedValue(person);
+      mocks.person.update.mockResolvedValue(person);
+      mocks.person.unassignFacesTakenBefore.mockResolvedValue(['face-1', 'face-2']);
+      mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
+
+      await sut.update(auth, person.personGroupId, { birthDate: '2025-06-18' });
+
+      expect(mocks.person.unassignFacesTakenBefore).toHaveBeenCalledWith({
+        personGroupId: person.personGroupId,
+        takenBefore: new Date('2025-06-18'),
+      });
+      expect(mocks.job.queueAll).toHaveBeenCalledWith([
+        { name: JobName.FacialRecognition, data: { id: 'face-1', deferred: false } },
+        { name: JobName.FacialRecognition, data: { id: 'face-2', deferred: false } },
+      ]);
+      expect(mocks.person.getRandomFace).not.toHaveBeenCalled();
+    });
+
+    it('should pick a new feature photo when the current one was taken before the date of birth', async () => {
+      const auth = AuthFactory.create();
+      const person = PersonFactory.create({ birthDate: new Date('2025-06-18'), faceAssetId: 'face-1' });
+      const newFace = AssetFaceFactory.create();
+
+      mocks.person.getByGroupId.mockResolvedValue(person);
+      mocks.person.update.mockResolvedValue(person);
+      mocks.person.unassignFacesTakenBefore.mockResolvedValue(['face-1']);
+      mocks.person.getRandomFace.mockResolvedValue(newFace);
+      mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
+
+      await sut.update(auth, person.personGroupId, { birthDate: '2025-06-18' });
+
+      expect(mocks.person.getRandomFace).toHaveBeenCalledWith(person.personGroupId);
+      expect(mocks.person.update).toHaveBeenCalledWith({
+        ownerId: person.ownerId,
+        personGroupId: person.personGroupId,
+        faceAssetId: newFace.id,
+      });
+      expect(mocks.job.queueAll).toHaveBeenCalledWith([
+        {
+          name: JobName.PersonGenerateThumbnail,
+          data: { ownerId: person.ownerId, personGroupId: person.personGroupId },
+        },
+      ]);
+    });
+
+    it('should not unassign faces when the date of birth is not updated', async () => {
+      const auth = AuthFactory.create();
+      const person = PersonFactory.create({ name: 'Person 1' });
+
+      mocks.person.getByGroupId.mockResolvedValue(person);
+      mocks.person.update.mockResolvedValue(person);
+      mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
+
+      await sut.update(auth, person.personGroupId, { name: 'Person 1' });
+
+      expect(mocks.person.unassignFacesTakenBefore).not.toHaveBeenCalled();
     });
 
     it('should update a person visibility', async () => {
@@ -1248,6 +1315,24 @@ describe(PersonService.name, () => {
       expect(mocks.search.searchFaces).toHaveBeenCalledTimes(1);
       expect(mocks.person.create).not.toHaveBeenCalled();
       expect(mocks.person.reassignFaces).not.toHaveBeenCalled();
+    });
+
+    it('should compare the date of birth against the local date the asset was taken', async () => {
+      // 07:00 on June 18 in UTC+8 is still June 17 in UTC
+      const asset = AssetFactory.create({
+        fileCreatedAt: new Date('2025-06-17T23:00:00.000Z'),
+        localDateTime: new Date('2025-06-18T07:00:00.000Z'),
+      });
+      const face = AssetFaceFactory.create({ assetId: asset.id });
+
+      mocks.search.searchFaces.mockResolvedValue([getForFaceSearch(face, 0)]);
+      mocks.person.getFaceForFacialRecognitionJob.mockResolvedValue(getForFacialRecognitionJob(face, asset));
+
+      await sut.handleRecognizeFaces({ id: face.id });
+
+      expect(mocks.search.searchFaces).toHaveBeenCalledWith(
+        expect.objectContaining({ minBirthDate: new Date('2025-06-18T07:00:00.000Z') }),
+      );
     });
 
     it('should defer non-core faces to end of queue', async () => {

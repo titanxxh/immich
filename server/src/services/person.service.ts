@@ -237,7 +237,33 @@ export class PersonService extends BaseService {
       await this.jobRepository.queue({ name: JobName.PersonGenerateThumbnail, data: { ownerId, personGroupId } });
     }
 
+    if (birthDate) {
+      await this.unassignFacesBeforeBirth(person, new Date(birthDate));
+    }
+
     return mapPerson(person);
+  }
+
+  /**
+   * Facial recognition never matches a face to a person born after the photo was taken, but faces
+   * clustered before the birth date was set keep their assignment. Release those faces so that
+   * facial recognition can match them to someone else.
+   */
+  private async unassignFacesBeforeBirth(person: PersonId & { faceAssetId: string | null }, birthDate: Date) {
+    const { personGroupId } = person;
+    const faceIds = await this.personRepository.unassignFacesTakenBefore({ personGroupId, takenBefore: birthDate });
+    if (faceIds.length === 0) {
+      return;
+    }
+
+    this.logger.log(`Unassigned ${faceIds.length} faces taken before the birth date of person ${personGroupId}`);
+    await this.jobRepository.queueAll(
+      faceIds.map((id) => ({ name: JobName.FacialRecognition, data: { id, deferred: false } })),
+    );
+
+    if (person.faceAssetId && faceIds.includes(person.faceAssetId)) {
+      await this.createNewFeaturePhoto([person]);
+    }
   }
 
   delete(auth: AuthDto, id: string): Promise<void> {
@@ -514,7 +540,7 @@ export class PersonService extends BaseService {
       embedding: face.faceSearch.embedding,
       maxDistance: machineLearning.facialRecognition.maxDistance,
       numResults: machineLearning.facialRecognition.minFaces,
-      minBirthDate: new Date(face.asset.fileCreatedAt),
+      minBirthDate: new Date(face.asset.localDateTime),
     });
 
     // `matches` also includes the face itself
@@ -542,7 +568,7 @@ export class PersonService extends BaseService {
         maxDistance: machineLearning.facialRecognition.maxDistance,
         numResults: 1,
         hasPerson: true,
-        minBirthDate: new Date(face.asset.fileCreatedAt),
+        minBirthDate: new Date(face.asset.localDateTime),
       });
 
       personGroupId = matchWithPerson?.personGroupId ?? undefined;
