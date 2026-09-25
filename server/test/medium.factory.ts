@@ -522,7 +522,8 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
         new ConfigRepository(),
         new SystemMetadataRepository(db),
         LoggingRepository.create(),
-        db,
+        // MapDB adds the temporary tables used while importing geodata
+        db as unknown as ConstructorParameters<typeof MapRepository>[3],
       ) as InstanceType<T>;
     }
 
