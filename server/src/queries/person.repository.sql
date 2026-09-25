@@ -22,6 +22,21 @@ where
   and "asset_face"."sourceType" = $2
   and "user"."clusterGroupId" = $3
 
+-- PersonRepository.unassignFacesTakenBefore
+update "asset_face"
+set
+  "personGroupId" = $1
+from
+  "asset"
+where
+  "asset_face"."assetId" = "asset"."id"
+  and "asset_face"."personGroupId" = $2
+  and "asset_face"."sourceType" = $3
+  and "asset_face"."deletedAt" is null
+  and "asset"."localDateTime" < $4
+returning
+  "asset_face"."id"
+
 -- PersonRepository.delete
 delete from "person"
 where
@@ -213,7 +228,7 @@ select
         select
           "asset"."ownerId",
           "asset"."visibility",
-          "asset"."fileCreatedAt",
+          "asset"."localDateTime",
           "user"."clusterGroupId"
         from
           "asset"

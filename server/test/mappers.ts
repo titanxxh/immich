@@ -58,7 +58,7 @@ export const getAsDetectedFace = (face: ReturnType<AssetFaceFactory['build']>) =
 export const getForFacialRecognitionJob = (
   face: ReturnType<AssetFaceFactory['build']>,
   asset:
-    (Pick<Selectable<AssetTable>, 'ownerId' | 'visibility' | 'fileCreatedAt'> & { clusterGroupId?: string }) | null,
+    (Pick<Selectable<AssetTable>, 'ownerId' | 'visibility' | 'localDateTime'> & { clusterGroupId?: string }) | null,
 ) => ({
   ...face,
   asset: asset
@@ -66,7 +66,7 @@ export const getForFacialRecognitionJob = (
         ownerId: asset.ownerId,
         clusterGroupId: asset.clusterGroupId ?? newUuid(),
         visibility: asset.visibility,
-        fileCreatedAt: asset.fileCreatedAt.toISOString(),
+        localDateTime: asset.localDateTime.toISOString(),
       }
     : null,
   faceSearch: { faceId: face.id, embedding: '[1, 2, 3, 4]' },
