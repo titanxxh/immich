@@ -3,7 +3,8 @@
 -- TripRepository.getByOwnerId
 select
   "trip".*,
-  "album"."albumName"
+  "album"."albumName",
+  "album"."albumThumbnailAssetId"
 from
   "trip"
   left join "album" on "album"."id" = "trip"."albumId"
@@ -11,6 +12,51 @@ where
   "trip"."ownerId" = $1
 order by
   "trip"."startAt"
+
+-- TripRepository.getById
+select
+  "trip".*,
+  "album"."albumName",
+  "album"."albumThumbnailAssetId"
+from
+  "trip"
+  left join "album" on "album"."id" = "trip"."albumId"
+where
+  "trip"."id" = $1
+
+-- TripRepository.getByAlbumId
+select
+  *
+from
+  "trip"
+where
+  "albumId" = $1
+
+-- TripRepository.delete
+delete from "trip"
+where
+  "id" = $1
+
+-- TripRepository.getAlbumAssets
+select
+  "asset"."id",
+  "asset"."localDateTime",
+  "asset"."createdAt",
+  "asset"."originalFileName",
+  "asset_exif"."latitude",
+  "asset_exif"."longitude",
+  "asset_exif"."make"
+from
+  "album_asset"
+  inner join "asset" on "asset"."id" = "album_asset"."assetId"
+  left join "asset_exif" on "asset_exif"."assetId" = "asset"."id"
+where
+  "album_asset"."albumId" = $1
+  and "asset"."deletedAt" is null
+  and "asset"."visibility" in ($2, $3)
+order by
+  "asset"."localDateTime",
+  "asset"."id"
 
 -- TripRepository.create
 insert into
@@ -50,6 +96,8 @@ order by
 -- TripRepository.getPlaces
 select
   point.index,
+  place.name,
+  place."alternateNames",
   place."countryCode",
   place."admin1Name",
   place."admin2Name"
@@ -57,6 +105,8 @@ from
   unnest($1::double precision[], $2::double precision[]) with ordinality as point(latitude, longitude, index)
   cross join lateral (
     select
+      name,
+      "alternateNames",
       "countryCode",
       "admin1Name",
       "admin2Name"

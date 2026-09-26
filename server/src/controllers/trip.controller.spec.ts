@@ -1,6 +1,7 @@
 import { TripController } from 'src/controllers/trip.controller';
 import { TripService } from 'src/services/trip.service';
 import request from 'supertest';
+import { factory } from 'test/small.factory';
 import { ControllerContext, controllerSetup, mockBaseService } from 'test/utils';
 
 describe(TripController.name, () => {
@@ -48,6 +49,49 @@ describe(TripController.name, () => {
 
       expect(status).toBe(204);
       expect(service.detect).toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /trips', () => {
+    it('should list trips', async () => {
+      service.getAll.mockResolvedValue([]);
+      const { status } = await request(ctx.getHttpServer()).get('/trips');
+      expect(status).toBe(200);
+    });
+
+    it('should require a valid album id', async () => {
+      const { status } = await request(ctx.getHttpServer()).get('/trips').query({ albumId: 'invalid' });
+      expect(status).toBe(400);
+      expect(service.getAll).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET /trips/:id', () => {
+    it('should require a valid id', async () => {
+      const { status } = await request(ctx.getHttpServer()).get('/trips/invalid');
+      expect(status).toBe(400);
+    });
+  });
+
+  describe('POST /trips', () => {
+    it('should mark an album as a trip', async () => {
+      const albumId = factory.uuid();
+      const { status } = await request(ctx.getHttpServer()).post('/trips').send({ albumId });
+      expect(status).toBe(201);
+      expect(service.create).toHaveBeenCalledWith(undefined, { albumId });
+    });
+
+    it('should require a valid album id', async () => {
+      const { status } = await request(ctx.getHttpServer()).post('/trips').send({ albumId: 'invalid' });
+      expect(status).toBe(400);
+    });
+  });
+
+  describe('DELETE /trips/:id', () => {
+    it('should unmark a trip', async () => {
+      const { status } = await request(ctx.getHttpServer()).delete(`/trips/${factory.uuid()}`);
+      expect(status).toBe(204);
+      expect(service.remove).toHaveBeenCalled();
     });
   });
 });

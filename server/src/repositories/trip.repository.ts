@@ -8,7 +8,13 @@ import { DB } from 'src/schema';
 import { TripTable } from 'src/schema/tables/trip.table';
 
 export type TripPoint = { latitude: number; longitude: number };
-export type TripPointPlace = { countryCode: string; admin1Name: string | null; admin2Name: string | null };
+export type TripPointPlace = {
+  name: string;
+  alternateNames: string | null;
+  countryCode: string;
+  admin1Name: string | null;
+  admin2Name: string | null;
+};
 
 @Injectable()
 export class TripRepository {
@@ -20,9 +26,54 @@ export class TripRepository {
       .selectFrom('trip')
       .leftJoin('album', 'album.id', 'trip.albumId')
       .selectAll('trip')
-      .select('album.albumName')
+      .select(['album.albumName', 'album.albumThumbnailAssetId'])
       .where('trip.ownerId', '=', ownerId)
       .orderBy('trip.startAt')
+      .execute();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID] })
+  getById(id: string) {
+    return this.db
+      .selectFrom('trip')
+      .leftJoin('album', 'album.id', 'trip.albumId')
+      .selectAll('trip')
+      .select(['album.albumName', 'album.albumThumbnailAssetId'])
+      .where('trip.id', '=', id)
+      .executeTakeFirst();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID] })
+  getByAlbumId(albumId: string) {
+    return this.db.selectFrom('trip').selectAll().where('albumId', '=', albumId).executeTakeFirst();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID] })
+  async delete(id: string) {
+    await this.db.deleteFrom('trip').where('id', '=', id).execute();
+  }
+
+  /** The photos of an album, as trip detection sees them, oldest first. */
+  @GenerateSql({ params: [DummyValue.UUID] })
+  getAlbumAssets(albumId: string) {
+    return this.db
+      .selectFrom('album_asset')
+      .innerJoin('asset', 'asset.id', 'album_asset.assetId')
+      .leftJoin('asset_exif', 'asset_exif.assetId', 'asset.id')
+      .select([
+        'asset.id',
+        'asset.localDateTime',
+        'asset.createdAt',
+        'asset.originalFileName',
+        'asset_exif.latitude',
+        'asset_exif.longitude',
+        'asset_exif.make',
+      ])
+      .where('album_asset.albumId', '=', albumId)
+      .where('asset.deletedAt', 'is', null)
+      .where('asset.visibility', 'in', [AssetVisibility.Timeline, AssetVisibility.Archive])
+      .orderBy('asset.localDateTime')
+      .orderBy('asset.id')
       .execute();
   }
 
@@ -68,17 +119,19 @@ export class TripRepository {
 
     const { rows } = await sql<{
       index: string;
+      name: string;
+      alternateNames: string | null;
       countryCode: string;
       admin1Name: string | null;
       admin2Name: string | null;
     }>`
-      select point.index, place."countryCode", place."admin1Name", place."admin2Name"
+      select point.index, place.name, place."alternateNames", place."countryCode", place."admin1Name", place."admin2Name"
       from unnest(
         ${points.map(({ latitude }) => latitude)}::double precision[],
         ${points.map(({ longitude }) => longitude)}::double precision[]
       ) with ordinality as point(latitude, longitude, index)
       cross join lateral (
-        select "countryCode", "admin1Name", "admin2Name"
+        select name, "alternateNames", "countryCode", "admin1Name", "admin2Name"
         from geodata_places
         where earth_box(ll_to_earth_public(point.latitude, point.longitude), ${reverseGeocodeMaxDistance})
           @> ll_to_earth_public(geodata_places.latitude, geodata_places.longitude)
@@ -93,6 +146,8 @@ export class TripRepository {
     const places: Array<TripPointPlace | undefined> = Array.from({ length: points.length });
     for (const row of rows) {
       places[Number(row.index) - 1] = {
+        name: row.name,
+        alternateNames: row.alternateNames,
         countryCode: row.countryCode,
         admin1Name: row.admin1Name,
         admin2Name: row.admin2Name,

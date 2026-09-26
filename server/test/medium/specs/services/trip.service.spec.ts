@@ -1,5 +1,6 @@
 import { Kysely } from 'kysely';
-import { UserMetadataKey } from 'src/enum';
+import { AssetOrder, TripSource, UserMetadataKey } from 'src/enum';
+import { AccessRepository } from 'src/repositories/access.repository';
 import { AlbumRepository } from 'src/repositories/album.repository';
 import { AssetRepository } from 'src/repositories/asset.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
@@ -24,7 +25,7 @@ const suzhou = { latitude: 31, longitude: 121 };
 const setup = (db?: Kysely<DB>) => {
   return newMediumService(TripService, {
     database: db || defaultDatabase,
-    real: [AlbumRepository, AssetRepository, DatabaseRepository, TripRepository, UserRepository],
+    real: [AccessRepository, AlbumRepository, AssetRepository, DatabaseRepository, TripRepository, UserRepository],
     mock: [LoggingRepository],
   });
 };
@@ -54,6 +55,11 @@ const newPhotos = async (
     ids.push(asset.id);
   }
   return ids;
+};
+
+const newAlbum = async (ctx: Context, ownerId: string, assetIds: string[]) => {
+  const { album } = await ctx.newAlbum({ ownerId, albumName: 'My trip' }, assetIds);
+  return album;
 };
 
 const getTrips = (ctx: Context, ownerId: string) => ctx.get(TripRepository).getByOwnerId(ownerId);
@@ -228,6 +234,161 @@ describe(TripService.name, () => {
       await expect(
         sut.preview(factory.auth({ user }), { homes: [], minAssets: 3, includeDayTrips: false }),
       ).resolves.toEqual([]);
+    });
+  });
+
+  describe('trip list and summary', () => {
+    it('should list trips with their summary and set the cover and order', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      await enableTrips(ctx, user.id);
+      const photoIds = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await sut.handleTripDetection({ userId: user.id });
+
+      const trips = await sut.getAll(factory.auth({ user }), {});
+
+      expect(trips).toEqual([
+        expect.objectContaining({
+          source: TripSource.Auto,
+          name: '2025-05-01 杭州',
+          dayCount: 2,
+          assetCount: 4,
+          point: { latitude: hangzhou.latitude, longitude: hangzhou.longitude },
+          // every photo is its own stop, 12 hours apart, so the first stop wins and its only photo is the cover
+          thumbnailAssetId: photoIds[0],
+        }),
+      ]);
+      const album = await ctx.get(AlbumRepository).getById(trips[0].albumId, { withAssets: false });
+      expect(album?.order).toBe(AssetOrder.Asc);
+    });
+
+    it('should keep a cover the user picked', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      await enableTrips(ctx, user.id);
+      const photoIds = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await sut.handleTripDetection({ userId: user.id });
+      const [trip] = await getTrips(ctx, user.id);
+      await ctx.get(AlbumRepository).update(trip.albumId!, { albumThumbnailAssetId: photoIds[3] }, user.id);
+
+      await sut.handleTripDetection({ userId: user.id });
+
+      const [updated] = await getTrips(ctx, user.id);
+      expect(updated.albumThumbnailAssetId).toBe(photoIds[3]);
+    });
+
+    it('should filter by album and leave out dismissed trips', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await enableTrips(ctx, user.id);
+      await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await newPhotos(ctx, user.id, '2025-06-01T08:00:00', 4, suzhou);
+      await sut.handleTripDetection({ userId: user.id });
+      const [first, second] = await sut.getAll(auth, {});
+
+      await sut.remove(auth, first.id);
+
+      await expect(sut.getAll(auth, {})).resolves.toEqual([expect.objectContaining({ id: second.id })]);
+      await expect(sut.getAll(auth, { albumId: first.albumId })).resolves.toEqual([]);
+    });
+  });
+
+  describe('get', () => {
+    it('should describe the days, stops and legs of a trip', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await enableTrips(ctx, user.id);
+      const photoIds = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 2, hangzhou);
+      await newPhotos(ctx, user.id, '2025-05-02T08:00:00', 2, suzhou);
+      await sut.handleTripDetection({ userId: user.id });
+      const [trip] = await sut.getAll(auth, {});
+
+      const detail = await sut.get(auth, trip.id);
+
+      expect(detail.places).toEqual(['杭州', '苏州']);
+      expect(detail.farthestKm).toBeGreaterThan(100);
+      expect(detail.days).toEqual([
+        { index: 1, date: '2025-05-01', place: '杭州', assetCount: 2, firstAssetId: photoIds[0], stops: [0, 1] },
+        expect.objectContaining({ index: 2, date: '2025-05-02', place: '苏州', assetCount: 2, stops: [2, 3] }),
+      ]);
+      expect(detail.stops).toHaveLength(4);
+      expect(detail.legs).toHaveLength(3);
+    });
+
+    it('should not show the trip of another user', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const { user: other } = await ctx.newUser();
+      await enableTrips(ctx, user.id);
+      await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await sut.handleTripDetection({ userId: user.id });
+      const [trip] = await getTrips(ctx, user.id);
+
+      await expect(sut.get(factory.auth({ user: other }), trip.id)).rejects.toThrow('Trip not found');
+    });
+  });
+
+  describe('create', () => {
+    it('should mark an album as a manual trip that detection leaves alone', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await enableTrips(ctx, user.id);
+      const photoIds = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      const album = await newAlbum(ctx, user.id, photoIds.slice(0, 2));
+
+      const trip = await sut.create(auth, { albumId: album.id });
+      await newPhotos(ctx, user.id, '2025-05-01T09:00:00', 2, hangzhou);
+      await sut.handleTripDetection({ userId: user.id });
+
+      expect(trip).toEqual(expect.objectContaining({ source: TripSource.Manual, name: 'My trip', assetCount: 2 }));
+      // no photos added, and no detected trip created over the same days
+      await expect(getAlbumAssetIds(ctx, album.id)).resolves.toEqual(photoIds.slice(0, 2).toSorted());
+      await expect(sut.getAll(auth, {})).resolves.toEqual([expect.objectContaining({ id: trip.id })]);
+    });
+
+    it('should refuse to overlap a detected trip unless asked to replace it', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await enableTrips(ctx, user.id);
+      const photoIds = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await sut.handleTripDetection({ userId: user.id });
+      const [detected] = await sut.getAll(auth, {});
+      const album = await newAlbum(ctx, user.id, photoIds);
+
+      await expect(sut.create(auth, { albumId: album.id })).rejects.toThrow('Album overlaps other trips');
+      const manual = await sut.create(auth, { albumId: album.id, replaceTripIds: [detected.id] });
+
+      await expect(sut.getAll(auth, {})).resolves.toEqual([expect.objectContaining({ id: manual.id })]);
+      // the replaced trip keeps its album as an ordinary album
+      await expect(ctx.get(AlbumRepository).getById(detected.albumId, { withAssets: false })).resolves.toBeDefined();
+    });
+
+    it('should not mark an album twice', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      const [photoId] = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 1, hangzhou);
+      const album = await newAlbum(ctx, user.id, [photoId]);
+      await sut.create(auth, { albumId: album.id });
+
+      await expect(sut.create(auth, { albumId: album.id })).rejects.toThrow('Album is already a trip');
+    });
+
+    it('should forget a manual trip when it is unmarked', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      const [photoId] = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 1, hangzhou);
+      const album = await newAlbum(ctx, user.id, [photoId]);
+      const trip = await sut.create(auth, { albumId: album.id });
+
+      await sut.remove(auth, trip.id);
+
+      await expect(getTrips(ctx, user.id)).resolves.toEqual([]);
     });
   });
 });

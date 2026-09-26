@@ -16459,6 +16459,111 @@
         "x-immich-state": "Stable"
       }
     },
+    "/trips": {
+      "get": {
+        "description": "List the trips of the current user, optionally only the trip of one album.",
+        "operationId": "getTrips",
+        "parameters": [
+          {
+            "name": "albumId",
+            "required": false,
+            "in": "query",
+            "description": "Only the trip of this album",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TripResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "List trips",
+        "tags": [
+          "Users"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "album.read"
+      },
+      "post": {
+        "description": "Turn an album of the current user into a trip. Fails with 409 when it overlaps other trips that are not listed in replaceTripIds.",
+        "operationId": "createTrip",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripCreateDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Mark an album as a trip",
+        "tags": [
+          "Users"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "album.update"
+      }
+    },
     "/trips/detect": {
       "post": {
         "description": "Queue trip detection for the current user, creating albums for new trips.",
@@ -16545,6 +16650,101 @@
           }
         ],
         "x-immich-permission": "userPreference.read"
+      }
+    },
+    "/trips/{id}": {
+      "delete": {
+        "description": "Stop treating an album as a trip. A detected trip is dismissed so it is not found again; the album stays.",
+        "operationId": "removeTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Unmark a trip",
+        "tags": [
+          "Users"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "album.update"
+      },
+      "get": {
+        "description": "Get a trip with its days, stops and route, computed from the photos in its album.",
+        "operationId": "getTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get a trip",
+        "tags": [
+          "Users"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "album.read"
       }
     },
     "/users": {
@@ -31909,6 +32109,183 @@
         ],
         "type": "object"
       },
+      "TripCreateDto": {
+        "properties": {
+          "albumId": {
+            "description": "The album to mark as a trip",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "replaceTripIds": {
+            "description": "Detected trips overlapping the album that it replaces; they are dismissed and keep their albums",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "albumId"
+        ],
+        "type": "object"
+      },
+      "TripDayDto": {
+        "properties": {
+          "assetCount": {
+            "description": "Number of photos",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "date": {
+            "description": "Local date (YYYY-MM-DD)",
+            "type": "string"
+          },
+          "firstAssetId": {
+            "description": "First photo of the day",
+            "type": "string"
+          },
+          "index": {
+            "description": "1 for the first day of the trip",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "place": {
+            "description": "Where the day was spent, e.g. \"丽江 → 大理\"; empty without located photos",
+            "type": "string"
+          },
+          "stops": {
+            "description": "Indexes of the day's stops",
+            "items": {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "assetCount",
+          "date",
+          "firstAssetId",
+          "index",
+          "place",
+          "stops"
+        ],
+        "type": "object"
+      },
+      "TripDetailResponseDto": {
+        "properties": {
+          "albumId": {
+            "description": "ID of the trip album",
+            "type": "string"
+          },
+          "assetCount": {
+            "description": "Number of photos",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "dayCount": {
+            "description": "Number of calendar days with photos",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/TripDayDto"
+            },
+            "type": "array"
+          },
+          "endAt": {
+            "description": "Local time of the last photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "farthestKm": {
+            "description": "Largest distance from home in kilometres",
+            "format": "double",
+            "nullable": true,
+            "type": "number"
+          },
+          "id": {
+            "description": "Trip ID",
+            "type": "string"
+          },
+          "legs": {
+            "items": {
+              "$ref": "#/components/schemas/TripLegDto"
+            },
+            "type": "array"
+          },
+          "name": {
+            "description": "Album name",
+            "type": "string"
+          },
+          "places": {
+            "description": "Places visited, in order",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "point": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripPoint"
+              }
+            ],
+            "description": "Where the trip is shown on a map; null without located photos",
+            "nullable": true
+          },
+          "source": {
+            "$ref": "#/components/schemas/TripSource"
+          },
+          "startAt": {
+            "description": "Local time of the first photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "stops": {
+            "items": {
+              "$ref": "#/components/schemas/TripStopDto"
+            },
+            "type": "array"
+          },
+          "thumbnailAssetId": {
+            "description": "Album cover",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "albumId",
+          "assetCount",
+          "dayCount",
+          "days",
+          "endAt",
+          "farthestKm",
+          "id",
+          "legs",
+          "name",
+          "places",
+          "point",
+          "source",
+          "startAt",
+          "stops",
+          "thumbnailAssetId"
+        ],
+        "type": "object"
+      },
       "TripHome": {
         "properties": {
           "from": {
@@ -31956,6 +32333,51 @@
           "longitude",
           "name",
           "radiusKm"
+        ],
+        "type": "object"
+      },
+      "TripLegDto": {
+        "properties": {
+          "from": {
+            "description": "Index of the stop the leg starts at",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "isLongJump": {
+            "description": "Whether the leg is long enough to be a flight or train ride",
+            "type": "boolean"
+          },
+          "to": {
+            "description": "Index of the stop the leg ends at",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "isLongJump",
+          "to"
+        ],
+        "type": "object"
+      },
+      "TripPoint": {
+        "properties": {
+          "latitude": {
+            "description": "Latitude",
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Longitude",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
         ],
         "type": "object"
       },
@@ -32025,6 +32447,123 @@
           "endAt",
           "name",
           "startAt"
+        ],
+        "type": "object"
+      },
+      "TripResponseDto": {
+        "properties": {
+          "albumId": {
+            "description": "ID of the trip album",
+            "type": "string"
+          },
+          "assetCount": {
+            "description": "Number of photos",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "dayCount": {
+            "description": "Number of calendar days with photos",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "endAt": {
+            "description": "Local time of the last photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Trip ID",
+            "type": "string"
+          },
+          "name": {
+            "description": "Album name",
+            "type": "string"
+          },
+          "point": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TripPoint"
+              }
+            ],
+            "description": "Where the trip is shown on a map; null without located photos",
+            "nullable": true
+          },
+          "source": {
+            "$ref": "#/components/schemas/TripSource"
+          },
+          "startAt": {
+            "description": "Local time of the first photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "thumbnailAssetId": {
+            "description": "Album cover",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "albumId",
+          "assetCount",
+          "dayCount",
+          "endAt",
+          "id",
+          "name",
+          "point",
+          "source",
+          "startAt",
+          "thumbnailAssetId"
+        ],
+        "type": "object"
+      },
+      "TripSource": {
+        "description": "How the trip came about",
+        "enum": [
+          "auto",
+          "manual"
+        ],
+        "type": "string"
+      },
+      "TripStopDto": {
+        "properties": {
+          "assetCount": {
+            "description": "Number of photos taken at the stop",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "date": {
+            "description": "Local date (YYYY-MM-DD)",
+            "type": "string"
+          },
+          "latitude": {
+            "description": "Latitude",
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Longitude",
+            "format": "double",
+            "type": "number"
+          },
+          "place": {
+            "description": "City of the stop",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetCount",
+          "date",
+          "latitude",
+          "longitude",
+          "place"
         ],
         "type": "object"
       },
