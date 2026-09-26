@@ -34,6 +34,8 @@
   import SharingSettings from './SharingSettings.svelte';
   import UserApiKeyList from './UserApiKeyList.svelte';
   import UserProfileSettings from './UserProfileSettings.svelte';
+  import TripSettingsPrototype from './trip-prototype/TripSettingsPrototype.svelte';
+  import { mdiAirplane } from '@mdi/js';
 
   interface Props {
     keys?: ApiKeyResponseDto[];
@@ -45,6 +47,10 @@
   let oauthOpen =
     oauth.isCallback(location) || $page.url.searchParams.get(QueryParameter.OPEN_SETTING) === OpenQueryParam.OAUTH;
 </script>
+
+<SettingAccordion icon={mdiAirplane} key="trips" title="旅行（PROTOTYPE）" subtitle="自动识别旅行并建相册" isOpen>
+  <TripSettingsPrototype />
+</SettingAccordion>
 
 <SettingAccordion
   icon={mdiCogOutline}
