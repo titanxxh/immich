@@ -7,6 +7,7 @@
   import { Route } from '$lib/route';
   import { recentAlbumsDropdown } from '$lib/stores/preferences.store';
   import { NavbarGroup, NavbarItem } from '@immich/ui';
+  import { mdiAirplane } from '@mdi/js';
   import {
     mdiAccount,
     mdiAccountMultiple,
@@ -85,6 +86,9 @@
       </span>
     {/snippet}
   </NavbarItem>
+
+  <!-- PROTOTYPE: trip list page -->
+  <NavbarItem title="旅行" href="/trips" icon={mdiAirplane} />
 
   {#if authManager.preferences.tags.enabled && authManager.preferences.tags.sidebarWeb}
     <NavbarItem title={$t('tags')} href={Route.tags()} icon={{ icon: mdiTagMultipleOutline, flipped: true }} />
