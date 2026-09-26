@@ -3142,6 +3142,39 @@ export type TrashResponseDto = {
     /** Number of items in trash */
     count: number;
 };
+export type TripPoint = {
+    /** Latitude */
+    latitude: number;
+    /** Longitude */
+    longitude: number;
+};
+export type TripResponseDto = {
+    /** ID of the trip album */
+    albumId: string;
+    /** Number of photos */
+    assetCount: number;
+    /** Number of calendar days with photos */
+    dayCount: number;
+    /** Local time of the last photo */
+    endAt: string;
+    /** Trip ID */
+    id: string;
+    /** Album name */
+    name: string;
+    /** Where the trip is shown on a map; null without located photos */
+    point: (TripPoint) | null;
+    source: TripSource;
+    /** Local time of the first photo */
+    startAt: string;
+    /** Album cover */
+    thumbnailAssetId: string | null;
+};
+export type TripCreateDto = {
+    /** The album to mark as a trip */
+    albumId: string;
+    /** Detected trips overlapping the album that it replaces; they are dismissed and keep their albums */
+    replaceTripIds?: string[];
+};
 export type TripPreviewDto = {
     /** Places that are home; being away from all of them is a trip */
     homes: TripHome[];
@@ -3161,6 +3194,68 @@ export type TripPreviewResponseDto = {
     name: string;
     /** Local time of the first photo */
     startAt: string;
+};
+export type TripDayDto = {
+    /** Number of photos */
+    assetCount: number;
+    /** Local date (YYYY-MM-DD) */
+    date: string;
+    /** First photo of the day */
+    firstAssetId: string;
+    /** 1 for the first day of the trip */
+    index: number;
+    /** Where the day was spent, e.g. "丽江 → 大理"; empty without located photos */
+    place: string;
+    /** Indexes of the day's stops */
+    stops: number[];
+};
+export type TripLegDto = {
+    /** Index of the stop the leg starts at */
+    "from": number;
+    /** Whether the leg is long enough to be a flight or train ride */
+    isLongJump: boolean;
+    /** Index of the stop the leg ends at */
+    to: number;
+};
+export type TripStopDto = {
+    /** Number of photos taken at the stop */
+    assetCount: number;
+    /** Local date (YYYY-MM-DD) */
+    date: string;
+    /** Latitude */
+    latitude: number;
+    /** Longitude */
+    longitude: number;
+    /** City of the stop */
+    place: string | null;
+};
+export type TripDetailResponseDto = {
+    /** ID of the trip album */
+    albumId: string;
+    /** Number of photos */
+    assetCount: number;
+    /** Number of calendar days with photos */
+    dayCount: number;
+    days: TripDayDto[];
+    /** Local time of the last photo */
+    endAt: string;
+    /** Largest distance from home in kilometres */
+    farthestKm: number | null;
+    /** Trip ID */
+    id: string;
+    legs: TripLegDto[];
+    /** Album name */
+    name: string;
+    /** Places visited, in order */
+    places: string[];
+    /** Where the trip is shown on a map; null without located photos */
+    point: (TripPoint) | null;
+    source: TripSource;
+    /** Local time of the first photo */
+    startAt: string;
+    stops: TripStopDto[];
+    /** Album cover */
+    thumbnailAssetId: string | null;
 };
 export type UserUpdateMeDto = {
     avatarColor?: (UserAvatarColor) | null;
@@ -7467,6 +7562,36 @@ export function restoreAssets({ bulkIdsDto }: {
     })));
 }
 /**
+ * List trips
+ */
+export function getTrips({ albumId }: {
+    albumId?: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: TripResponseDto[];
+    }>(`/trips${QS.query(QS.explode({
+        albumId
+    }))}`, {
+        ...opts
+    }));
+}
+/**
+ * Mark an album as a trip
+ */
+export function createTrip({ tripCreateDto }: {
+    tripCreateDto: TripCreateDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 201;
+        data: TripResponseDto;
+    }>("/trips", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: tripCreateDto
+    })));
+}
+/**
  * Detect trips
  */
 export function detectTrips(opts?: Oazapfts.RequestOpts) {
@@ -7489,6 +7614,30 @@ export function previewTrips({ tripPreviewDto }: {
         method: "POST",
         body: tripPreviewDto
     })));
+}
+/**
+ * Unmark a trip
+ */
+export function removeTrip({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/trips/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+/**
+ * Get a trip
+ */
+export function getTrip({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: TripDetailResponseDto;
+    }>(`/trips/${encodeURIComponent(id)}`, {
+        ...opts
+    }));
 }
 /**
  * Get all users
@@ -8481,6 +8630,10 @@ export enum SyncRequestType {
 export enum AssetOrderBy {
     TakenAt = "takenAt",
     CreatedAt = "createdAt"
+}
+export enum TripSource {
+    Auto = "auto",
+    Manual = "manual"
 }
 export enum WorkflowResult {
     Completed = "completed",

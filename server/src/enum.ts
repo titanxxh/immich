@@ -974,6 +974,15 @@ export enum VectorIndex {
   Face = 'face_index',
 }
 
+export enum TripSource {
+  /** found by trip detection, which keeps its album up to date */
+  Auto = 'auto',
+  /** an existing album the user marked as a trip, which trip detection leaves alone */
+  Manual = 'manual',
+}
+
+export const TripSourceSchema = z.enum(TripSource).describe('How the trip came about').meta({ id: 'TripSource' });
+
 export enum DatabaseLock {
   GeodataImport = 100,
   Migrations = 200,

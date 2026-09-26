@@ -293,3 +293,150 @@ export const pickChineseName = (alternateNames: string | null) => {
 /** The English city name without its administrative suffix, e.g. `Hangzhou Shi` → `Hangzhou`. */
 export const stripAdmin2Suffix = (admin2Name: string) =>
   admin2Name.replace(/ (Shi|Diqu|Zizhizhou|Meng|Shiqu|Zizhixian|Linqu|Municipality|Prefecture|City)$/, '');
+
+/** Photos taken within this long of the previous one, on the same day, can belong to the same stop. */
+export const STOP_MAX_GAP_MINUTES = 60;
+/** Photos within this distance of a stop's centre belong to it. */
+export const STOP_RADIUS_KM = 2;
+/** A leg between stops longer than this is travelled by plane or train, not walked or driven. */
+export const LONG_JUMP_KM = 300;
+
+export type TripStop = {
+  latitude: number;
+  longitude: number;
+  /** local date (YYYY-MM-DD) of the stop */
+  date: string;
+  startAt: Date;
+  endAt: Date;
+  assetIds: string[];
+};
+
+export type TripLeg = { from: number; to: number; isLongJump: boolean };
+
+export type TripDay = {
+  /** 1 for the first day of the trip */
+  index: number;
+  /** local date (YYYY-MM-DD) */
+  date: string;
+  assetCount: number;
+  /** the first photo of the day, to scroll the timeline to */
+  firstAssetId: string;
+  /** indexes into the trip's stops */
+  stops: number[];
+};
+
+const byTime = (a: TripAsset, b: TripAsset) =>
+  a.localDateTime.getTime() - b.localDateTime.getTime() || a.id.localeCompare(b.id);
+
+/** Groups the located photos into stops: places the user stayed at for a while, in the order they were visited. */
+export const buildStops = (assets: TripAsset[]): TripStop[] => {
+  const stops: TripStop[] = [];
+  for (const asset of assets.filter(isLocated).toSorted(byTime)) {
+    const date = toLocalDate(asset.localDateTime);
+    const stop = stops.at(-1);
+    if (
+      stop &&
+      stop.date === date &&
+      asset.localDateTime.getTime() - stop.endAt.getTime() <= STOP_MAX_GAP_MINUTES * 60 * 1000 &&
+      distanceKm(stop, asset) <= STOP_RADIUS_KM
+    ) {
+      const count = stop.assetIds.length;
+      stop.latitude = (stop.latitude * count + asset.latitude) / (count + 1);
+      stop.longitude = (stop.longitude * count + asset.longitude) / (count + 1);
+      stop.endAt = asset.localDateTime;
+      stop.assetIds.push(asset.id);
+      continue;
+    }
+
+    stops.push({
+      latitude: asset.latitude,
+      longitude: asset.longitude,
+      date,
+      startAt: asset.localDateTime,
+      endAt: asset.localDateTime,
+      assetIds: [asset.id],
+    });
+  }
+
+  return stops;
+};
+
+/** The legs between consecutive stops. */
+export const buildLegs = (stops: TripStop[]): TripLeg[] =>
+  stops.slice(1).map((stop, index) => ({
+    from: index,
+    to: index + 1,
+    isLongJump: distanceKm(stops[index], stop) > LONG_JUMP_KM,
+  }));
+
+/** Splits all photos of a trip, located or not, into calendar days. */
+export const buildDays = (assets: TripAsset[], stops: TripStop[]): TripDay[] => {
+  const days = new Map<string, TripAsset[]>();
+  for (const asset of assets.toSorted(byTime)) {
+    const date = toLocalDate(asset.localDateTime);
+    days.set(date, [...(days.get(date) ?? []), asset]);
+  }
+
+  return [...days].map(([date, dayAssets], index) => ({
+    index: index + 1,
+    date,
+    assetCount: dayAssets.length,
+    firstAssetId: dayAssets[0].id,
+    stops: stops.flatMap((stop, stopIndex) => (stop.date === date ? [stopIndex] : [])),
+  }));
+};
+
+/** The stop with the most photos, which stands for the whole trip on a map and provides its cover. */
+export const getMainStop = (stops: TripStop[]) => {
+  let main: TripStop | undefined;
+  for (const stop of stops) {
+    if (!main || stop.assetIds.length > main.assetIds.length) {
+      main = stop;
+    }
+  }
+  return main;
+};
+
+/** A photo from the middle of the main stop, which is less likely to be a blurry first or last shot. */
+export const getCoverAssetId = (stops: TripStop[]) => {
+  const stop = getMainStop(stops);
+  return stop?.assetIds[Math.floor(stop.assetIds.length / 2)];
+};
+
+/**
+ * Describes where a day was spent: the places with at least a fifth of its located photos, in the order they were
+ * first visited, e.g. `丽江 → 大理`.
+ */
+export const describeDay = (stops: Array<{ place?: string; count: number }>) => {
+  const places = new Map<string, number>();
+  for (const { place, count } of stops) {
+    if (place) {
+      places.set(place, (places.get(place) ?? 0) + count);
+    }
+  }
+
+  let total = 0;
+  for (const count of places.values()) {
+    total += count;
+  }
+
+  return [...places]
+    .filter(([, count]) => count / total >= 0.2)
+    .slice(0, 3)
+    .map(([place]) => place)
+    .join(' → ');
+};
+
+/** How far from home the trip went: the largest distance from a stop to the nearest home that applied that day. */
+export const getFarthestKm = (stops: TripStop[], homes: TripHome[]) => {
+  if (stops.length === 0 || homes.length === 0) {
+    return;
+  }
+
+  return Math.max(
+    ...stops.map((stop) => {
+      const active = homes.filter((home) => isHomeActive(home, stop.date));
+      return Math.min(...(active.length > 0 ? active : homes).map((home) => distanceKm(home, stop)));
+    }),
+  );
+};

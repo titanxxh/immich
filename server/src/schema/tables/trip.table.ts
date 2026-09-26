@@ -9,7 +9,9 @@ import {
   UpdateDateColumn,
 } from '@immich/sql-tools';
 import { UpdatedAtTrigger, UpdateIdColumn } from 'src/decorators';
+import { TripSource } from 'src/enum';
 import { AlbumTable } from 'src/schema/tables/album.table';
+import { AssetTable } from 'src/schema/tables/asset.table';
 import { UserTable } from 'src/schema/tables/user.table';
 
 @Table('trip')
@@ -24,6 +26,9 @@ export class TripTable {
   /** null once the user deletes the album: the trip is then dismissed and never recreated */
   @ForeignKeyColumn(() => AlbumTable, { onDelete: 'SET NULL', onUpdate: 'CASCADE', nullable: true })
   albumId!: string | null;
+
+  @Column({ type: 'character varying', default: TripSource.Auto })
+  source!: Generated<TripSource>;
 
   /** local time of the first photo, same convention as asset.localDateTime */
   @Column({ type: 'timestamp with time zone' })
@@ -40,6 +45,23 @@ export class TripTable {
   /** photos uploaded after this are added to the album; earlier ones the user removed stay removed */
   @Column({ type: 'timestamp with time zone' })
   lastSyncedAt!: Timestamp;
+
+  /** where the trip is shown on a map: the centre of its stop with the most photos */
+  @Column({ type: 'double precision', nullable: true })
+  pointLatitude!: number | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  pointLongitude!: number | null;
+
+  @Column({ type: 'integer', default: 0 })
+  dayCount!: Generated<number>;
+
+  @Column({ type: 'integer', default: 0 })
+  assetCount!: Generated<number>;
+
+  /** the album cover last set by trip detection; a different cover means the user picked their own */
+  @ForeignKeyColumn(() => AssetTable, { onDelete: 'SET NULL', onUpdate: 'CASCADE', nullable: true })
+  generatedThumbnailAssetId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Generated<Timestamp>;
