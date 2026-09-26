@@ -3,6 +3,12 @@
   import { navigating } from '$app/state';
   import { scrollMemoryClearer } from '$lib/actions/scroll-memory';
   import AlbumMap from '$lib/components/album-page/AlbumMap.svelte';
+  // PROTOTYPE: trip album page layouts, switched with ?variant=A|B|C
+  import { page as prototypePage } from '$app/state';
+  import PrototypeSwitcher from '$lib/components/prototype/PrototypeSwitcher.svelte';
+  import VariantAHeader from '$lib/components/album-page/trip-prototype/VariantAHeader.svelte';
+  import VariantBAside from '$lib/components/album-page/trip-prototype/VariantBAside.svelte';
+  import VariantCStory from '$lib/components/album-page/trip-prototype/VariantCStory.svelte';
   import AlbumSummary from '$lib/components/album-page/AlbumSummary.svelte';
   import ActivityStatus from '$lib/components/asset-viewer/ActivityStatus.svelte';
   import ActivityViewer from '$lib/components/asset-viewer/ActivityViewer.svelte';
@@ -89,6 +95,7 @@
   let oldAt: AssetGridRouteSearchParams | null | undefined = $state();
   let viewMode: AlbumPageViewMode = $state(AlbumPageViewMode.VIEW);
   let timelineManager = $state<TimelineManager>() as TimelineManager;
+  const tripVariant = $derived(prototypePage.url.searchParams.get('variant'));
   let showAlbumUsers = $derived(timelineManager?.showAssetOwners ?? false);
 
   const timelineMultiSelectManager = new AssetMultiSelectManager();
@@ -347,117 +354,124 @@
 
 <div class="flex overflow-hidden" use:scrollMemoryClearer={{ routeStartsWith: Route.albums() }}>
   <div class="relative w-full shrink">
-    <main class="relative h-dvh overflow-hidden px-2 pt-(--navbar-height) max-md:pt-(--navbar-height-md) md:px-6">
-      <Timeline
-        enableRouting={viewMode === AlbumPageViewMode.SELECT_ASSETS ? false : true}
-        {album}
-        {albumUsers}
-        bind:timelineManager
-        {options}
-        assetInteraction={currentAssetIntersection}
-        {isShared}
-        {isSelectionMode}
-        {singleSelect}
-        {showArchiveIcon}
-        {onSelect}
-        onEscape={handleEscape}
-        withStacked={true}
-      >
-        {#if viewMode !== AlbumPageViewMode.SELECT_ASSETS}
-          {#if viewMode !== AlbumPageViewMode.SELECT_THUMBNAIL}
-            <!-- ALBUM TITLE -->
-            <section class="pt-8 md:pt-24">
-              <AlbumTitle
-                id={album.id}
-                albumName={album.albumName}
-                {isOwned}
-                onUpdate={(albumName) => (album = { ...album, albumName })}
-              />
+    {#if tripVariant === 'C'}
+      <VariantCStory {album} />
+    {:else}
+      <main class="relative h-dvh overflow-hidden px-2 pt-(--navbar-height) max-md:pt-(--navbar-height-md) md:px-6">
+        <Timeline
+          enableRouting={viewMode === AlbumPageViewMode.SELECT_ASSETS ? false : true}
+          {album}
+          {albumUsers}
+          bind:timelineManager
+          {options}
+          assetInteraction={currentAssetIntersection}
+          {isShared}
+          {isSelectionMode}
+          {singleSelect}
+          {showArchiveIcon}
+          {onSelect}
+          onEscape={handleEscape}
+          withStacked={true}
+        >
+          {#if viewMode !== AlbumPageViewMode.SELECT_ASSETS}
+            {#if viewMode !== AlbumPageViewMode.SELECT_THUMBNAIL}
+              <!-- ALBUM TITLE -->
+              <section class="pt-8 md:pt-24">
+                <AlbumTitle
+                  id={album.id}
+                  albumName={album.albumName}
+                  {isOwned}
+                  onUpdate={(albumName) => (album = { ...album, albumName })}
+                />
 
-              {#if album.assetCount > 0}
-                <AlbumSummary {album} />
-              {/if}
+                {#if album.assetCount > 0}
+                  <AlbumSummary {album} />
+                {/if}
 
-              <!-- ALBUM SHARING -->
-              {#if album.albumUsers.length > 1 || (album.hasSharedLink && isOwned)}
-                <div class="my-3 flex gap-x-1">
+                <!-- ALBUM SHARING -->
+                {#if album.albumUsers.length > 1 || (album.hasSharedLink && isOwned)}
+                  <div class="my-3 flex gap-x-1">
+                    <button
+                      class="flex gap-x-1"
+                      type="button"
+                      onclick={() => modalManager.show(AlbumOptionsModal, { album, readOnly: !isOwned })}
+                    >
+                      <!-- owner & users with write access (collaborators) -->
+                      {#each album.albumUsers.filter(({ role }) => role === AlbumUserRole.Editor || role === AlbumUserRole.Owner) as { user } (user.id)}
+                        <UserAvatar {user} size="md" />
+                      {/each}
+
+                      <!-- display ellipsis if there are readonly users too -->
+                      {#if albumHasViewers}
+                        <IconButton
+                          shape="round"
+                          aria-label={$t('view_all_users')}
+                          color="secondary"
+                          size="medium"
+                          icon={mdiDotsHorizontal}
+                        />
+                      {/if}
+
+                      {#if album.hasSharedLink && isOwned}
+                        <IconButton
+                          aria-label={$t('shared_link_manage_links')}
+                          color="secondary"
+                          size="medium"
+                          shape="round"
+                          icon={mdiLink}
+                        />
+                      {/if}
+                    </button>
+
+                    {#if isOwned}
+                      <ActionButton action={Share} />
+                    {/if}
+                  </div>
+                {/if}
+                <AlbumDescription
+                  id={album.id}
+                  {isOwned}
+                  bind:description={() => album.description, (description) => (album = { ...album, description })}
+                />
+                {#if tripVariant === 'A'}
+                  <VariantAHeader albumId={album.id} />
+                {/if}
+              </section>
+            {/if}
+
+            {#if album.assetCount === 0}
+              <section id="empty-album" class="mt-50 flex place-content-center place-items-center">
+                <div class="w-75">
+                  <p class="text-xs uppercase dark:text-immich-dark-fg">{$t('add_photos')}</p>
                   <button
-                    class="flex gap-x-1"
                     type="button"
-                    onclick={() => modalManager.show(AlbumOptionsModal, { album, readOnly: !isOwned })}
+                    onclick={() => (viewMode = AlbumPageViewMode.SELECT_ASSETS)}
+                    class="mt-5 flex w-full place-items-center gap-6 rounded-2xl border bg-subtle p-8 text-immich-fg transition-all hover:bg-gray-100 hover:text-immich-primary dark:border-none dark:text-immich-dark-fg dark:hover:bg-gray-500/20 dark:hover:text-immich-dark-primary"
                   >
-                    <!-- owner & users with write access (collaborators) -->
-                    {#each album.albumUsers.filter(({ role }) => role === AlbumUserRole.Editor || role === AlbumUserRole.Owner) as { user } (user.id)}
-                      <UserAvatar {user} size="md" />
-                    {/each}
-
-                    <!-- display ellipsis if there are readonly users too -->
-                    {#if albumHasViewers}
-                      <IconButton
-                        shape="round"
-                        aria-label={$t('view_all_users')}
-                        color="secondary"
-                        size="medium"
-                        icon={mdiDotsHorizontal}
-                      />
-                    {/if}
-
-                    {#if album.hasSharedLink && isOwned}
-                      <IconButton
-                        aria-label={$t('shared_link_manage_links')}
-                        color="secondary"
-                        size="medium"
-                        shape="round"
-                        icon={mdiLink}
-                      />
-                    {/if}
+                    <span class="text-primary">
+                      <Icon icon={mdiPlus} size="24" />
+                    </span>
+                    <span class="text-lg">{$t('select_photos')}</span>
                   </button>
-
-                  {#if isOwned}
-                    <ActionButton action={Share} />
-                  {/if}
                 </div>
-              {/if}
-              <AlbumDescription
-                id={album.id}
-                {isOwned}
-                bind:description={() => album.description, (description) => (album = { ...album, description })}
-              />
-            </section>
+              </section>
+            {/if}
           {/if}
+        </Timeline>
 
-          {#if album.assetCount === 0}
-            <section id="empty-album" class="mt-50 flex place-content-center place-items-center">
-              <div class="w-75">
-                <p class="text-xs uppercase dark:text-immich-dark-fg">{$t('add_photos')}</p>
-                <button
-                  type="button"
-                  onclick={() => (viewMode = AlbumPageViewMode.SELECT_ASSETS)}
-                  class="mt-5 flex w-full place-items-center gap-6 rounded-2xl border bg-subtle p-8 text-immich-fg transition-all hover:bg-gray-100 hover:text-immich-primary dark:border-none dark:text-immich-dark-fg dark:hover:bg-gray-500/20 dark:hover:text-immich-dark-primary"
-                >
-                  <span class="text-primary">
-                    <Icon icon={mdiPlus} size="24" />
-                  </span>
-                  <span class="text-lg">{$t('select_photos')}</span>
-                </button>
-              </div>
-            </section>
-          {/if}
+        {#if showActivityStatus}
+          <div class="absolute inset-e-0 bottom-0 z-2 me-12 mb-6">
+            <ActivityStatus
+              disabled={!album.isActivityEnabled}
+              isLiked={activityManager.isLiked}
+              numberOfComments={activityManager.commentCount}
+              numberOfLikes={undefined}
+              onFavorite={handleFavorite}
+            />
+          </div>
         {/if}
-      </Timeline>
-
-      {#if showActivityStatus}
-        <div class="absolute inset-e-0 bottom-0 z-2 me-12 mb-6">
-          <ActivityStatus
-            disabled={!album.isActivityEnabled}
-            isLiked={activityManager.isLiked}
-            numberOfComments={activityManager.commentCount}
-            numberOfLikes={undefined}
-            onFavorite={handleFavorite}
-          />
-        </div>
-      {/if}
-    </main>
+      </main>
+    {/if}
 
     {#if assetMultiSelectManager.selectionActive}
       <AssetSelectControlBar>
@@ -623,6 +637,18 @@
       {/if}
     {/if}
   </div>
+  {#if tripVariant === 'B'}
+    <VariantBAside albumId={album.id} />
+  {/if}
+  {#if tripVariant}
+    <PrototypeSwitcher
+      variants={[
+        { key: 'A', name: '地图置顶' },
+        { key: 'B', name: '右侧分栏' },
+        { key: 'C', name: '按天故事' },
+      ]}
+    />
+  {/if}
   {#if album.albumUsers.length > 1 && album && assetViewerManager.isShowActivityPanel && authManager.authenticated && !assetViewerManager.isViewing}
     <div class="flex">
       <div
