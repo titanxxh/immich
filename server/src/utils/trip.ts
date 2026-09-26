@@ -85,7 +85,10 @@ export const splitIntoRuns = (assets: TripAsset[], homes: TripHome[]): Located[]
   let current: Located[] = [];
   let homeSince: Date | undefined;
 
-  const located = assets.filter(isLocated).toSorted((a, b) => a.localDateTime.getTime() - b.localDateTime.getTime());
+  // photos taken in the same second are ordered by id, so the same photos are always sampled for naming
+  const located = assets
+    .filter(isLocated)
+    .toSorted((a, b) => a.localDateTime.getTime() - b.localDateTime.getTime() || a.id.localeCompare(b.id));
   for (const asset of located) {
     const localDate = toLocalDate(asset.localDateTime);
     const activeHomes = homes.filter((home) => isHomeActive(home, localDate));
@@ -254,7 +257,7 @@ const countBy = (values: string[]) => {
   for (const value of values) {
     counts.set(value, (counts.get(value) ?? 0) + 1);
   }
-  return [...counts].toSorted((a, b) => b[1] - a[1]);
+  return [...counts].toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 };
 
 let simplifiedChinese: Set<string> | undefined;

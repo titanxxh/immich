@@ -44,7 +44,8 @@ where
   and "asset"."deletedAt" is null
   and "asset"."visibility" in ($2, $3)
 order by
-  "asset"."localDateTime"
+  "asset"."localDateTime",
+  "asset"."id"
 
 -- TripRepository.getPlaces
 select

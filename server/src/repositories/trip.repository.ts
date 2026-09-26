@@ -55,6 +55,7 @@ export class TripRepository {
       .where('asset.deletedAt', 'is', null)
       .where('asset.visibility', 'in', [AssetVisibility.Timeline, AssetVisibility.Archive])
       .orderBy('asset.localDateTime')
+      .orderBy('asset.id')
       .execute();
   }
 
