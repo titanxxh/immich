@@ -49,6 +49,8 @@
     onEscape?: () => void;
     children?: Snippet;
     empty?: Snippet;
+    /** replaces the title of a day, given its date as YYYY-MM-DD */
+    getDayTitle?: (date: string) => string | undefined;
     customThumbnailLayout?: Snippet<[TimelineAsset]>;
     onThumbnailClick?: (
       asset: TimelineAsset,
@@ -81,6 +83,7 @@
     onEscape = () => {},
     children,
     empty,
+    getDayTitle,
     customThumbnailLayout,
     onThumbnailClick,
   }: Props = $props();
@@ -197,6 +200,9 @@
     scrollToAssetPosition(asset.id, timelineMonth);
     return true;
   };
+
+  /** Scrolls to an asset, loading its month first if needed. */
+  export const scrollToAssetId = (assetId: string) => scrollAndLoadAsset(assetId);
 
   export const scrollAfterNavigate = async () => {
     if (timelineManager.viewportHeight === 0 || timelineManager.viewportWidth === 0) {
@@ -661,6 +667,7 @@
             {timelineMonth}
             manager={timelineManager}
             onTimelineDaySelect={handleGroupSelect}
+            {getDayTitle}
           >
             {#snippet thumbnail({ asset, position, timelineDay, groupIndex })}
               {@const isAssetSelectionCandidate = assetInteraction.hasSelectionCandidate(asset.id)}

@@ -30,6 +30,8 @@
     timelineMonth: TimelineMonth;
     manager: VirtualScrollManager;
     onTimelineDaySelect: (timelineDay: TimelineDay, assets: TimelineAsset[]) => void;
+    /** replaces the title of a day, given its date as YYYY-MM-DD */
+    getDayTitle?: (date: string) => string | undefined;
   };
   let {
     thumbnail: thumbnailWithGroup,
@@ -39,12 +41,18 @@
     timelineMonth,
     manager,
     onTimelineDaySelect,
+    getDayTitle,
   }: Props = $props();
 
   let { isUploading } = uploadAssetsStore;
   let hoveredTimelineDay = $state<string | null>(null);
 
   const transitionDuration = $derived(timelineMonth.timelineManager.suspendTransitions && !$isUploading ? 0 : 150);
+
+  const getIsoDate = ({ timelineMonth, day }: TimelineDay) => {
+    const { year, month } = timelineMonth.yearMonth;
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
 
   const getTimelineDayFullDate = (timelineDay: TimelineDay): string => {
     const { month, year } = timelineDay.timelineMonth.yearMonth;
@@ -92,7 +100,7 @@
       {/if}
 
       <span class="w-full truncate first-letter:capitalize" title={getTimelineDayFullDate(timelineDay)}>
-        {timelineDay.groupTitle}
+        {getDayTitle?.(getIsoDate(timelineDay)) ?? timelineDay.groupTitle}
       </span>
     </div>
 

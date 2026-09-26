@@ -4,6 +4,8 @@
   import { scrollMemoryClearer } from '$lib/actions/scroll-memory';
   import AlbumMap from '$lib/components/album-page/AlbumMap.svelte';
   import AlbumSummary from '$lib/components/album-page/AlbumSummary.svelte';
+  import { formatDayDate, getDateAtTop, getDayTop } from '$lib/components/album-page/trip/trip';
+  import TripPanel from '$lib/components/album-page/trip/TripPanel.svelte';
   import ActivityStatus from '$lib/components/asset-viewer/ActivityStatus.svelte';
   import ActivityViewer from '$lib/components/asset-viewer/ActivityViewer.svelte';
   import HeaderActionButton from '$lib/components/HeaderActionButton.svelte';
@@ -45,11 +47,23 @@
   } from '$lib/services/album.service';
   import { getGlobalActions } from '$lib/services/app.service';
   import { getAssetBulkActions } from '$lib/services/asset.service';
+  import { markAlbumAsTrip, unmarkTrip } from '$lib/services/trip.service';
+  import { locale } from '$lib/stores/preferences.store';
   import { SlideshowNavigation, SlideshowState, slideshowStore } from '$lib/stores/slideshow.store';
   import { handlePromiseError } from '$lib/utils';
   import { handleError } from '$lib/utils/handle-error';
   import { isAlbumsRoute, navigate, type AssetGridRouteSearchParams } from '$lib/utils/navigation';
-  import { AlbumUserRole, AssetVisibility, getAlbumInfo, updateAlbumInfo, type AlbumResponseDto } from '@immich/sdk';
+  import {
+    AlbumUserRole,
+    AssetVisibility,
+    getAlbumInfo,
+    getTrip,
+    getTrips,
+    updateAlbumInfo,
+    type AlbumResponseDto,
+    type TripDayDto,
+    type TripDetailResponseDto,
+  } from '@immich/sdk';
   import {
     ActionButton,
     CommandPaletteDefaultProvider,
@@ -61,6 +75,8 @@
   import {
     mdiAccountEye,
     mdiAccountEyeOutline,
+    mdiAirplane,
+    mdiAirplaneOff,
     mdiArrowLeft,
     mdiCogOutline,
     mdiDeleteOutline,
@@ -73,7 +89,7 @@
     mdiPlus,
     mdiPresentationPlay,
   } from '@mdi/js';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import { t } from 'svelte-i18n';
   import { fly } from 'svelte/transition';
   import type { PageData } from './$types';
@@ -90,6 +106,77 @@
   let viewMode: AlbumPageViewMode = $state(AlbumPageViewMode.VIEW);
   let timelineManager = $state<TimelineManager>() as TimelineManager;
   let showAlbumUsers = $derived(timelineManager?.showAssetOwners ?? false);
+
+  // trip view: the album's trip, if it is one, and the day being looked at
+  let timeline = $state<ReturnType<typeof Timeline>>();
+  let trip = $state<TripDetailResponseDto>();
+  let selectedTripDate = $state<string>();
+  let isScrollingToDay = false;
+
+  const loadTrip = async (albumId: string) => {
+    try {
+      const [summary] = await getTrips({ albumId });
+      trip = summary ? await getTrip({ id: summary.id }) : undefined;
+    } catch {
+      trip = undefined;
+    }
+  };
+
+  $effect(() => {
+    // reload when photos are added or removed
+    void album.assetCount;
+    const albumId = album.id;
+    untrack(() => void loadTrip(albumId));
+  });
+
+  // follow the timeline: the day at the top is the one highlighted in the trip panel
+  $effect(() => {
+    if (!trip || !timelineManager) {
+      return;
+    }
+    void timelineManager.visibleWindow.top;
+    if (!isScrollingToDay) {
+      selectedTripDate = getDateAtTop(timelineManager);
+    }
+  });
+
+  const handleSelectTripDay = async (day?: TripDayDto) => {
+    selectedTripDate = day?.date;
+    if (!day || !timeline) {
+      return;
+    }
+
+    isScrollingToDay = true;
+    try {
+      await timeline.scrollToAssetId(day.firstAssetId);
+      // align the day to the top, so the timeline and the panel agree on the day in view
+      const top = getDayTop(timelineManager, day.date);
+      if (top !== undefined) {
+        timelineManager.scrollTo(top);
+      }
+    } finally {
+      setTimeout(() => (isScrollingToDay = false), 200);
+    }
+  };
+
+  const tripDayTitles = $derived(
+    new Map(
+      trip?.days.map((day) => [
+        day.date,
+        [$t('trip_day', { values: { index: day.index } }), formatDayDate(day.date, $locale), day.place]
+          .filter(Boolean)
+          .join(' · '),
+      ]),
+    ),
+  );
+  const getTripDayTitle = (date: string) => tripDayTitles.get(date);
+
+  const handleToggleTrip = async () => {
+    const isDone = trip ? await unmarkTrip(trip.id) : await markAlbumAsTrip(album.id);
+    if (isDone) {
+      await loadTrip(album.id);
+    }
+  };
 
   const timelineMultiSelectManager = new AssetMultiSelectManager();
 
@@ -349,6 +436,8 @@
   <div class="relative w-full shrink">
     <main class="relative h-dvh overflow-hidden px-2 pt-(--navbar-height) max-md:pt-(--navbar-height-md) md:px-6">
       <Timeline
+        bind:this={timeline}
+        getDayTitle={trip ? getTripDayTitle : undefined}
         enableRouting={viewMode === AlbumPageViewMode.SELECT_ASSETS ? false : true}
         {album}
         {albumUsers}
@@ -582,6 +671,14 @@
                   />
                 {/if}
 
+                {#if isOwned && album.assetCount > 0}
+                  <MenuOption
+                    icon={trip ? mdiAirplaneOff : mdiAirplane}
+                    text={trip ? $t('trip_unmark') : $t('trip_mark')}
+                    onClick={handleToggleTrip}
+                  />
+                {/if}
+
                 {#if isOwned}
                   <MenuOption
                     icon={mdiDeleteOutline}
@@ -623,6 +720,9 @@
       {/if}
     {/if}
   </div>
+  {#if trip && viewMode === AlbumPageViewMode.VIEW}
+    <TripPanel {trip} selectedDate={selectedTripDate} onSelectDay={handleSelectTripDay} />
+  {/if}
   {#if album.albumUsers.length > 1 && album && assetViewerManager.isShowActivityPanel && authManager.authenticated && !assetViewerManager.isViewing}
     <div class="flex">
       <div
