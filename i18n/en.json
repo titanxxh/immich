@@ -2229,6 +2229,7 @@
   "trips_homes": "Homes",
   "trips_homes_description": "Photos taken within the radius of a home count as at home. If you moved, give each home the dates it applies to.",
   "trips_include_day_trips": "Include day trips",
+  "trips_list_empty": "No trips yet. Set your homes in Settings → Trips to detect them.",
   "trips_min_assets": "Minimum photos",
   "trips_move_home": "Move on the map",
   "trips_photos": "{count, plural, one {# photo} other {# photos}}",
