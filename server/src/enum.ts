@@ -437,6 +437,7 @@ export enum ManualJobName {
   UserCleanup = 'user-cleanup',
   MemoryCleanup = 'memory-cleanup',
   MemoryCreate = 'memory-create',
+  TripDetection = 'trip-detection',
   BackupDatabase = 'backup-database',
   IntegrityMissingFiles = `integrity-missing-files`,
   IntegrityUntrackedFiles = `integrity-untracked-files`,
@@ -885,6 +886,8 @@ export enum JobName {
   MemoryCleanup = 'MemoryCleanup',
   MemoryGenerate = 'MemoryGenerate',
 
+  TripDetection = 'TripDetection',
+
   NotificationsCleanup = 'NotificationsCleanup',
 
   NotifyUserSignup = 'NotifyUserSignup',
@@ -989,6 +992,7 @@ export enum DatabaseLock {
   IntegrityCheck = 67,
   VersionCheck = 800,
   HlsSessionCleanup = 850,
+  TripDetection = 900,
 }
 
 export enum MaintenanceAction {

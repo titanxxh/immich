@@ -277,6 +277,8 @@ export type AdminConfigNightlyTasksDto = {
     clusterNewFaces: boolean;
     /** Database cleanup */
     databaseCleanup: boolean;
+    /** Detect trips and create their albums */
+    detectTrips: boolean;
     /** Generate memories */
     generateMemories: boolean;
     /** Missing thumbnails */
@@ -715,6 +717,30 @@ export type TagsResponse = {
     /** Whether tags appear in web sidebar */
     sidebarWeb: boolean;
 };
+export type TripHome = {
+    /** First day this home applies to (YYYY-MM-DD, inclusive) */
+    "from"?: string | null;
+    /** Home latitude */
+    latitude: number;
+    /** Home longitude */
+    longitude: number;
+    /** Home name */
+    name: string;
+    /** Photos within this distance (km) are taken at home */
+    radiusKm: number;
+    /** Last day this home applies to (YYYY-MM-DD, inclusive) */
+    to?: string | null;
+};
+export type TripsResponse = {
+    /** Whether trips are detected and turned into albums */
+    enabled: boolean;
+    /** Places that are home; being away from all of them is a trip */
+    homes: TripHome[];
+    /** Whether trips within a single day get an album */
+    includeDayTrips: boolean;
+    /** Minimum number of located photos for a trip */
+    minAssets: number;
+};
 export type UserPreferencesResponseDto = {
     albums: AlbumsResponse;
     cast: CastResponse;
@@ -728,6 +754,7 @@ export type UserPreferencesResponseDto = {
     recentlyAdded: RecentlyAddedResponse;
     sharedLinks: SharedLinksResponse;
     tags: TagsResponse;
+    trips: TripsResponse;
 };
 export type AlbumsUpdate = {
     defaultAssetOrder?: AssetOrder;
@@ -801,6 +828,16 @@ export type TagsUpdate = {
     /** Whether tags appear in web sidebar */
     sidebarWeb?: boolean;
 };
+export type TripsUpdate = {
+    /** Whether trips are detected and turned into albums */
+    enabled?: boolean;
+    /** Places that are home; being away from all of them is a trip */
+    homes?: TripHome[];
+    /** Whether trips within a single day get an album */
+    includeDayTrips?: boolean;
+    /** Minimum number of located photos for a trip */
+    minAssets?: number;
+};
 export type UserPreferencesUpdateDto = {
     albums?: AlbumsUpdate;
     avatar?: AvatarUpdate;
@@ -815,6 +852,7 @@ export type UserPreferencesUpdateDto = {
     recentlyAdded?: RecentlyAddedUpdate;
     sharedLinks?: SharedLinksUpdate;
     tags?: TagsUpdate;
+    trips?: TripsUpdate;
 };
 export type SessionResponseDto = {
     /** App version */
@@ -8146,6 +8184,7 @@ export enum ManualJobName {
     UserCleanup = "user-cleanup",
     MemoryCleanup = "memory-cleanup",
     MemoryCreate = "memory-create",
+    TripDetection = "trip-detection",
     BackupDatabase = "backup-database",
     IntegrityMissingFiles = "integrity-missing-files",
     IntegrityUntrackedFiles = "integrity-untracked-files",
@@ -8246,6 +8285,7 @@ export enum JobName {
     HlsSessionCleanup = "HlsSessionCleanup",
     MemoryCleanup = "MemoryCleanup",
     MemoryGenerate = "MemoryGenerate",
+    TripDetection = "TripDetection",
     NotificationsCleanup = "NotificationsCleanup",
     NotifyUserSignup = "NotifyUserSignup",
     NotifyAlbumInvite = "NotifyAlbumInvite",

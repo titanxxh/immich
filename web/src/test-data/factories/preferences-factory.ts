@@ -48,4 +48,10 @@ export const preferencesFactory = Sync.makeFactory<UserPreferencesResponseDto>({
   recentlyAdded: {
     sidebarWeb: false,
   },
+  trips: {
+    enabled: false,
+    homes: [],
+    minAssets: 10,
+    includeDayTrips: false,
+  },
 });

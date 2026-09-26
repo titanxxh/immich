@@ -60,6 +60,7 @@ import { SyncRepository } from 'src/repositories/sync.repository';
 import { SystemMetadataRepository } from 'src/repositories/system-metadata.repository';
 import { TagRepository } from 'src/repositories/tag.repository';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository';
+import { TripRepository } from 'src/repositories/trip.repository';
 import { UserRepository } from 'src/repositories/user.repository';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository';
 import { WorkflowRepository } from 'src/repositories/workflow.repository';
@@ -493,6 +494,7 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     case SyncRepository:
     case SyncCheckpointRepository:
     case SystemMetadataRepository:
+    case TripRepository:
     case UserRepository:
     case VersionHistoryRepository:
     case WorkflowRepository: {
@@ -571,6 +573,7 @@ const newMockRepository = <T>(key: ClassConstructor<T>) => {
     case UserRepository:
     case VersionHistoryRepository:
     case TagRepository:
+    case TripRepository:
     case WorkflowRepository: {
       return automock(key);
     }

@@ -148,6 +148,7 @@ const updatedConfig = Object.freeze<SystemConfig>({
     clusterNewFaces: true,
     missingThumbnails: true,
     generateMemories: true,
+    detectTrips: true,
     syncQuotaUsage: true,
   },
   reverseGeocoding: {

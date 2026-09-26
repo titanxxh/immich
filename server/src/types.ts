@@ -30,6 +30,7 @@ import {
   TranscodeTarget,
   UserMetadataKey,
 } from 'src/enum';
+import type { TripHome } from 'src/utils/trip';
 import { Mocked } from 'vitest';
 
 export type DeepPartial<T> = T extends Date
@@ -246,6 +247,11 @@ export interface ILibraryBulkIdsJob {
   totalAssets: number;
 }
 
+export interface ITripDetectionJob extends IBaseJob {
+  /** only detect the trips of this user; all users with trips enabled otherwise */
+  userId?: string;
+}
+
 export interface IDeleteFilesJob extends IBaseJob {
   files: Array<string | null | undefined>;
 }
@@ -394,6 +400,9 @@ export type JobItem =
   // Memories
   | { name: JobName.MemoryCleanup; data?: IBaseJob }
   | { name: JobName.MemoryGenerate; data?: IBaseJob }
+
+  // Trips
+  | { name: JobName.TripDetection; data?: ITripDetectionJob }
 
   // Filesystem
   | { name: JobName.FileDelete; data: IDeleteFilesJob }
@@ -597,6 +606,12 @@ export type UserPreferences = {
   };
   recentlyAdded: {
     sidebarWeb: boolean;
+  };
+  trips: {
+    enabled: boolean;
+    homes: TripHome[];
+    minAssets: number;
+    includeDayTrips: boolean;
   };
 };
 

@@ -106,6 +106,31 @@ const RecentlyAddedUpdateSchema = z
   .optional()
   .meta({ id: 'RecentlyAddedUpdate' });
 
+const TripHomeSchema = z
+  .object({
+    name: z.string().describe('Home name'),
+    latitude: z.number().min(-90).max(90).meta({ format: 'double' }).describe('Home latitude'),
+    longitude: z.number().min(-180).max(180).meta({ format: 'double' }).describe('Home longitude'),
+    radiusKm: z
+      .number()
+      .positive()
+      .meta({ format: 'double' })
+      .describe('Photos within this distance (km) are taken at home'),
+    from: z.iso.date().nullish().describe('First day this home applies to (YYYY-MM-DD, inclusive)'),
+    to: z.iso.date().nullish().describe('Last day this home applies to (YYYY-MM-DD, inclusive)'),
+  })
+  .meta({ id: 'TripHome' });
+
+const TripsUpdateSchema = z
+  .object({
+    enabled: z.boolean().optional().describe('Whether trips are detected and turned into albums'),
+    homes: z.array(TripHomeSchema).optional().describe('Places that are home; being away from all of them is a trip'),
+    minAssets: z.int().min(1).optional().describe('Minimum number of located photos for a trip'),
+    includeDayTrips: z.boolean().optional().describe('Whether trips within a single day get an album'),
+  })
+  .optional()
+  .meta({ id: 'TripsUpdate' });
+
 const UserPreferencesUpdateSchema = z
   .object({
     albums: AlbumsUpdateSchema,
@@ -121,6 +146,7 @@ const UserPreferencesUpdateSchema = z
     sharedLinks: SharedLinksUpdateSchema,
     tags: TagsUpdateSchema,
     recentlyAdded: RecentlyAddedUpdateSchema,
+    trips: TripsUpdateSchema,
   })
   .meta({ id: 'UserPreferencesUpdateDto' });
 
@@ -207,6 +233,15 @@ const RecentlyAddedResponseSchema = z
   })
   .meta({ id: 'RecentlyAddedResponse' });
 
+const TripsResponseSchema = z
+  .object({
+    enabled: z.boolean().describe('Whether trips are detected and turned into albums'),
+    homes: z.array(TripHomeSchema).describe('Places that are home; being away from all of them is a trip'),
+    minAssets: z.int().describe('Minimum number of located photos for a trip'),
+    includeDayTrips: z.boolean().describe('Whether trips within a single day get an album'),
+  })
+  .meta({ id: 'TripsResponse' });
+
 const UserPreferencesResponseSchema = z
   .object({
     albums: AlbumsResponseSchema,
@@ -221,6 +256,7 @@ const UserPreferencesResponseSchema = z
     purchase: PurchaseResponseSchema,
     cast: CastResponseSchema,
     recentlyAdded: RecentlyAddedResponseSchema,
+    trips: TripsResponseSchema,
   })
   .meta({ id: 'UserPreferencesResponseDto' });
 

@@ -280,6 +280,10 @@ export class QueueService extends BaseService {
       jobs.push({ name: JobName.MemoryGenerate });
     }
 
+    if (config.nightlyTasks.detectTrips) {
+      jobs.push({ name: JobName.TripDetection });
+    }
+
     if (config.nightlyTasks.syncQuotaUsage) {
       jobs.push({ name: JobName.UserSyncUsage });
     }

@@ -363,6 +363,7 @@ const AdminConfigSchemaWithVisibility = z
         missingThumbnails: configBool.describe('Missing thumbnails'),
         clusterNewFaces: configBool.describe('Cluster new faces'),
         generateMemories: configBool.describe('Generate memories'),
+        detectTrips: configBool.describe('Detect trips and create their albums'),
         syncQuotaUsage: configBool.describe('Sync quota usage'),
       })
       .meta({ id: 'AdminConfigNightlyTasksDto' }),
@@ -722,6 +723,7 @@ export const defaults = Object.freeze<SystemConfig>({
     startTime: '00:00',
     databaseCleanup: true,
     generateMemories: true,
+    detectTrips: true,
     syncQuotaUsage: true,
     missingThumbnails: true,
     clusterNewFaces: true,
