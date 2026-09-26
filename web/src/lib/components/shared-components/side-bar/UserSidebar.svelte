@@ -9,6 +9,7 @@
   import { NavbarGroup, NavbarItem } from '@immich/ui';
   import {
     mdiAccount,
+    mdiAirplane,
     mdiAccountMultiple,
     mdiAccountMultipleOutline,
     mdiAccountOutline,
@@ -85,6 +86,8 @@
       </span>
     {/snippet}
   </NavbarItem>
+
+  <NavbarItem title={$t('trips')} href={Route.trips()} icon={mdiAirplane} />
 
   {#if authManager.preferences.tags.enabled && authManager.preferences.tags.sidebarWeb}
     <NavbarItem title={$t('tags')} href={Route.tags()} icon={{ icon: mdiTagMultipleOutline, flipped: true }} />

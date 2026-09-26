@@ -2172,6 +2172,7 @@
   "trips_homes": "家",
   "trips_homes_description": "在家的半径以内拍的照片算在家。搬过家的话，给每个家填上生效的日期。",
   "trips_include_day_trips": "包含一日游",
+  "trips_list_empty": "还没有旅行。在 设置 → 旅行 里填好家，就会自动识别。",
   "trips_min_assets": "最少照片数",
   "trips_move_home": "在地图上修改位置",
   "trips_photos": "{count} 张",
