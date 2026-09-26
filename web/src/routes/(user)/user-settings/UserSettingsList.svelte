@@ -13,6 +13,7 @@
   import {
     mdiAccountGroupOutline,
     mdiAccountOutline,
+    mdiAirplane,
     mdiApi,
     mdiBellOutline,
     mdiCogOutline,
@@ -32,6 +33,7 @@
   import DeviceList from './DeviceList.svelte';
   import OauthSettings from './OauthSettings.svelte';
   import SharingSettings from './SharingSettings.svelte';
+  import TripSettings from './TripSettings.svelte';
   import UserApiKeyList from './UserApiKeyList.svelte';
   import UserProfileSettings from './UserProfileSettings.svelte';
 
@@ -97,6 +99,10 @@
   subtitle={$t('features_setting_description')}
 >
   <FeatureSettings />
+</SettingAccordion>
+
+<SettingAccordion icon={mdiAirplane} key="trips" title={$t('trips')} subtitle={$t('trips_setting_description')}>
+  <TripSettings />
 </SettingAccordion>
 
 <SettingAccordion

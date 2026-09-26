@@ -3142,6 +3142,26 @@ export type TrashResponseDto = {
     /** Number of items in trash */
     count: number;
 };
+export type TripPreviewDto = {
+    /** Places that are home; being away from all of them is a trip */
+    homes: TripHome[];
+    /** Whether trips within a single day count */
+    includeDayTrips: boolean;
+    /** Minimum number of located photos for a trip */
+    minAssets: number;
+};
+export type TripPreviewResponseDto = {
+    /** Number of photos in the trip */
+    assetCount: number;
+    /** Number of calendar days with located photos */
+    days: number;
+    /** Local time of the last photo */
+    endAt: string;
+    /** Name the trip album would get */
+    name: string;
+    /** Local time of the first photo */
+    startAt: string;
+};
 export type UserUpdateMeDto = {
     avatarColor?: (UserAvatarColor) | null;
     /** User email */
@@ -7444,6 +7464,30 @@ export function restoreAssets({ bulkIdsDto }: {
         ...opts,
         method: "POST",
         body: bulkIdsDto
+    })));
+}
+/**
+ * Detect trips
+ */
+export function detectTrips(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/trips/detect", {
+        ...opts,
+        method: "POST"
+    }));
+}
+/**
+ * Preview trips
+ */
+export function previewTrips({ tripPreviewDto }: {
+    tripPreviewDto: TripPreviewDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: TripPreviewResponseDto[];
+    }>("/trips/preview", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: tripPreviewDto
     })));
 }
 /**

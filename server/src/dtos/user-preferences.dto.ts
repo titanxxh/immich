@@ -106,7 +106,7 @@ const RecentlyAddedUpdateSchema = z
   .optional()
   .meta({ id: 'RecentlyAddedUpdate' });
 
-const TripHomeSchema = z
+export const TripHomeSchema = z
   .object({
     name: z.string().describe('Home name'),
     latitude: z.number().min(-90).max(90).meta({ format: 'double' }).describe('Home latitude'),

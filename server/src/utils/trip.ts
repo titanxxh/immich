@@ -125,14 +125,11 @@ export const splitIntoRuns = (assets: TripAsset[], homes: TripHome[]): Located[]
   return runs;
 };
 
-const isQualifyingRun = (run: Located[], options: TripOptions) => {
-  if (run.length < options.minAssets) {
-    return false;
-  }
+/** The number of calendar days the photos were taken on. */
+export const countDays = (assets: TripAsset[]) => new Set(assets.map((asset) => toLocalDate(asset.localDateTime))).size;
 
-  const days = new Set(run.map((asset) => toLocalDate(asset.localDateTime))).size;
-  return options.includeDayTrips || days >= 2;
-};
+const isQualifyingRun = (run: Located[], options: TripOptions) =>
+  run.length >= options.minAssets && (options.includeDayTrips || countDays(run) >= 2);
 
 const paddedContains = (window: TripWindow, date: Date) =>
   window.startAt.getTime() - TRIP_WINDOW_PADDING_HOURS * HOUR <= date.getTime() &&

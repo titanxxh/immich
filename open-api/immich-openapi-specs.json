@@ -16459,6 +16459,94 @@
         "x-immich-state": "Stable"
       }
     },
+    "/trips/detect": {
+      "post": {
+        "description": "Queue trip detection for the current user, creating albums for new trips.",
+        "operationId": "detectTrips",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Detect trips",
+        "tags": [
+          "Users"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "userPreference.update"
+      }
+    },
+    "/trips/preview": {
+      "post": {
+        "description": "List the trips that trip detection would find in the photos of the current user with these settings.",
+        "operationId": "previewTrips",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripPreviewDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TripPreviewResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Preview trips",
+        "tags": [
+          "Users"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "userPreference.read"
+      }
+    },
     "/users": {
       "get": {
         "description": "Retrieve a list of all users on the server.",
@@ -31868,6 +31956,75 @@
           "longitude",
           "name",
           "radiusKm"
+        ],
+        "type": "object"
+      },
+      "TripPreviewDto": {
+        "properties": {
+          "homes": {
+            "description": "Places that are home; being away from all of them is a trip",
+            "items": {
+              "$ref": "#/components/schemas/TripHome"
+            },
+            "type": "array"
+          },
+          "includeDayTrips": {
+            "description": "Whether trips within a single day count",
+            "type": "boolean"
+          },
+          "minAssets": {
+            "description": "Minimum number of located photos for a trip",
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "homes",
+          "includeDayTrips",
+          "minAssets"
+        ],
+        "type": "object"
+      },
+      "TripPreviewResponseDto": {
+        "properties": {
+          "assetCount": {
+            "description": "Number of photos in the trip",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "days": {
+            "description": "Number of calendar days with located photos",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "endAt": {
+            "description": "Local time of the last photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Name the trip album would get",
+            "type": "string"
+          },
+          "startAt": {
+            "description": "Local time of the first photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetCount",
+          "days",
+          "endAt",
+          "name",
+          "startAt"
         ],
         "type": "object"
       },
