@@ -51,6 +51,12 @@
           {disabled}
         />
         <SettingSwitch
+          title={$t('admin.nightly_tasks_detect_trips_setting')}
+          subtitle={$t('admin.nightly_tasks_detect_trips_setting_description')}
+          bind:checked={configToEdit.nightlyTasks.detectTrips}
+          {disabled}
+        />
+        <SettingSwitch
           title={$t('admin.nightly_tasks_sync_quota_usage_setting')}
           subtitle={$t('admin.nightly_tasks_sync_quota_usage_setting_description')}
           bind:checked={configToEdit.nightlyTasks.syncQuotaUsage}

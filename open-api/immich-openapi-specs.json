@@ -19071,6 +19071,10 @@
             "description": "Database cleanup",
             "type": "boolean"
           },
+          "detectTrips": {
+            "description": "Detect trips and create their albums",
+            "type": "boolean"
+          },
           "generateMemories": {
             "description": "Generate memories",
             "type": "boolean"
@@ -19092,6 +19096,7 @@
         "required": [
           "clusterNewFaces",
           "databaseCleanup",
+          "detectTrips",
           "generateMemories",
           "missingThumbnails",
           "startTime",
@@ -22544,6 +22549,7 @@
           "HlsSessionCleanup",
           "MemoryCleanup",
           "MemoryGenerate",
+          "TripDetection",
           "NotificationsCleanup",
           "NotifyUserSignup",
           "NotifyAlbumInvite",
@@ -22919,6 +22925,7 @@
           "user-cleanup",
           "memory-cleanup",
           "memory-create",
+          "trip-detection",
           "backup-database",
           "integrity-missing-files",
           "integrity-untracked-files",
@@ -31814,6 +31821,114 @@
         ],
         "type": "object"
       },
+      "TripHome": {
+        "properties": {
+          "from": {
+            "description": "First day this home applies to (YYYY-MM-DD, inclusive)",
+            "format": "date",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "type": "string"
+          },
+          "latitude": {
+            "description": "Home latitude",
+            "format": "double",
+            "maximum": 90,
+            "minimum": -90,
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Home longitude",
+            "format": "double",
+            "maximum": 180,
+            "minimum": -180,
+            "type": "number"
+          },
+          "name": {
+            "description": "Home name",
+            "type": "string"
+          },
+          "radiusKm": {
+            "description": "Photos within this distance (km) are taken at home",
+            "exclusiveMinimum": true,
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "to": {
+            "description": "Last day this home applies to (YYYY-MM-DD, inclusive)",
+            "format": "date",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "name",
+          "radiusKm"
+        ],
+        "type": "object"
+      },
+      "TripsResponse": {
+        "properties": {
+          "enabled": {
+            "description": "Whether trips are detected and turned into albums",
+            "type": "boolean"
+          },
+          "homes": {
+            "description": "Places that are home; being away from all of them is a trip",
+            "items": {
+              "$ref": "#/components/schemas/TripHome"
+            },
+            "type": "array"
+          },
+          "includeDayTrips": {
+            "description": "Whether trips within a single day get an album",
+            "type": "boolean"
+          },
+          "minAssets": {
+            "description": "Minimum number of located photos for a trip",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "homes",
+          "includeDayTrips",
+          "minAssets"
+        ],
+        "type": "object"
+      },
+      "TripsUpdate": {
+        "properties": {
+          "enabled": {
+            "description": "Whether trips are detected and turned into albums",
+            "type": "boolean"
+          },
+          "homes": {
+            "description": "Places that are home; being away from all of them is a trip",
+            "items": {
+              "$ref": "#/components/schemas/TripHome"
+            },
+            "type": "array"
+          },
+          "includeDayTrips": {
+            "description": "Whether trips within a single day get an album",
+            "type": "boolean"
+          },
+          "minAssets": {
+            "description": "Minimum number of located photos for a trip",
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "UpdateAlbumDto": {
         "properties": {
           "albumName": {
@@ -32714,6 +32829,9 @@
           },
           "tags": {
             "$ref": "#/components/schemas/TagsResponse"
+          },
+          "trips": {
+            "$ref": "#/components/schemas/TripsResponse"
           }
         },
         "required": [
@@ -32728,7 +32846,8 @@
           "ratings",
           "recentlyAdded",
           "sharedLinks",
-          "tags"
+          "tags",
+          "trips"
         ],
         "type": "object"
       },
@@ -32772,6 +32891,9 @@
           },
           "tags": {
             "$ref": "#/components/schemas/TagsUpdate"
+          },
+          "trips": {
+            "$ref": "#/components/schemas/TripsUpdate"
           }
         },
         "type": "object"

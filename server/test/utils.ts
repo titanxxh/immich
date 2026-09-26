@@ -66,6 +66,7 @@ import { SystemMetadataRepository } from 'src/repositories/system-metadata.repos
 import { TagRepository } from 'src/repositories/tag.repository';
 import { TelemetryRepository } from 'src/repositories/telemetry.repository';
 import { TrashRepository } from 'src/repositories/trash.repository';
+import { TripRepository } from 'src/repositories/trip.repository';
 import { UserRepository } from 'src/repositories/user.repository';
 import { VersionHistoryRepository } from 'src/repositories/version-history.repository';
 import { VideoStreamRepository } from 'src/repositories/video-stream.repository';
@@ -281,6 +282,7 @@ export type ServiceOverrides = {
   tag: TagRepository;
   telemetry: TelemetryRepository;
   trash: TrashRepository;
+  trip: TripRepository;
   user: UserRepository;
   versionHistory: VersionHistoryRepository;
   videoStream: VideoStreamRepository;
@@ -370,6 +372,7 @@ export const getMocks = () => {
     tag: automock(TagRepository, { args: [, loggerMock], strict: false }),
     telemetry: newTelemetryRepositoryMock(),
     trash: automock(TrashRepository),
+    trip: automock(TripRepository),
     user: automock(UserRepository, { strict: false }),
     versionHistory: automock(VersionHistoryRepository),
     videoStream: automock(VideoStreamRepository, { strict: false }),
@@ -441,6 +444,7 @@ export const newTestService = <T extends BaseService>(
     overrides.tag || (mocks.tag as As<TagRepository>),
     overrides.telemetry || (mocks.telemetry as unknown as TelemetryRepository),
     overrides.trash || (mocks.trash as As<TrashRepository>),
+    overrides.trip || (mocks.trip as As<TripRepository>),
     overrides.user || (mocks.user as As<UserRepository>),
     overrides.versionHistory || (mocks.versionHistory as As<VersionHistoryRepository>),
     overrides.videoStream || (mocks.videoStream as As<VideoStreamRepository>),

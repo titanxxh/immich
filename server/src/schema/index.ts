@@ -82,6 +82,7 @@ import { SystemMetadataTable } from 'src/schema/tables/system-metadata.table';
 import { TagAssetTable } from 'src/schema/tables/tag-asset.table';
 import { TagClosureTable } from 'src/schema/tables/tag-closure.table';
 import { TagTable } from 'src/schema/tables/tag.table';
+import { TripTable } from 'src/schema/tables/trip.table';
 import { UserAuditTable } from 'src/schema/tables/user-audit.table';
 import { UserMetadataAuditTable } from 'src/schema/tables/user-metadata-audit.table';
 import { UserMetadataTable } from 'src/schema/tables/user-metadata.table';
@@ -150,6 +151,7 @@ export class ImmichDatabase {
     SessionSyncCheckpointTable,
     SystemMetadataTable,
     TagTable,
+    TripTable,
     TagAssetTable,
     TagClosureTable,
     UserAuditTable,
@@ -278,6 +280,8 @@ export interface DB {
   tag: TagTable;
   tag_asset: TagAssetTable;
   tag_closure: TagClosureTable;
+
+  trip: TripTable;
 
   user: UserTable;
   user_audit: UserAuditTable;

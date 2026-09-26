@@ -30,6 +30,10 @@ const asJobItem = (dto: JobCreateDto): JobItem => {
       return { name: JobName.MemoryGenerate };
     }
 
+    case ManualJobName.TripDetection: {
+      return { name: JobName.TripDetection };
+    }
+
     case ManualJobName.BackupDatabase: {
       return { name: JobName.DatabaseBackup };
     }
