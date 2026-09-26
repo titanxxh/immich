@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { getName } from 'i18n-iso-countries';
 import { OnJob } from 'src/decorators';
+import { AuthDto } from 'src/dtos/auth.dto';
+import { TripPreviewDto, TripPreviewResponseDto } from 'src/dtos/trip.dto';
 import { AlbumUserRole, DatabaseLock, JobName, JobStatus, QueueName } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
 import { JobOf, UserPreferences } from 'src/types';
 import { getPreferences } from 'src/utils/preferences';
 import {
   buildTripName,
+  countDays,
   isHomeActive,
   pickChineseName,
   PlannedTrip,
@@ -23,6 +26,17 @@ const NAMING_SAMPLE_SIZE = 200;
 const NAME_LANGUAGE = 'zh';
 
 const toDate = (value: Date | string) => new Date(value);
+
+const toTripAssets = (
+  assets: Array<
+    Omit<TripAsset, 'localDateTime' | 'createdAt'> & { localDateTime: Date | string; createdAt: Date | string }
+  >,
+) =>
+  assets.map((asset) => ({
+    ...asset,
+    localDateTime: toDate(asset.localDateTime),
+    createdAt: toDate(asset.createdAt),
+  }));
 
 const keyOf = ({ name, admin1Name }: { name: string; admin1Name: string }) => `${name}|${admin1Name}`;
 
@@ -49,6 +63,31 @@ export class TripService extends BaseService {
     return JobStatus.Success;
   }
 
+  async preview(auth: AuthDto, dto: TripPreviewDto): Promise<TripPreviewResponseDto[]> {
+    if (dto.homes.length === 0) {
+      return [];
+    }
+
+    const assets = await this.tripRepository.getAssets(auth.user.id);
+    const { created } = planTrips(toTripAssets(assets), dto, []);
+
+    const trips: TripPreviewResponseDto[] = [];
+    for (const trip of created) {
+      trips.push({
+        name: await this.getTripName(trip, dto.homes),
+        startAt: trip.startAt,
+        endAt: trip.endAt,
+        days: countDays(trip.locatedAssets),
+        assetCount: trip.assets.length,
+      });
+    }
+    return trips;
+  }
+
+  async detect(auth: AuthDto) {
+    await this.jobRepository.queue({ name: JobName.TripDetection, data: { userId: auth.user.id } });
+  }
+
   private async detectTrips(ownerId: string) {
     const preferences = getPreferences(await this.userRepository.getMetadata(ownerId));
     const { trips: options } = preferences;
@@ -64,11 +103,7 @@ export class TripService extends BaseService {
     ]);
 
     const plan = planTrips(
-      assets.map((asset) => ({
-        ...asset,
-        localDateTime: toDate(asset.localDateTime),
-        createdAt: toDate(asset.createdAt),
-      })),
+      toTripAssets(assets),
       options,
       trips.map((trip) => ({ id: trip.id, startAt: toDate(trip.startAt), endAt: toDate(trip.endAt) })),
     );

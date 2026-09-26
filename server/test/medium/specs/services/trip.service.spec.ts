@@ -10,6 +10,7 @@ import { DB } from 'src/schema';
 import { TripService } from 'src/services/trip.service';
 import { TripHome } from 'src/utils/trip';
 import { newMediumService } from 'test/medium.factory';
+import { factory } from 'test/small.factory';
 import { getKyselyDB } from 'test/utils';
 
 let defaultDatabase: Kysely<DB>;
@@ -195,6 +196,38 @@ describe(TripService.name, () => {
       await expect(getTrips(ctx, user.id)).resolves.toEqual([
         expect.objectContaining({ id: trip.id, albumId: null, endAt: new Date('2025-05-03T20:00:00Z') }),
       ]);
+    });
+  });
+
+  describe('preview', () => {
+    it('should list the trips for the given settings without creating albums', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await newPhotos(ctx, user.id, '2025-06-01T08:00:00', 2, suzhou);
+
+      const trips = await sut.preview(factory.auth({ user }), { homes: [home], minAssets: 3, includeDayTrips: false });
+
+      expect(trips).toEqual([
+        {
+          name: '2025-05-01 杭州',
+          startAt: new Date('2025-05-01T08:00:00Z'),
+          endAt: new Date('2025-05-02T20:00:00Z'),
+          days: 2,
+          assetCount: 4,
+        },
+      ]);
+      await expect(getTrips(ctx, user.id)).resolves.toEqual([]);
+    });
+
+    it('should find nothing without a home', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+
+      await expect(
+        sut.preview(factory.auth({ user }), { homes: [], minAssets: 3, includeDayTrips: false }),
+      ).resolves.toEqual([]);
     });
   });
 });
