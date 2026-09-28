@@ -1332,6 +1332,7 @@
   "locate_no_suggestion": "No clue. Click the map or search for a place.",
   "locate_photos": "Locate photos",
   "locate_point_chosen": "Location chosen",
+  "locate_range_hint": "Click a photo, then shift-click another to select or deselect all photos in between.",
   "locate_scattered": "Scattered photos",
   "locate_scattered_description": "These photos do not form a group and are listed by time. The selected ones all get the same location.",
   "locate_search_place": "Search for a place",
