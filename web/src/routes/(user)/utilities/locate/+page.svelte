@@ -2,6 +2,7 @@
   import UserPageLayout from '$lib/components/layouts/UserPageLayout.svelte';
   import GeolocationPointPickerModal from '$lib/modals/GeolocationPointPickerModal.svelte';
   import LocatePickMap from './LocatePickMap.svelte';
+  import LocatePreview from './LocatePreview.svelte';
   import { locale } from '$lib/stores/preferences.store';
   import type { LatLng } from '$lib/types';
   import { getAssetMediaUrl } from '$lib/utils';
@@ -15,7 +16,8 @@
     type LocateGroupsResponseDto,
     type LocateSuggestionDto,
   } from '@immich/sdk';
-  import { Button, LoadingSpinner, Switch, modalManager, toastManager } from '@immich/ui';
+  import { Button, Icon, LoadingSpinner, Switch, modalManager, toastManager } from '@immich/ui';
+  import { mdiMagnifyPlusOutline } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
 
@@ -60,6 +62,7 @@
     const item = current;
     selected = new Set(item && item.key !== SCATTERED ? item.assetIds : []);
     anchorIndex = undefined;
+    previewIndex = undefined;
     point = undefined;
     suggestion = undefined;
     if (!item) {
@@ -94,6 +97,21 @@
       ? $t('locate_scattered')
       : `${formatTime(item.startAt, true)} – ${formatTime(item.endAt, false)}`;
 
+  const THUMBNAIL_SIZES = {
+    small: { className: 'size-24', label: 'locate_size_small' },
+    medium: { className: 'size-40', label: 'locate_size_medium' },
+    large: { className: 'size-64', label: 'locate_size_large' },
+  } as const;
+  type ThumbnailSize = keyof typeof THUMBNAIL_SIZES;
+  let thumbnailSize = $state<ThumbnailSize>('small');
+
+  // the photo shown large, if any
+  let previewIndex = $state<number>();
+
+  const togglePhoto = (id: string) => {
+    selected = selected.has(id) ? new Set([...selected].filter((other) => other !== id)) : new Set([...selected, id]);
+  };
+
   // the last photo clicked without shift, from which a shift-click selects or deselects a whole run
   let anchorIndex = $state<number>();
 
@@ -107,8 +125,7 @@
       return;
     }
 
-    const id = ids[index];
-    selected = selected.has(id) ? new Set([...selected].filter((other) => other !== id)) : new Set([...selected, id]);
+    togglePhoto(ids[index]);
     anchorIndex = index;
   };
 
@@ -221,7 +238,16 @@
               <h2 class="text-lg font-medium">
                 {getTitle(current)} · {$t('trips_photos', { values: { count: current.assetIds.length } })}
               </h2>
-              <div class="flex gap-1">
+              <div class="flex items-center gap-1">
+                {#each Object.keys(THUMBNAIL_SIZES) as size (size)}
+                  <Button
+                    size="small"
+                    variant={thumbnailSize === size ? 'filled' : 'ghost'}
+                    onclick={() => (thumbnailSize = size as ThumbnailSize)}
+                  >
+                    {$t(THUMBNAIL_SIZES[size as ThumbnailSize].label)}
+                  </Button>
+                {/each}
                 <Button size="small" variant="ghost" onclick={() => (selected = new Set(current.assetIds))}>
                   {$t('select_all')}
                 </Button>
@@ -236,22 +262,35 @@
             <p class="mb-2 text-sm text-gray-500 dark:text-gray-300">{$t('locate_range_hint')}</p>
             <div class="flex flex-wrap gap-1">
               {#each current.assetIds as id, index (id)}
-                <button
-                  type="button"
-                  class="relative size-24"
-                  onmousedown={(event) => event.shiftKey && event.preventDefault()}
-                  onclick={(event) => handlePhotoClick(index, event)}
-                >
-                  <img
-                    class="size-full rounded-sm object-cover {selected.has(id) ? '' : 'opacity-40 grayscale'}"
-                    alt=""
-                    loading="lazy"
-                    src={getAssetMediaUrl({ id, size: AssetMediaSize.Thumbnail })}
-                  />
+                <div class="group relative {THUMBNAIL_SIZES[thumbnailSize].className}">
+                  <button
+                    type="button"
+                    class="size-full"
+                    onmousedown={(event) => event.shiftKey && event.preventDefault()}
+                    onclick={(event) => handlePhotoClick(index, event)}
+                  >
+                    <img
+                      class="size-full rounded-sm object-cover {selected.has(id) ? '' : 'opacity-40 grayscale'}"
+                      alt=""
+                      loading="lazy"
+                      src={getAssetMediaUrl({ id, size: AssetMediaSize.Thumbnail })}
+                    />
+                  </button>
                   {#if selected.has(id)}
-                    <span class="absolute inset-e-1 top-1 size-4 rounded-full border-2 border-white bg-primary"></span>
+                    <span
+                      class="pointer-events-none absolute inset-e-1 top-1 size-4 rounded-full border-2 border-white bg-primary"
+                    ></span>
                   {/if}
-                </button>
+                  <button
+                    type="button"
+                    class="absolute inset-s-1 top-1 hidden rounded-full bg-black/60 p-1 text-white group-hover:block"
+                    title={$t('locate_preview')}
+                    aria-label={$t('locate_preview')}
+                    onclick={() => (previewIndex = index)}
+                  >
+                    <Icon icon={mdiMagnifyPlusOutline} size="18" />
+                  </button>
+                </div>
               {/each}
             </div>
           </div>
@@ -274,3 +313,13 @@
     </div>
   {/if}
 </UserPageLayout>
+
+{#if current && previewIndex !== undefined}
+  <LocatePreview
+    assetIds={current.assetIds}
+    bind:index={previewIndex}
+    {selected}
+    onToggle={togglePhoto}
+    onClose={() => (previewIndex = undefined)}
+  />
+{/if}
