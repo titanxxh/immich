@@ -1872,6 +1872,38 @@ export type ValidateLibraryResponseDto = {
     /** Validation results for import paths */
     importPaths?: ValidateLibraryImportPathResponseDto[];
 };
+export type LocateGroupDto = {
+    /** Photos of the group, oldest first */
+    assetIds: string[];
+    /** Local time of the last photo */
+    endAt: string;
+    /** Key of the group in the list: its first photo */
+    id: string;
+    /** Local time of the first photo */
+    startAt: string;
+};
+export type LocateGroupsResponseDto = {
+    /** Photos taken close together, largest group first */
+    groups: LocateGroupDto[];
+    /** Photos too few to form a group, oldest first */
+    scattered: string[];
+};
+export type LocateAssetIdsDto = {
+    /** Photos */
+    assetIds: string[];
+};
+export type LocateSuggestionDto = {
+    /** Latitude */
+    latitude: number;
+    /** Longitude */
+    longitude: number;
+    /** Where it comes from: located photos in the same folder, or the located photo nearest in time */
+    source: Source;
+};
+export type LocateSuggestionResponseDto = {
+    /** Suggested position; null without any clue */
+    suggestion: (LocateSuggestionDto) | null;
+};
 export type MapReverseGeocodeResponseDto = {
     /** City name */
     city: string | null;
@@ -5706,6 +5738,44 @@ export function validate({ id, validateLibraryDto }: {
     })));
 }
 /**
+ * Get photos to locate
+ */
+export function getLocateGroups(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: LocateGroupsResponseDto;
+    }>("/locate/groups", {
+        ...opts
+    }));
+}
+/**
+ * Ignore photos to locate
+ */
+export function ignoreLocateAssets({ locateAssetIdsDto }: {
+    locateAssetIdsDto: LocateAssetIdsDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/locate/ignore", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: locateAssetIdsDto
+    })));
+}
+/**
+ * Suggest a location
+ */
+export function getLocateSuggestion({ locateAssetIdsDto }: {
+    locateAssetIdsDto: LocateAssetIdsDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: LocateSuggestionResponseDto;
+    }>("/locate/suggestion", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: locateAssetIdsDto
+    })));
+}
+/**
  * Retrieve map markers
  */
 export function getMapMarkers({ fileCreatedAfter, fileCreatedBefore, isArchived, isFavorite, withPartners, withSharedAlbums }: {
@@ -8416,6 +8486,10 @@ export enum QueueCommand {
     Resume = "resume",
     Empty = "empty",
     ClearFailed = "clear-failed"
+}
+export enum Source {
+    Directory = "directory",
+    Time = "time"
 }
 export enum MemorySearchOrder {
     Asc = "asc",

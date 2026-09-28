@@ -7904,6 +7904,142 @@
         "x-immich-state": "Stable"
       }
     },
+    "/locate/groups": {
+      "get": {
+        "description": "Group the camera photos of the current user that have no location by when they were taken.",
+        "operationId": "getLocateGroups",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocateGroupsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get photos to locate",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      }
+    },
+    "/locate/ignore": {
+      "post": {
+        "description": "Stop offering the photos for locating. They can still be located from the photo itself.",
+        "operationId": "ignoreLocateAssets",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocateAssetIdsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Ignore photos to locate",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.update"
+      }
+    },
+    "/locate/suggestion": {
+      "post": {
+        "description": "Suggest where the photos were taken, from located photos in the same folders or nearby in time.",
+        "operationId": "getLocateSuggestion",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocateAssetIdsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocateSuggestionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Suggest a location",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.2",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      }
+    },
     "/map/markers": {
       "get": {
         "description": "Retrieve a list of latitude and longitude coordinates for every asset with location data.",
@@ -23004,6 +23140,128 @@
       },
       "LicenseResponseDto": {
         "$ref": "#/components/schemas/UserLicense"
+      },
+      "LocateAssetIdsDto": {
+        "properties": {
+          "assetIds": {
+            "description": "Photos",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "assetIds"
+        ],
+        "type": "object"
+      },
+      "LocateGroupDto": {
+        "properties": {
+          "assetIds": {
+            "description": "Photos of the group, oldest first",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "endAt": {
+            "description": "Local time of the last photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Key of the group in the list: its first photo",
+            "type": "string"
+          },
+          "startAt": {
+            "description": "Local time of the first photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetIds",
+          "endAt",
+          "id",
+          "startAt"
+        ],
+        "type": "object"
+      },
+      "LocateGroupsResponseDto": {
+        "properties": {
+          "groups": {
+            "description": "Photos taken close together, largest group first",
+            "items": {
+              "$ref": "#/components/schemas/LocateGroupDto"
+            },
+            "type": "array"
+          },
+          "scattered": {
+            "description": "Photos too few to form a group, oldest first",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups",
+          "scattered"
+        ],
+        "type": "object"
+      },
+      "LocateSuggestionDto": {
+        "properties": {
+          "latitude": {
+            "description": "Latitude",
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Longitude",
+            "format": "double",
+            "type": "number"
+          },
+          "source": {
+            "description": "Where it comes from: located photos in the same folder, or the located photo nearest in time",
+            "enum": [
+              "directory",
+              "time"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "source"
+        ],
+        "type": "object"
+      },
+      "LocateSuggestionResponseDto": {
+        "properties": {
+          "suggestion": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LocateSuggestionDto"
+              }
+            ],
+            "description": "Suggested position; null without any clue",
+            "nullable": true
+          }
+        },
+        "required": [
+          "suggestion"
+        ],
+        "type": "object"
       },
       "LogLevel": {
         "description": "Log level",
