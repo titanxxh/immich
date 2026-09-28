@@ -9,6 +9,7 @@ import { AccessRepository } from 'src/repositories/access.repository';
 import { ActivityRepository } from 'src/repositories/activity.repository';
 import { AlbumUserRepository } from 'src/repositories/album-user.repository';
 import { AlbumRepository } from 'src/repositories/album.repository';
+import { AmapRepository } from 'src/repositories/amap.repository';
 import { ApiKeyRepository } from 'src/repositories/api-key.repository';
 import { AppRepository } from 'src/repositories/app.repository';
 import { AssetEditRepository } from 'src/repositories/asset-edit.repository';
@@ -73,6 +74,7 @@ export const BASE_SERVICE_DEPENDENCIES = [
   ActivityRepository,
   AlbumRepository,
   AlbumUserRepository,
+  AmapRepository,
   ApiKeyRepository,
   AppRepository,
   AssetRepository,
@@ -137,6 +139,7 @@ export class BaseService {
     protected activityRepository: ActivityRepository,
     protected albumRepository: AlbumRepository,
     protected albumUserRepository: AlbumUserRepository,
+    protected amapRepository: AmapRepository,
     protected apiKeyRepository: ApiKeyRepository,
     protected appRepository: AppRepository,
     protected assetRepository: AssetRepository,
@@ -210,6 +213,7 @@ export class BaseService {
       ctx.activityRepository,
       ctx.albumRepository,
       ctx.albumUserRepository,
+      ctx.amapRepository,
       ctx.apiKeyRepository,
       ctx.appRepository,
       ctx.assetRepository,

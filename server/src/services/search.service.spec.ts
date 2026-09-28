@@ -1,7 +1,7 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { mapAsset } from 'src/dtos/asset-response.dto';
 import { SearchSuggestionType } from 'src/dtos/search.dto';
-import { AssetVisibility } from 'src/enum';
+import { AssetVisibility, UserMetadataKey } from 'src/enum';
 import { SearchService } from 'src/services/search.service';
 import { AssetFactory } from 'test/factories/asset.factory';
 import { AuthFactory } from 'test/factories/auth.factory';
@@ -61,8 +61,68 @@ describe(SearchService.name, () => {
         },
       ]);
 
-      await sut.searchPlaces({ name: 'place' });
+      await sut.searchPlaces(AuthFactory.create(), { name: 'place' });
       expect(mocks.search.searchPlaces).toHaveBeenCalledWith('place');
+      expect(mocks.amap.searchText).not.toHaveBeenCalled();
+    });
+
+    it('should name places in Chinese when GeoNames has a Chinese name', async () => {
+      mocks.search.searchPlaces.mockResolvedValue([
+        {
+          id: 42,
+          name: 'Hangzhou',
+          latitude: 30.29,
+          longitude: 120.16,
+          admin1Code: null,
+          admin1Name: 'Zhejiang',
+          admin2Code: null,
+          admin2Name: 'Hangzhou Shi',
+          alternateNames: 'Hangzhou,杭州,杭州市',
+          countryCode: 'CN',
+          modificationDate: new Date(),
+        },
+      ]);
+
+      await expect(sut.searchPlaces(AuthFactory.create(), { name: '杭州' })).resolves.toEqual([
+        expect.objectContaining({ name: '杭州', admin1name: 'Zhejiang' }),
+      ]);
+    });
+
+    it('should put Amap places near home first, converted to WGS-84', async () => {
+      mocks.search.searchPlaces.mockResolvedValue([]);
+      mocks.amap.isEnabled.mockReturnValue(true);
+      mocks.user.getMetadata.mockResolvedValue([
+        {
+          key: UserMetadataKey.Preferences,
+          value: { trips: { homes: [{ name: 'Home', latitude: 31.1, longitude: 121.5, radiusKm: 50 }] } },
+        },
+      ]);
+      mocks.amap.searchAround.mockResolvedValue([
+        { name: '上海世纪公园', location: '121.552563,31.215725', cityname: '上海市', adname: '浦东新区' },
+      ]);
+
+      const [place] = await sut.searchPlaces(AuthFactory.create(), { name: '世纪公园' });
+
+      expect(mocks.amap.searchAround).toHaveBeenCalledWith('世纪公园', expect.any(Object), 50_000);
+      expect(mocks.amap.searchText).not.toHaveBeenCalled();
+      expect(place).toEqual(
+        expect.objectContaining({ name: '上海世纪公园', admin1name: '上海市', admin2name: '浦东新区' }),
+      );
+      // GCJ-02 sits a few hundred metres north-east of WGS-84 in Shanghai
+      expect(place.latitude).toBeCloseTo(31.2177, 3);
+      expect(place.longitude).toBeCloseTo(121.5482, 3);
+    });
+
+    it('should search the whole country when nothing is near home', async () => {
+      mocks.search.searchPlaces.mockResolvedValue([]);
+      mocks.amap.isEnabled.mockReturnValue(true);
+      mocks.user.getMetadata.mockResolvedValue([]);
+      mocks.amap.searchText.mockResolvedValue([{ name: '西湖', location: '120.1445,30.2463', pname: '浙江省' }]);
+
+      await expect(sut.searchPlaces(AuthFactory.create(), { name: '西湖' })).resolves.toEqual([
+        expect.objectContaining({ name: '西湖', admin1name: '浙江省' }),
+      ]);
+      expect(mocks.amap.searchAround).not.toHaveBeenCalled();
     });
   });
 
