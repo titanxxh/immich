@@ -22,6 +22,7 @@ import { AccessRepository } from 'src/repositories/access.repository';
 import { ActivityRepository } from 'src/repositories/activity.repository';
 import { AlbumUserRepository } from 'src/repositories/album-user.repository';
 import { AlbumRepository } from 'src/repositories/album.repository';
+import { AmapRepository } from 'src/repositories/amap.repository';
 import { ApiKeyRepository } from 'src/repositories/api-key.repository';
 import { AssetEditRepository } from 'src/repositories/asset-edit.repository';
 import { AssetFileRepository } from 'src/repositories/asset-file.repository';
@@ -535,6 +536,7 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
       return new key(db, LoggingRepository.create()) as InstanceType<T>;
     }
 
+    case AmapRepository:
     case StorageRepository: {
       return new key(LoggingRepository.create()) as InstanceType<T>;
     }
@@ -579,6 +581,10 @@ const newMockRepository = <T>(key: ClassConstructor<T>) => {
     case TripRepository:
     case WorkflowRepository: {
       return automock(key);
+    }
+
+    case AmapRepository: {
+      return automock(AmapRepository, { args: [{ setContext: () => {} }], strict: false });
     }
 
     case MapRepository: {

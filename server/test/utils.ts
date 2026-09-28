@@ -21,6 +21,7 @@ import { AccessRepository } from 'src/repositories/access.repository';
 import { ActivityRepository } from 'src/repositories/activity.repository';
 import { AlbumUserRepository } from 'src/repositories/album-user.repository';
 import { AlbumRepository } from 'src/repositories/album.repository';
+import { AmapRepository } from 'src/repositories/amap.repository';
 import { ApiKeyRepository } from 'src/repositories/api-key.repository';
 import { AppRepository } from 'src/repositories/app.repository';
 import { AssetEditRepository } from 'src/repositories/asset-edit.repository';
@@ -238,6 +239,7 @@ export type ServiceOverrides = {
   activity: ActivityRepository;
   album: AlbumRepository;
   albumUser: AlbumUserRepository;
+  amap: AmapRepository;
   apiKey: ApiKeyRepository;
   app: AppRepository;
   asset: AssetRepository;
@@ -328,6 +330,7 @@ export const getMocks = () => {
     activity: automock(ActivityRepository),
     album: automock(AlbumRepository, { strict: false }),
     albumUser: automock(AlbumUserRepository),
+    amap: automock(AmapRepository, { args: [loggerMock], strict: false }),
     asset: newAssetRepositoryMock(),
     assetEdit: automock(AssetEditRepository),
     assetFile: automock(AssetFileRepository),
@@ -403,6 +406,7 @@ export const newTestService = <T extends BaseService>(
     overrides.activity || (mocks.activity as As<ActivityRepository>),
     overrides.album || (mocks.album as As<AlbumRepository>),
     overrides.albumUser || (mocks.albumUser as As<AlbumUserRepository>),
+    overrides.amap || (mocks.amap as As<AmapRepository>),
     overrides.apiKey || (mocks.apiKey as As<ApiKeyRepository>),
     overrides.app || (mocks.app as As<AppRepository>),
     overrides.asset || (mocks.asset as As<AssetRepository>),

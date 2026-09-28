@@ -27,9 +27,15 @@ import { AssetSearchScope } from 'src/repositories/search.repository';
 import { BaseService } from 'src/services/base.service';
 import { requireElevatedPermission } from 'src/utils/access';
 import { getMyPartnerIds } from 'src/utils/asset.util';
+import { gcj02ToWgs84, wgs84ToGcj02 } from 'src/utils/coordinates';
 import { isSmartSearchEnabled } from 'src/utils/misc';
+import { getPreferences } from 'src/utils/preferences';
 import { decodeSearchCursor, encodeSearchCursor } from 'src/utils/search-cursor';
 import { applyLockedVisibilityPolicy, collectFilterIds } from 'src/utils/search-filter';
+import { isHomeActive, pickChineseName } from 'src/utils/trip';
+
+/** How far from home (in metres) Amap places are searched before searching the whole country. */
+const AMAP_NEARBY_RADIUS = 50_000;
 
 @Injectable()
 export class SearchService extends BaseService {
@@ -40,9 +46,51 @@ export class SearchService extends BaseService {
     return people.map((person) => mapPerson(person));
   }
 
-  async searchPlaces(dto: SearchPlacesDto): Promise<PlacesResponseDto[]> {
-    const places = await this.searchRepository.searchPlaces(dto.name);
-    return places.map((place) => mapPlaces(place));
+  async searchPlaces(auth: AuthDto, dto: SearchPlacesDto): Promise<PlacesResponseDto[]> {
+    const [pois, places] = await Promise.all([
+      this.searchAmapPlaces(auth, dto.name),
+      this.searchRepository.searchPlaces(dto.name),
+    ]);
+
+    // venues, parks and roads from Amap first, then the towns and cities GeoNames knows, named in Chinese when possible
+    return [
+      ...pois,
+      ...places.map((place) => mapPlaces({ ...place, name: pickChineseName(place.alternateNames) ?? place.name })),
+    ];
+  }
+
+  /** Amap places near the user's home, or anywhere in the country when there are none nearby. */
+  private async searchAmapPlaces(auth: AuthDto, name: string): Promise<PlacesResponseDto[]> {
+    if (!this.amapRepository.isEnabled()) {
+      return [];
+    }
+
+    const { homes } = getPreferences(await this.userRepository.getMetadata(auth.user.id)).trips;
+    const today = new Date().toISOString().slice(0, 10);
+    const home = homes.find((home) => isHomeActive(home, today)) ?? homes[0];
+
+    let pois = home ? await this.amapRepository.searchAround(name, wgs84ToGcj02(home), AMAP_NEARBY_RADIUS) : [];
+    if (pois.length === 0) {
+      pois = await this.amapRepository.searchText(name);
+    }
+
+    return pois.flatMap((poi) => {
+      const [longitude, latitude] = poi.location.split(',').map(Number);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return [];
+      }
+
+      const point = gcj02ToWgs84({ latitude, longitude });
+      return [
+        {
+          name: poi.name,
+          latitude: point.latitude,
+          longitude: point.longitude,
+          admin1name: poi.cityname || poi.pname || undefined,
+          admin2name: poi.adname || undefined,
+        },
+      ];
+    });
   }
 
   async getExploreData(auth: AuthDto) {
