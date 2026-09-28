@@ -59,6 +59,7 @@
   $effect(() => {
     const item = current;
     selected = new Set(item && item.key !== SCATTERED ? item.assetIds : []);
+    anchorIndex = undefined;
     point = undefined;
     suggestion = undefined;
     if (!item) {
@@ -93,8 +94,22 @@
       ? $t('locate_scattered')
       : `${formatTime(item.startAt, true)} – ${formatTime(item.endAt, false)}`;
 
-  const toggle = (id: string) => {
+  // the last photo clicked without shift, from which a shift-click selects or deselects a whole run
+  let anchorIndex = $state<number>();
+
+  const handlePhotoClick = (index: number, event: MouseEvent) => {
+    const ids = current?.assetIds ?? [];
+    if (event.shiftKey && anchorIndex !== undefined && anchorIndex < ids.length) {
+      const run = new Set(ids.slice(Math.min(anchorIndex, index), Math.max(anchorIndex, index) + 1));
+      // the run takes the state of the anchor, so a run can be selected as well as deselected
+      const shouldSelect = selected.has(ids[anchorIndex]);
+      selected = new Set(ids.filter((id) => (run.has(id) ? shouldSelect : selected.has(id))));
+      return;
+    }
+
+    const id = ids[index];
     selected = selected.has(id) ? new Set([...selected].filter((other) => other !== id)) : new Set([...selected, id]);
+    anchorIndex = index;
   };
 
   /** After a change, stay on what is left of the group, or move on to the next one. */
@@ -218,9 +233,15 @@
             {#if current.key === SCATTERED}
               <p class="mb-2 text-sm text-gray-500 dark:text-gray-300">{$t('locate_scattered_description')}</p>
             {/if}
+            <p class="mb-2 text-sm text-gray-500 dark:text-gray-300">{$t('locate_range_hint')}</p>
             <div class="flex flex-wrap gap-1">
-              {#each current.assetIds as id (id)}
-                <button type="button" class="relative size-24" onclick={() => toggle(id)}>
+              {#each current.assetIds as id, index (id)}
+                <button
+                  type="button"
+                  class="relative size-24"
+                  onmousedown={(event) => event.shiftKey && event.preventDefault()}
+                  onclick={(event) => handlePhotoClick(index, event)}
+                >
                   <img
                     class="size-full rounded-sm object-cover {selected.has(id) ? '' : 'opacity-40 grayscale'}"
                     alt=""

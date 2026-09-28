@@ -1310,6 +1310,7 @@
   "locate_no_suggestion": "没有线索，请在地图上点选或搜索地名",
   "locate_photos": "补充位置",
   "locate_point_chosen": "已选位置",
+  "locate_range_hint": "点一张照片，再按住 Shift 点另一张，可以一次选中或取消中间的所有照片。",
   "locate_scattered": "零散照片",
   "locate_scattered_description": "这些照片不成组，按时间排列。选中的照片会一起设成同一个位置。",
   "locate_search_place": "搜索地名",
