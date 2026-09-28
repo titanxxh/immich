@@ -142,6 +142,7 @@ export const Route = {
   duplicatesUtility: (params?: { index?: number }) => '/utilities/duplicates' + asQueryString(params),
   largeFileUtility: () => '/utilities/large-files',
   geolocationUtility: () => '/utilities/geolocation',
+  locateUtility: () => '/utilities/locate',
 
   // workflows
   workflows: () => '/workflows',

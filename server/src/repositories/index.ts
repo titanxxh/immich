@@ -20,6 +20,7 @@ import { EventRepository } from 'src/repositories/event.repository';
 import { IntegrityRepository } from 'src/repositories/integrity.repository';
 import { JobRepository } from 'src/repositories/job.repository';
 import { LibraryRepository } from 'src/repositories/library.repository';
+import { LocateRepository } from 'src/repositories/locate.repository';
 import { LoggingRepository } from 'src/repositories/logging.repository';
 import { MachineLearningRepository } from 'src/repositories/machine-learning.repository';
 import { MapRepository } from 'src/repositories/map.repository';
@@ -77,6 +78,7 @@ export const repositories = [
   IntegrityRepository,
   JobRepository,
   LibraryRepository,
+  LocateRepository,
   LoggingRepository,
   MachineLearningRepository,
   MapRepository,

@@ -17,6 +17,7 @@ import { HlsService } from 'src/services/hls.service';
 import { IntegrityService } from 'src/services/integrity.service';
 import { JobService } from 'src/services/job.service';
 import { LibraryService } from 'src/services/library.service';
+import { LocateService } from 'src/services/locate.service';
 import { MaintenanceService } from 'src/services/maintenance.service';
 import { MapService } from 'src/services/map.service';
 import { MediaService } from 'src/services/media.service';
@@ -73,6 +74,7 @@ export const services = [
   JobService,
   LibraryService,
   MaintenanceService,
+  LocateService,
   MapService,
   MediaService,
   MemoryService,

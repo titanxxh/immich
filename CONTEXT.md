@@ -23,3 +23,17 @@ _Avoid_: Smart album, auto album
 **Dismissed trip**:
 A trip whose album the user deleted. It keeps its time window so it is never detected again.
 _Avoid_: Ignored trip, hidden trip
+
+## Locating photos
+
+**Photo to locate**:
+A camera photo (one with a camera make) that has no location and has not been ignored.
+_Avoid_: Unlocated photo, missing-GPS photo
+
+**Location group**:
+At least three photos to locate taken no more than three hours apart, which were most likely taken at the same place.
+_Avoid_: Cluster, event
+
+**Scattered photos**:
+Photos to locate too few to form a location group; they are handled together in one list.
+_Avoid_: Leftovers, singles
