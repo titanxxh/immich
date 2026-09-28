@@ -113,6 +113,31 @@ describe(SearchService.name, () => {
       expect(place.longitude).toBeCloseTo(121.5482, 3);
     });
 
+    it('should put a town named exactly as searched before Amap places', async () => {
+      mocks.search.searchPlaces.mockResolvedValue([
+        {
+          id: 42,
+          name: 'Hangzhou',
+          latitude: 30.29,
+          longitude: 120.16,
+          admin1Code: null,
+          admin1Name: 'Zhejiang',
+          admin2Code: null,
+          admin2Name: 'Hangzhou Shi',
+          alternateNames: 'Hangzhou,杭州,杭州市',
+          countryCode: 'CN',
+          modificationDate: new Date(),
+        },
+      ]);
+      mocks.amap.isEnabled.mockReturnValue(true);
+      mocks.user.getMetadata.mockResolvedValue([]);
+      mocks.amap.searchText.mockResolvedValue([{ name: '杭州银行', location: '121.5,31.18', cityname: '上海市' }]);
+
+      const places = await sut.searchPlaces(AuthFactory.create(), { name: '杭州市' });
+
+      expect(places.map(({ name }) => name)).toEqual(['杭州', '杭州银行']);
+    });
+
     it('should search the whole country when nothing is near home', async () => {
       mocks.search.searchPlaces.mockResolvedValue([]);
       mocks.amap.isEnabled.mockReturnValue(true);

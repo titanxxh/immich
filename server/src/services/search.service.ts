@@ -52,11 +52,14 @@ export class SearchService extends BaseService {
       this.searchRepository.searchPlaces(dto.name),
     ]);
 
-    // venues, parks and roads from Amap first, then the towns and cities GeoNames knows, named in Chinese when possible
-    return [
-      ...pois,
-      ...places.map((place) => mapPlaces({ ...place, name: pickChineseName(place.alternateNames) ?? place.name })),
-    ];
+    // a town or city named exactly as searched comes first, then venues, parks and roads from Amap (which are biased
+    // towards home), then the other towns and cities GeoNames knows, named in Chinese when possible
+    const towns = places.map((place) =>
+      mapPlaces({ ...place, name: pickChineseName(place.alternateNames) ?? place.name }),
+    );
+    const query = dto.name.trim().replace(/市$/, '');
+    const isExact = (town: PlacesResponseDto) => town.name.replace(/市$/, '') === query;
+    return [...towns.filter((town) => isExact(town)), ...pois, ...towns.filter((town) => !isExact(town))];
   }
 
   /** Amap places near the user's home, or anywhere in the country when there are none nearby. */
