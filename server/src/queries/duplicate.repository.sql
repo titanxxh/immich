@@ -56,6 +56,99 @@ from
 where
   json_array_length("assets") > $2
 
+-- DuplicateRepository.getBurstCount
+with
+  "burst" as (
+    select
+      "asset"."duplicateId",
+      min("asset"."localDateTime") as "startAt"
+    from
+      "asset"
+    where
+      "asset"."visibility" in ('archive', 'timeline')
+      and "asset"."ownerId" = $1::uuid
+      and "asset"."duplicateId" is not null
+      and "asset"."deletedAt" is null
+      and "asset"."stackId" is null
+      and "asset"."type" = $2
+    group by
+      "asset"."duplicateId"
+    having
+      count("asset"."id") > $3
+  )
+select
+  count(*) as "count"
+from
+  "burst"
+
+-- DuplicateRepository.getBursts
+with
+  "burst" as (
+    select
+      "asset"."duplicateId",
+      min("asset"."localDateTime") as "startAt"
+    from
+      "asset"
+    where
+      "asset"."visibility" in ('archive', 'timeline')
+      and "asset"."ownerId" = $1::uuid
+      and "asset"."duplicateId" is not null
+      and "asset"."deletedAt" is null
+      and "asset"."stackId" is null
+      and "asset"."type" = $2
+    group by
+      "asset"."duplicateId"
+    having
+      count("asset"."id") > $3
+  )
+select
+  "burst"."duplicateId",
+  (
+    select
+      coalesce(json_agg(agg), '[]')
+    from
+      (
+        select
+          "asset"."id",
+          "asset"."localDateTime",
+          "asset_job_status"."sharpness",
+          "asset_job_status"."sharpnessVersion",
+          (
+            select
+              "asset_file"."path"
+            from
+              "asset_file"
+            where
+              "asset_file"."assetId" = "asset"."id"
+              and "asset_file"."type" = $4
+              and "asset_file"."isEdited" = $5
+            limit
+              $6
+          ) as "previewPath"
+        from
+          "asset"
+          left join "asset_job_status" on "asset_job_status"."assetId" = "asset"."id"
+        where
+          "asset"."visibility" in ('archive', 'timeline')
+          and "asset"."duplicateId" = "burst"."duplicateId"
+          and "asset"."deletedAt" is null
+          and "asset"."stackId" is null
+          and "asset"."type" = $7
+        order by
+          "asset"."localDateTime",
+          "asset"."id"
+      ) as agg
+  ) as "assets"
+from
+  "burst"
+order by
+  "burst"."startAt",
+  "burst"."duplicateId"
+limit
+  $8
+offset
+  $9
+
 -- DuplicateRepository.cleanupSingletonGroups
 with
   "singletons" as (

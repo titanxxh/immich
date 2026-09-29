@@ -17,4 +17,10 @@ export class AssetJobStatusTable {
 
   @Column({ type: 'timestamp with time zone', nullable: true })
   ocrAt!: Timestamp | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  sharpness!: number | null;
+
+  @Column({ type: 'smallint', nullable: true })
+  sharpnessVersion!: number | null;
 }

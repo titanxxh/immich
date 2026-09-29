@@ -35,6 +35,7 @@ import {
   VideoInfo,
   VideoPacketInfo,
 } from 'src/types';
+import { getLaplacianVariance } from 'src/utils/burst';
 import { handlePromiseError } from 'src/utils/misc';
 import { createAffineMatrix } from 'src/utils/transform';
 
@@ -215,6 +216,15 @@ export class MediaRepository {
       pipeline = pipeline.resize(options.size, options.size, { fit: 'outside', withoutEnlargement: true });
     }
     return pipeline;
+  }
+
+  /** Sharpness of an image, see `getLaplacianVariance`. */
+  async getSharpness(input: string): Promise<number> {
+    const { data, info } = await sharp(input, { failOn: 'none' })
+      .greyscale()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    return getLaplacianVariance(data, info.width, info.height);
   }
 
   async generateThumbhash(input: string | Buffer, options: GenerateThumbhashOptions): Promise<Buffer> {
