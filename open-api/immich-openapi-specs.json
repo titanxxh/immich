@@ -23109,6 +23109,13 @@
         ],
         "type": "object"
       },
+      "FootprintGeometryType": {
+        "enum": [
+          "Polygon",
+          "MultiPolygon"
+        ],
+        "type": "string"
+      },
       "FootprintPlace": {
         "properties": {
           "id": {
@@ -23246,11 +23253,7 @@
                 "type": "array"
               },
               "type": {
-                "enum": [
-                  "Polygon",
-                  "MultiPolygon"
-                ],
-                "type": "string"
+                "$ref": "#/components/schemas/FootprintGeometryType"
               }
             },
             "required": [
@@ -23272,10 +23275,7 @@
             "type": "object"
           },
           "type": {
-            "enum": [
-              "Feature"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/FootprintShapeType"
           }
         },
         "required": [
@@ -23284,6 +23284,12 @@
           "type"
         ],
         "type": "object"
+      },
+      "FootprintShapeType": {
+        "enum": [
+          "Feature"
+        ],
+        "type": "string"
       },
       "FootprintShapesResponseDto": {
         "properties": {
@@ -23295,10 +23301,7 @@
             "type": "array"
           },
           "type": {
-            "enum": [
-              "FeatureCollection"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/FootprintShapesType"
           }
         },
         "required": [
@@ -23306,6 +23309,12 @@
           "type"
         ],
         "type": "object"
+      },
+      "FootprintShapesType": {
+        "enum": [
+          "FeatureCollection"
+        ],
+        "type": "string"
       },
       "FootprintsResponse": {
         "properties": {

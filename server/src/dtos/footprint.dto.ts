@@ -40,11 +40,11 @@ const FootprintsResponseSchema = z
 
 const FootprintShapeSchema = z
   .object({
-    type: z.literal('Feature'),
+    type: z.enum(['Feature']).meta({ id: 'FootprintShapeType' }),
     properties: z.object({ id: z.string().describe('Region ID') }),
     geometry: z
       .object({
-        type: z.enum(['Polygon', 'MultiPolygon']),
+        type: z.enum(['Polygon', 'MultiPolygon']).meta({ id: 'FootprintGeometryType' }),
         coordinates: z.array(z.any()).describe('GeoJSON coordinates'),
       })
       .describe('Simplified outline'),
@@ -53,7 +53,7 @@ const FootprintShapeSchema = z
 
 const FootprintShapesResponseSchema = z
   .object({
-    type: z.literal('FeatureCollection'),
+    type: z.enum(['FeatureCollection']).meta({ id: 'FootprintShapesType' }),
     features: z.array(FootprintShapeSchema).describe('Outlines of the regions the user visited, hidden ones included'),
   })
   .meta({ id: 'FootprintShapesResponseDto' });

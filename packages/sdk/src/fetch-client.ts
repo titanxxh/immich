@@ -1844,18 +1844,18 @@ export type FootprintShape = {
     geometry: {
         /** GeoJSON coordinates */
         coordinates: any[];
-        "type": Type;
+        "type": FootprintGeometryType;
     };
     properties: {
         /** Region ID */
         id: string;
     };
-    "type": Type2;
+    "type": FootprintShapeType;
 };
 export type FootprintShapesResponseDto = {
     /** Outlines of the regions the user visited, hidden ones included */
     features: FootprintShape[];
-    "type": Type3;
+    "type": FootprintShapesType;
 };
 export type QueueStatisticsDto = {
     /** Number of active jobs */
@@ -8607,14 +8607,14 @@ export enum SourceType {
     Exif = "exif",
     Manual = "manual"
 }
-export enum Type {
+export enum FootprintGeometryType {
     Polygon = "Polygon",
     MultiPolygon = "MultiPolygon"
 }
-export enum Type2 {
+export enum FootprintShapeType {
     Feature = "Feature"
 }
-export enum Type3 {
+export enum FootprintShapesType {
     FeatureCollection = "FeatureCollection"
 }
 export enum ManualJobName {
