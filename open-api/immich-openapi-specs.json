@@ -7301,6 +7301,139 @@
         "x-immich-state": "Stable"
       }
     },
+    "/footprints": {
+      "get": {
+        "description": "List every region the current user took camera photos in, with the first and last visit, hidden ones included.",
+        "operationId": "getFootprints",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "List footprint regions",
+        "tags": [
+          "Map"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "map.read"
+      }
+    },
+    "/footprints/regions/{id}": {
+      "get": {
+        "description": "Get a region, province or country the current user took camera photos in, with some of those photos.",
+        "operationId": "getFootprintRegion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Region, province or country ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintRegionDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get a footprint region",
+        "tags": [
+          "Map"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "map.read"
+      }
+    },
+    "/footprints/shapes": {
+      "get": {
+        "description": "Get simplified outlines of the regions the current user visited, as GeoJSON.",
+        "operationId": "getFootprintShapes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintShapesResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get footprint outlines",
+        "tags": [
+          "Map"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "map.read"
+      }
+    },
     "/jobs": {
       "get": {
         "deprecated": true,
@@ -16201,6 +16334,15 @@
             }
           },
           {
+            "name": "regionId",
+            "required": false,
+            "in": "query",
+            "description": "Filter assets taken in a footprint region, province or country",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "slug",
             "required": false,
             "in": "query",
@@ -16396,6 +16538,15 @@
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "regionId",
+            "required": false,
+            "in": "query",
+            "description": "Filter assets taken in a footprint region, province or country",
+            "schema": {
               "type": "string"
             }
           },
@@ -22930,6 +23081,281 @@
         },
         "type": "object"
       },
+      "FootprintCountry": {
+        "properties": {
+          "code": {
+            "description": "ISO 3166-1 alpha-2 code; Hong Kong, Macau and Taiwan are CN",
+            "type": "string"
+          },
+          "id": {
+            "description": "Region ID",
+            "type": "string"
+          },
+          "name": {
+            "description": "Local name",
+            "type": "string"
+          },
+          "nameZh": {
+            "description": "Chinese name, when there is one",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "id",
+          "name",
+          "nameZh"
+        ],
+        "type": "object"
+      },
+      "FootprintPlace": {
+        "properties": {
+          "id": {
+            "description": "Region ID",
+            "type": "string"
+          },
+          "name": {
+            "description": "Local name",
+            "type": "string"
+          },
+          "nameZh": {
+            "description": "Chinese name, when there is one",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "nameZh"
+        ],
+        "type": "object"
+      },
+      "FootprintRegion": {
+        "properties": {
+          "assetCount": {
+            "description": "Number of photos taken there",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "country": {
+            "$ref": "#/components/schemas/FootprintCountry"
+          },
+          "dayCount": {
+            "description": "Number of local calendar days with photos taken there",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "firstVisitAt": {
+            "description": "Local time of the earliest photo taken there",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "hidden": {
+            "description": "Whether the user left the region off the footprint map",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Region ID",
+            "type": "string"
+          },
+          "lastVisitAt": {
+            "description": "Local time of the latest photo taken there",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "latitude": {
+            "description": "Latitude of a point inside the region",
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "description": "Longitude of a point inside the region",
+            "format": "double",
+            "type": "number"
+          },
+          "name": {
+            "description": "Local name",
+            "type": "string"
+          },
+          "nameZh": {
+            "description": "Chinese name, when there is one",
+            "nullable": true,
+            "type": "string"
+          },
+          "province": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FootprintPlace"
+              }
+            ],
+            "description": "Province; null abroad when the region is itself first-level",
+            "nullable": true
+          }
+        },
+        "required": [
+          "assetCount",
+          "country",
+          "dayCount",
+          "firstVisitAt",
+          "hidden",
+          "id",
+          "lastVisitAt",
+          "latitude",
+          "longitude",
+          "name",
+          "nameZh",
+          "province"
+        ],
+        "type": "object"
+      },
+      "FootprintRegionDetailResponseDto": {
+        "properties": {
+          "assetIds": {
+            "description": "Some photos taken there, spread evenly over time, oldest first",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "region": {
+            "$ref": "#/components/schemas/FootprintRegion"
+          }
+        },
+        "required": [
+          "assetIds",
+          "region"
+        ],
+        "type": "object"
+      },
+      "FootprintShape": {
+        "properties": {
+          "geometry": {
+            "description": "Simplified outline",
+            "properties": {
+              "coordinates": {
+                "description": "GeoJSON coordinates",
+                "items": {},
+                "type": "array"
+              },
+              "type": {
+                "enum": [
+                  "Polygon",
+                  "MultiPolygon"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ],
+            "type": "object"
+          },
+          "properties": {
+            "properties": {
+              "id": {
+                "description": "Region ID",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "enum": [
+              "Feature"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "geometry",
+          "properties",
+          "type"
+        ],
+        "type": "object"
+      },
+      "FootprintShapesResponseDto": {
+        "properties": {
+          "features": {
+            "description": "Outlines of the regions the user visited, hidden ones included",
+            "items": {
+              "$ref": "#/components/schemas/FootprintShape"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "FeatureCollection"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "features",
+          "type"
+        ],
+        "type": "object"
+      },
+      "FootprintsResponse": {
+        "properties": {
+          "hiddenRegionIds": {
+            "description": "Regions left off the footprint map because their photos were placed there by mistake",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "hiddenRegionIds"
+        ],
+        "type": "object"
+      },
+      "FootprintsResponseDto": {
+        "properties": {
+          "pendingCount": {
+            "description": "Located photos whose regions have not been found yet",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "regions": {
+            "description": "Every region the user took camera photos in, oldest visit first",
+            "items": {
+              "$ref": "#/components/schemas/FootprintRegion"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "pendingCount",
+          "regions"
+        ],
+        "type": "object"
+      },
+      "FootprintsUpdate": {
+        "properties": {
+          "hiddenRegionIds": {
+            "description": "Regions left off the footprint map because their photos were placed there by mistake",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
       "HlsVideoResolution": {
         "description": "HLS video resolution",
         "enum": [
@@ -23131,6 +23557,7 @@
           "MemoryCleanup",
           "MemoryGenerate",
           "TripDetection",
+          "FootprintAssign",
           "NotificationsCleanup",
           "NotifyUserSignup",
           "NotifyAlbumInvite",
@@ -33920,6 +34347,9 @@
           "folders": {
             "$ref": "#/components/schemas/FoldersResponse"
           },
+          "footprints": {
+            "$ref": "#/components/schemas/FootprintsResponse"
+          },
           "memories": {
             "$ref": "#/components/schemas/MemoriesResponse"
           },
@@ -33951,6 +34381,7 @@
           "download",
           "emailNotifications",
           "folders",
+          "footprints",
           "memories",
           "people",
           "purchase",
@@ -33981,6 +34412,9 @@
           },
           "folders": {
             "$ref": "#/components/schemas/FoldersUpdate"
+          },
+          "footprints": {
+            "$ref": "#/components/schemas/FootprintsUpdate"
           },
           "memories": {
             "$ref": "#/components/schemas/MemoriesUpdate"

@@ -32,3 +32,102 @@ where
       and "asset_exif"."latitude" is not null
       and "asset_exif"."longitude" is not null
   )
+
+-- FootprintRepository.getRegionVisits
+select
+  "asset_region"."regionId" as "id",
+  min("asset"."localDateTime") as "firstVisitAt",
+  max("asset"."localDateTime") as "lastVisitAt",
+  count(*) as "assetCount",
+  count(
+    distinct ("asset"."localDateTime" at time zone 'UTC')::date
+  )::int as "dayCount"
+from
+  "asset"
+  inner join "asset_exif" on "asset_exif"."assetId" = "asset"."id"
+  inner join "asset_region" on "asset_region"."assetId" = "asset"."id"
+where
+  "asset"."ownerId" = $1::uuid
+  and "asset"."deletedAt" is null
+  and "asset"."visibility" in ($2, $3)
+  and "asset_exif"."make" is not null
+  and "asset_exif"."make" != $4
+  and "asset_region"."regionId" is not null
+group by
+  "asset_region"."regionId"
+
+-- FootprintRepository.getVisit
+select
+  min("asset"."localDateTime") as "firstVisitAt",
+  max("asset"."localDateTime") as "lastVisitAt",
+  count(*) as "assetCount",
+  count(
+    distinct ("asset"."localDateTime" at time zone 'UTC')::date
+  )::int as "dayCount"
+from
+  "asset"
+  inner join "asset_exif" on "asset_exif"."assetId" = "asset"."id"
+  inner join "asset_region" on "asset_region"."assetId" = "asset"."id"
+where
+  "asset"."ownerId" = $1::uuid
+  and "asset"."deletedAt" is null
+  and "asset"."visibility" in ($2, $3)
+  and "asset_exif"."make" is not null
+  and "asset_exif"."make" != $4
+  and (
+    "asset_region"."regionId" = $5
+    or "asset_region"."provinceId" = $6
+    or "asset_region"."countryId" = $7
+  )
+
+-- FootprintRepository.getAssetIds
+select
+  "asset"."id"
+from
+  "asset"
+  inner join "asset_exif" on "asset_exif"."assetId" = "asset"."id"
+  inner join "asset_region" on "asset_region"."assetId" = "asset"."id"
+where
+  "asset"."ownerId" = $1::uuid
+  and "asset"."deletedAt" is null
+  and "asset"."visibility" in ($2, $3)
+  and "asset_exif"."make" is not null
+  and "asset_exif"."make" != $4
+  and (
+    "asset_region"."regionId" = $5
+    or "asset_region"."provinceId" = $6
+    or "asset_region"."countryId" = $7
+  )
+order by
+  "asset"."localDateTime",
+  "asset"."id"
+
+-- FootprintRepository.getRegions
+select
+  *
+from
+  "region"
+where
+  "id" in ($1)
+
+-- FootprintRepository.countPending
+select
+  count(*) as "count"
+from
+  "asset"
+  inner join "asset_exif" on "asset_exif"."assetId" = "asset"."id"
+  left join "asset_region" on "asset_region"."assetId" = "asset"."id"
+where
+  "asset"."ownerId" = $1::uuid
+  and "asset"."deletedAt" is null
+  and "asset"."visibility" in ($2, $3)
+  and "asset_exif"."make" is not null
+  and "asset_exif"."make" != $4
+  and "asset_exif"."latitude" is not null
+  and "asset_exif"."longitude" is not null
+  and (
+    "asset_region"."assetId" is null
+    or "asset_region"."version" != $5
+    or "asset_region"."latitude" != "asset_exif"."latitude"
+    or "asset_region"."longitude" != "asset_exif"."longitude"
+  )

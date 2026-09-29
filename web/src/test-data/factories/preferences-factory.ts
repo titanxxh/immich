@@ -54,4 +54,7 @@ export const preferencesFactory = Sync.makeFactory<UserPreferencesResponseDto>({
     minAssets: 10,
     includeDayTrips: false,
   },
+  footprints: {
+    hiddenRegionIds: [],
+  },
 });

@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { SystemMetadataKey } from 'src/enum';
+import { AssetVisibility, SystemMetadataKey, UserMetadataKey } from 'src/enum';
 import { AssetRepository } from 'src/repositories/asset.repository';
 import { ConfigRepository } from 'src/repositories/config.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
@@ -12,10 +12,12 @@ import { JobRepository } from 'src/repositories/job.repository';
 import { LoggingRepository } from 'src/repositories/logging.repository';
 import { StorageRepository } from 'src/repositories/storage.repository';
 import { SystemMetadataRepository } from 'src/repositories/system-metadata.repository';
+import { UserRepository } from 'src/repositories/user.repository';
 import { DB } from 'src/schema';
 import { FootprintService } from 'src/services/footprint.service';
 import { newMediumService } from 'test/medium.factory';
 import { mockEnvData } from 'test/repositories/config.repository.mock';
+import { factory } from 'test/small.factory';
 import { getKyselyDB } from 'test/utils';
 
 const square = (minX: number, minY: number, maxX: number, maxY: number) => [
@@ -84,6 +86,14 @@ const writeFiles = (version: string) => {
       },
     ],
   });
+  gz('footprint-display.geojson.gz', {
+    type: 'FeatureCollection',
+    features: ['hz', 'nb'].map((id, index) => ({
+      type: 'Feature',
+      properties: { id },
+      geometry: { type: 'Polygon', coordinates: square(120 + index, 30, 121 + index, 31) },
+    })),
+  });
   return {
     versionFile: join(folder, 'footprint-version.txt'),
     regions: join(folder, 'footprint-regions.json.gz'),
@@ -96,7 +106,7 @@ const writeFiles = (version: string) => {
 const setup = async (db?: Kysely<DB>, version = 'test-1') => {
   const result = newMediumService(FootprintService, {
     database: db || (await getKyselyDB()),
-    real: [AssetRepository, DatabaseRepository, FootprintRepository, SystemMetadataRepository],
+    real: [AssetRepository, DatabaseRepository, FootprintRepository, SystemMetadataRepository, UserRepository],
     mock: [ConfigRepository, JobRepository, LoggingRepository, StorageRepository],
   });
   const env = mockEnvData({});
@@ -112,12 +122,19 @@ const setup = async (db?: Kysely<DB>, version = 'test-1') => {
 
 type Context = Awaited<ReturnType<typeof setup>>['ctx'];
 
-const newPhoto = async (ctx: Context, ownerId: string, location: { latitude: number; longitude: number } | null) => {
-  const { asset } = await ctx.newAsset({ ownerId });
+const newPhoto = async (
+  ctx: Context,
+  ownerId: string,
+  location: { latitude: number; longitude: number } | null,
+  { make = 'Canon', localDateTime = '2025-05-01T08:00:00Z', visibility = AssetVisibility.Timeline } = {},
+) => {
+  const date = new Date(localDateTime);
+  const { asset } = await ctx.newAsset({ ownerId, localDateTime: date, fileCreatedAt: date, visibility });
   await ctx.newExif({
     assetId: asset.id,
     latitude: location?.latitude ?? null,
     longitude: location?.longitude ?? null,
+    make: make || null,
   });
   return asset.id;
 };
@@ -254,6 +271,153 @@ describe(FootprintService.name, () => {
 
       const assigned = await getAssetRegions(ctx);
       expect(assigned[photo]).toEqual({ countryId: 'cn', provinceId: 'zj', regionId: 'hz', version: 'test-2' });
+    });
+  });
+
+  describe('getAll', () => {
+    it('should list the regions of camera photos with their visits', async () => {
+      const { sut, ctx } = await setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await sut.onBootstrap();
+      await newPhoto(ctx, user.id, west, { localDateTime: '2024-03-01T23:30:00Z' });
+      await newPhoto(ctx, user.id, west, { localDateTime: '2024-03-02T08:00:00Z' });
+      await newPhoto(ctx, user.id, west, {
+        localDateTime: '2024-03-02T09:00:00Z',
+        visibility: AssetVisibility.Archive,
+      });
+      await newPhoto(ctx, user.id, east, { localDateTime: '2025-06-01T10:00:00Z' });
+      // not counted: forwarded (no camera make), hidden, locked, trashed, or someone else's
+      await newPhoto(ctx, user.id, west, { make: '', localDateTime: '2020-01-01T00:00:00Z' });
+      await newPhoto(ctx, user.id, west, { localDateTime: '2020-01-01T00:00:00Z', visibility: AssetVisibility.Hidden });
+      await newPhoto(ctx, user.id, west, { localDateTime: '2020-01-01T00:00:00Z', visibility: AssetVisibility.Locked });
+      const trashed = await newPhoto(ctx, user.id, west, { localDateTime: '2020-01-01T00:00:00Z' });
+      await ctx.database.updateTable('asset').set({ deletedAt: new Date() }).where('id', '=', trashed).execute();
+      const { user: other } = await ctx.newUser();
+      await newPhoto(ctx, other.id, west, { localDateTime: '2020-01-01T00:00:00Z' });
+
+      await expect(sut.getAll(auth)).resolves.toMatchObject({ pendingCount: 4, regions: [] });
+      await sut.handleAssign();
+      const { regions, pendingCount } = await sut.getAll(auth);
+
+      expect(pendingCount).toBe(0);
+      expect(regions).toEqual([
+        {
+          id: 'hz',
+          name: 'Hangzhou',
+          nameZh: '杭州市',
+          province: { id: 'zj', name: 'Zhejiang', nameZh: '浙江省' },
+          country: { id: 'cn', name: 'China', nameZh: '中国', code: 'CN' },
+          latitude: 30.5,
+          longitude: 120.5,
+          firstVisitAt: new Date('2024-03-01T23:30:00Z'),
+          lastVisitAt: new Date('2024-03-02T09:00:00Z'),
+          assetCount: 3,
+          dayCount: 2,
+          hidden: false,
+        },
+        expect.objectContaining({
+          id: 'nb',
+          assetCount: 1,
+          dayCount: 1,
+          firstVisitAt: new Date('2025-06-01T10:00:00Z'),
+        }),
+      ]);
+    });
+
+    it('should flag hidden regions', async () => {
+      const { sut, ctx } = await setup();
+      const { user } = await ctx.newUser();
+      await sut.onBootstrap();
+      await newPhoto(ctx, user.id, west);
+      await newPhoto(ctx, user.id, east);
+      await sut.handleAssign();
+      await ctx.get(UserRepository).upsertMetadata(user.id, {
+        key: UserMetadataKey.Preferences,
+        value: { footprints: { hiddenRegionIds: ['nb'] } },
+      });
+
+      const { regions } = await sut.getAll(factory.auth({ user }));
+
+      expect(regions.map(({ id, hidden }) => [id, hidden])).toEqual([
+        ['hz', false],
+        ['nb', true],
+      ]);
+    });
+  });
+
+  describe('getShapes', () => {
+    it('should return the outlines of visited regions only', async () => {
+      const { sut, ctx } = await setup();
+      const { user } = await ctx.newUser();
+      await sut.onBootstrap();
+      await newPhoto(ctx, user.id, east);
+      await sut.handleAssign();
+
+      const { features } = await sut.getShapes(factory.auth({ user }));
+
+      expect(features).toEqual([expect.objectContaining({ properties: { id: 'nb' } })]);
+    });
+  });
+
+  describe('getRegion', () => {
+    it('should return a region with photos spread over time', async () => {
+      const { sut, ctx } = await setup();
+      const { user } = await ctx.newUser();
+      await sut.onBootstrap();
+      const ids = [];
+      for (let index = 0; index < 60; index++) {
+        ids.push(await newPhoto(ctx, user.id, west, { localDateTime: `2024-01-01T08:00:00Z` }));
+      }
+      await sut.handleAssign();
+
+      const { region, assetIds } = await sut.getRegion(factory.auth({ user }), 'hz');
+
+      expect(region).toMatchObject({ id: 'hz', assetCount: 60 });
+      expect(assetIds).toHaveLength(48);
+      expect(ids).toEqual(expect.arrayContaining(assetIds));
+    });
+
+    it('should accept a province or country', async () => {
+      const { sut, ctx } = await setup();
+      const { user } = await ctx.newUser();
+      await sut.onBootstrap();
+      await newPhoto(ctx, user.id, west);
+      await newPhoto(ctx, user.id, east);
+      await sut.handleAssign();
+
+      const { region, assetIds } = await sut.getRegion(factory.auth({ user }), 'zj');
+
+      expect(region).toMatchObject({ id: 'zj', nameZh: '浙江省', assetCount: 2, province: { id: 'zj' } });
+      expect(assetIds).toHaveLength(2);
+    });
+
+    it('should fail for a region without photos', async () => {
+      const { sut, ctx } = await setup();
+      const { user } = await ctx.newUser();
+      await sut.onBootstrap();
+
+      await expect(sut.getRegion(factory.auth({ user }), 'hz')).rejects.toThrow('No photos taken in this region');
+    });
+  });
+
+  describe('timeline', () => {
+    it('should filter time buckets by region, province or country', async () => {
+      const { sut, ctx } = await setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await newPhoto(ctx, user.id, west, { localDateTime: '2024-03-01T08:00:00Z' });
+      await newPhoto(ctx, user.id, east, { localDateTime: '2024-04-01T08:00:00Z' });
+      await newPhoto(ctx, user.id, null, { localDateTime: '2024-05-01T08:00:00Z' });
+      await sut.handleAssign();
+      const assets = ctx.get(AssetRepository);
+
+      await expect(assets.getTimeBuckets({ userIds: [user.id], regionId: 'nb' }, auth)).resolves.toEqual([
+        { timeBucket: '2024-04-01', count: 1 },
+      ]);
+      await expect(assets.getTimeBuckets({ userIds: [user.id], regionId: 'cn' }, auth)).resolves.toHaveLength(2);
+      const bucket = await assets.getTimeBucket('2024-03-01', { userIds: [user.id], regionId: 'hz' }, auth);
+      expect(JSON.parse(bucket.assets).id).toHaveLength(1);
     });
   });
 });

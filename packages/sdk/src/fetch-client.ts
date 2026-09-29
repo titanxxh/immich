@@ -675,6 +675,10 @@ export type FoldersResponse = {
     /** Whether folders appear in web sidebar */
     sidebarWeb: boolean;
 };
+export type FootprintsResponse = {
+    /** Regions left off the footprint map because their photos were placed there by mistake */
+    hiddenRegionIds: string[];
+};
 export type MemoriesResponse = {
     /** Memory duration in seconds */
     duration: number;
@@ -747,6 +751,7 @@ export type UserPreferencesResponseDto = {
     download: DownloadResponse;
     emailNotifications: EmailNotificationsResponse;
     folders: FoldersResponse;
+    footprints: FootprintsResponse;
     memories: MemoriesResponse;
     people: PeopleResponse;
     purchase: PurchaseResponse;
@@ -785,6 +790,10 @@ export type FoldersUpdate = {
     enabled?: boolean;
     /** Whether folders appear in web sidebar */
     sidebarWeb?: boolean;
+};
+export type FootprintsUpdate = {
+    /** Regions left off the footprint map because their photos were placed there by mistake */
+    hiddenRegionIds?: string[];
 };
 export type MemoriesUpdate = {
     /** Memory duration in seconds */
@@ -845,6 +854,7 @@ export type UserPreferencesUpdateDto = {
     download?: DownloadUpdate;
     emailNotifications?: EmailNotificationsUpdate;
     folders?: FoldersUpdate;
+    footprints?: FootprintsUpdate;
     memories?: MemoriesUpdate;
     people?: PeopleUpdate;
     purchase?: PurchaseUpdate;
@@ -1774,6 +1784,78 @@ export type AssetFaceDeleteDto = {
 export type FaceDto = {
     /** Face ID */
     id: string;
+};
+export type FootprintCountry = {
+    /** ISO 3166-1 alpha-2 code; Hong Kong, Macau and Taiwan are CN */
+    code: string;
+    /** Region ID */
+    id: string;
+    /** Local name */
+    name: string;
+    /** Chinese name, when there is one */
+    nameZh: string | null;
+};
+export type FootprintPlace = {
+    /** Region ID */
+    id: string;
+    /** Local name */
+    name: string;
+    /** Chinese name, when there is one */
+    nameZh: string | null;
+};
+export type FootprintRegion = {
+    /** Number of photos taken there */
+    assetCount: number;
+    country: FootprintCountry;
+    /** Number of local calendar days with photos taken there */
+    dayCount: number;
+    /** Local time of the earliest photo taken there */
+    firstVisitAt: string;
+    /** Whether the user left the region off the footprint map */
+    hidden: boolean;
+    /** Region ID */
+    id: string;
+    /** Local time of the latest photo taken there */
+    lastVisitAt: string;
+    /** Latitude of a point inside the region */
+    latitude: number;
+    /** Longitude of a point inside the region */
+    longitude: number;
+    /** Local name */
+    name: string;
+    /** Chinese name, when there is one */
+    nameZh: string | null;
+    /** Province; null abroad when the region is itself first-level */
+    province: (FootprintPlace) | null;
+};
+export type FootprintsResponseDto = {
+    /** Located photos whose regions have not been found yet */
+    pendingCount: number;
+    /** Every region the user took camera photos in, oldest visit first */
+    regions: FootprintRegion[];
+};
+export type FootprintRegionDetailResponseDto = {
+    /** Some photos taken there, spread evenly over time, oldest first */
+    assetIds: string[];
+    region: FootprintRegion;
+};
+export type FootprintShape = {
+    /** Simplified outline */
+    geometry: {
+        /** GeoJSON coordinates */
+        coordinates: any[];
+        "type": Type;
+    };
+    properties: {
+        /** Region ID */
+        id: string;
+    };
+    "type": Type2;
+};
+export type FootprintShapesResponseDto = {
+    /** Outlines of the regions the user visited, hidden ones included */
+    features: FootprintShape[];
+    "type": Type3;
 };
 export type QueueStatisticsDto = {
     /** Number of active jobs */
@@ -5634,6 +5716,41 @@ export function reassignFacesById({ id, faceDto }: {
     })));
 }
 /**
+ * List footprint regions
+ */
+export function getFootprints(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: FootprintsResponseDto;
+    }>("/footprints", {
+        ...opts
+    }));
+}
+/**
+ * Get a footprint region
+ */
+export function getFootprintRegion({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: FootprintRegionDetailResponseDto;
+    }>(`/footprints/regions/${encodeURIComponent(id)}`, {
+        ...opts
+    }));
+}
+/**
+ * Get footprint outlines
+ */
+export function getFootprintShapes(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: FootprintShapesResponseDto;
+    }>("/footprints/shapes", {
+        ...opts
+    }));
+}
+/**
  * Retrieve queue counts and status
  */
 export function getQueuesLegacy(opts?: Oazapfts.RequestOpts) {
@@ -7548,7 +7665,7 @@ export function tagAssets({ id, bulkIdsDto }: {
 /**
  * Get time bucket
  */
-export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, timeBucket, userId, visibility, withCoordinates, withPartners, withStacked }: {
+export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, regionId, slug, tagId, timeBucket, userId, visibility, withCoordinates, withPartners, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -7557,6 +7674,7 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
     order?: AssetOrder;
     orderBy?: AssetOrderBy;
     personId?: string;
+    regionId?: string;
     slug?: string;
     tagId?: string;
     timeBucket: string;
@@ -7578,6 +7696,7 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
         order,
         orderBy,
         personId,
+        regionId,
         slug,
         tagId,
         timeBucket,
@@ -7593,7 +7712,7 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
 /**
  * Get time buckets
  */
-export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, userId, visibility, withCoordinates, withPartners, withStacked }: {
+export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, regionId, slug, tagId, userId, visibility, withCoordinates, withPartners, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -7602,6 +7721,7 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
     order?: AssetOrder;
     orderBy?: AssetOrderBy;
     personId?: string;
+    regionId?: string;
     slug?: string;
     tagId?: string;
     userId?: string;
@@ -7622,6 +7742,7 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
         order,
         orderBy,
         personId,
+        regionId,
         slug,
         tagId,
         userId,
@@ -8486,6 +8607,16 @@ export enum SourceType {
     Exif = "exif",
     Manual = "manual"
 }
+export enum Type {
+    Polygon = "Polygon",
+    MultiPolygon = "MultiPolygon"
+}
+export enum Type2 {
+    Feature = "Feature"
+}
+export enum Type3 {
+    FeatureCollection = "FeatureCollection"
+}
 export enum ManualJobName {
     PersonCleanup = "person-cleanup",
     TagCleanup = "tag-cleanup",
@@ -8598,6 +8729,7 @@ export enum JobName {
     MemoryCleanup = "MemoryCleanup",
     MemoryGenerate = "MemoryGenerate",
     TripDetection = "TripDetection",
+    FootprintAssign = "FootprintAssign",
     NotificationsCleanup = "NotificationsCleanup",
     NotifyUserSignup = "NotifyUserSignup",
     NotifyAlbumInvite = "NotifyAlbumInvite",

@@ -10,6 +10,10 @@ const TimeBucketQueryBaseSchema = z
     albumId: z.uuidv4().optional().describe('Filter assets belonging to a specific album'),
     personId: z.uuidv4().optional().describe('Filter assets containing a specific person (face recognition)'),
     tagId: z.uuidv4().optional().describe('Filter assets with a specific tag'),
+    regionId: z
+      .string()
+      .optional()
+      .describe('Filter assets taken in a footprint region, province or country'),
     isFavorite: stringToBool
       .optional()
       .describe('Filter by favorite status (true for favorites only, false for non-favorites only)'),

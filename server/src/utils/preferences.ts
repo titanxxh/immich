@@ -60,6 +60,9 @@ const getDefaultPreferences = (): UserPreferences => {
       minAssets: 10,
       includeDayTrips: false,
     },
+    footprints: {
+      hiddenRegionIds: [],
+    },
   };
 };
 
