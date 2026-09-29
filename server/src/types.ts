@@ -617,6 +617,9 @@ export type UserPreferences = {
     minAssets: number;
     includeDayTrips: boolean;
   };
+  footprints: {
+    hiddenRegionIds: string[];
+  };
 };
 
 export type UserMetadataItem<T extends keyof UserMetadata = UserMetadataKey> = {

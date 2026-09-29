@@ -357,6 +357,24 @@ export function truncatedDate<O>(order: AssetOrderBy = AssetOrderBy.TakenAt, siz
   return sql<O>`date_trunc(${sql.lit(size ?? 'MONTH')}, ${sql.ref(order === AssetOrderBy.CreatedAt ? 'asset.createdAt' : 'localDateTime')} AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
 }
 
+/** Photos taken in a footprint region, province or country. */
+export function withRegionId<O>(qb: SelectQueryBuilder<DB, 'asset', O>, regionId: string) {
+  return qb.where((eb) =>
+    eb.exists(
+      eb
+        .selectFrom('asset_region')
+        .whereRef('asset_region.assetId', '=', 'asset.id')
+        .where((eb) =>
+          eb.or([
+            eb('asset_region.regionId', '=', regionId),
+            eb('asset_region.provinceId', '=', regionId),
+            eb('asset_region.countryId', '=', regionId),
+          ]),
+        ),
+    ),
+  );
+}
+
 export function withTagId<O>(qb: SelectQueryBuilder<DB, 'asset', O>, tagId: string) {
   return qb.where((eb) =>
     eb.exists(

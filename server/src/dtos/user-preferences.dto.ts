@@ -131,6 +131,16 @@ const TripsUpdateSchema = z
   .optional()
   .meta({ id: 'TripsUpdate' });
 
+const FootprintsUpdateSchema = z
+  .object({
+    hiddenRegionIds: z
+      .array(z.string())
+      .optional()
+      .describe('Regions left off the footprint map because their photos were placed there by mistake'),
+  })
+  .optional()
+  .meta({ id: 'FootprintsUpdate' });
+
 const UserPreferencesUpdateSchema = z
   .object({
     albums: AlbumsUpdateSchema,
@@ -147,6 +157,7 @@ const UserPreferencesUpdateSchema = z
     tags: TagsUpdateSchema,
     recentlyAdded: RecentlyAddedUpdateSchema,
     trips: TripsUpdateSchema,
+    footprints: FootprintsUpdateSchema,
   })
   .meta({ id: 'UserPreferencesUpdateDto' });
 
@@ -233,6 +244,14 @@ const RecentlyAddedResponseSchema = z
   })
   .meta({ id: 'RecentlyAddedResponse' });
 
+const FootprintsResponseSchema = z
+  .object({
+    hiddenRegionIds: z
+      .array(z.string())
+      .describe('Regions left off the footprint map because their photos were placed there by mistake'),
+  })
+  .meta({ id: 'FootprintsResponse' });
+
 const TripsResponseSchema = z
   .object({
     enabled: z.boolean().describe('Whether trips are detected and turned into albums'),
@@ -257,6 +276,7 @@ const UserPreferencesResponseSchema = z
     cast: CastResponseSchema,
     recentlyAdded: RecentlyAddedResponseSchema,
     trips: TripsResponseSchema,
+    footprints: FootprintsResponseSchema,
   })
   .meta({ id: 'UserPreferencesResponseDto' });
 

@@ -1,14 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { Insertable, Kysely } from 'kysely';
+import { ExpressionBuilder, Insertable, Kysely, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { gunzip } from 'node:zlib';
 import { DummyValue, GenerateSql } from 'src/decorators';
+import { AssetVisibility } from 'src/enum';
 import { DB } from 'src/schema';
 import { AssetRegionTable } from 'src/schema/tables/asset-region.table';
 import { RegionTable } from 'src/schema/tables/region.table';
 import { asUuid } from 'src/utils/database';
+
+const inRegion = (eb: ExpressionBuilder<DB, 'asset_region'>, id: string) =>
+  eb.or([
+    eb('asset_region.regionId', '=', id),
+    eb('asset_region.provinceId', '=', id),
+    eb('asset_region.countryId', '=', id),
+  ]);
 
 const gunzipAsync = promisify(gunzip);
 
@@ -99,5 +107,96 @@ export class FootprintRepository {
         ),
       )
       .execute();
+  }
+
+  /** Own camera photos in the timeline or archive, with their regions. */
+  private visits(userId: string) {
+    return this.db
+      .selectFrom('asset')
+      .innerJoin('asset_exif', 'asset_exif.assetId', 'asset.id')
+      .innerJoin('asset_region', 'asset_region.assetId', 'asset.id')
+      .where('asset.ownerId', '=', asUuid(userId))
+      .where('asset.deletedAt', 'is', null)
+      .where('asset.visibility', 'in', [AssetVisibility.Timeline, AssetVisibility.Archive])
+      .where('asset_exif.make', 'is not', null)
+      .where('asset_exif.make', '!=', '');
+  }
+
+  /** First and last visit, photos and days for every region the user took camera photos in. */
+  @GenerateSql({ params: [DummyValue.UUID] })
+  getRegionVisits(userId: string) {
+    return this.visits(userId)
+      .where('asset_region.regionId', 'is not', null)
+      .select((eb) => [
+        'asset_region.regionId as id',
+        eb.fn.min('asset.localDateTime').as('firstVisitAt'),
+        eb.fn.max('asset.localDateTime').as('lastVisitAt'),
+        eb.fn.countAll<number>().as('assetCount'),
+        sql<number>`count(distinct ("asset"."localDateTime" at time zone 'UTC')::date)::int`.as('dayCount'),
+      ])
+      .groupBy('asset_region.regionId')
+      .$narrowType<{ id: string }>()
+      .execute();
+  }
+
+  /** The same figures for one region, province or country. */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.STRING] })
+  getVisit(userId: string, id: string) {
+    return this.visits(userId)
+      .where((eb) => inRegion(eb, id))
+      .select((eb) => [
+        eb.fn.min('asset.localDateTime').as('firstVisitAt'),
+        eb.fn.max('asset.localDateTime').as('lastVisitAt'),
+        eb.fn.countAll<number>().as('assetCount'),
+        sql<number>`count(distinct ("asset"."localDateTime" at time zone 'UTC')::date)::int`.as('dayCount'),
+      ])
+      .executeTakeFirstOrThrow();
+  }
+
+  /** The photos taken in a region, province or country, oldest first. */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.STRING] })
+  async getAssetIds(userId: string, id: string) {
+    const rows = await this.visits(userId)
+      .where((eb) => inRegion(eb, id))
+      .select('asset.id')
+      .orderBy('asset.localDateTime')
+      .orderBy('asset.id')
+      .execute();
+    return rows.map(({ id }) => id);
+  }
+
+  @GenerateSql({ params: [[DummyValue.STRING]] })
+  getRegions(ids: string[]) {
+    if (ids.length === 0) {
+      return Promise.resolve([]);
+    }
+    return this.db.selectFrom('region').selectAll().where('id', 'in', ids).execute();
+  }
+
+  /** Own located camera photos whose regions have not been found with the current region files yet. */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.STRING] })
+  async countPending(userId: string, version: string) {
+    const { count } = await this.db
+      .selectFrom('asset')
+      .innerJoin('asset_exif', 'asset_exif.assetId', 'asset.id')
+      .leftJoin('asset_region', 'asset_region.assetId', 'asset.id')
+      .select((eb) => eb.fn.countAll<number>().as('count'))
+      .where('asset.ownerId', '=', asUuid(userId))
+      .where('asset.deletedAt', 'is', null)
+      .where('asset.visibility', 'in', [AssetVisibility.Timeline, AssetVisibility.Archive])
+      .where('asset_exif.make', 'is not', null)
+      .where('asset_exif.make', '!=', '')
+      .where('asset_exif.latitude', 'is not', null)
+      .where('asset_exif.longitude', 'is not', null)
+      .where((eb) =>
+        eb.or([
+          eb('asset_region.assetId', 'is', null),
+          eb('asset_region.version', '!=', version),
+          eb('asset_region.latitude', '!=', eb.ref('asset_exif.latitude')),
+          eb('asset_region.longitude', '!=', eb.ref('asset_exif.longitude')),
+        ]),
+      )
+      .executeTakeFirstOrThrow();
+    return Number(count);
   }
 }
