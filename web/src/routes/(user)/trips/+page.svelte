@@ -4,6 +4,8 @@
   import { locale } from '$lib/stores/preferences.store';
   import { getAssetMediaUrl } from '$lib/utils';
   import { AssetMediaSize } from '@immich/sdk';
+  import { Button } from '@immich/ui';
+  import { mdiMapMarkerMultipleOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
   import TripsMap from './TripsMap.svelte';
@@ -17,6 +19,18 @@
 </script>
 
 <UserPageLayout title={$t('trips')} description={`(${data.trips.length.toLocaleString($locale)})`}>
+  {#snippet buttons()}
+    <Button
+      href={Route.footprints()}
+      size="small"
+      variant="ghost"
+      color="secondary"
+      leadingIcon={mdiMapMarkerMultipleOutline}
+    >
+      {$t('footprints')}
+    </Button>
+  {/snippet}
+
   {#if data.trips.length === 0}
     <p class="p-8 text-center text-gray-500 dark:text-gray-300">{$t('trips_list_empty')}</p>
   {:else}
