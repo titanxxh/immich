@@ -52,7 +52,7 @@ describe(BurstService.name, () => {
   });
 
   describe('getBursts', () => {
-    it('should page through bursts oldest first, score them and store the scores', async () => {
+    it('should page through bursts oldest first when asked, score them and store the scores', async () => {
       const { sut, ctx } = setup();
       const { user } = await ctx.newUser();
       const auth = factory.auth({ user });
@@ -84,7 +84,7 @@ describe(BurstService.name, () => {
         return Promise.resolve(scores[id] ?? 10);
       });
 
-      const first = await sut.getBursts(auth, { offset: 0, limit: 1 });
+      const first = await sut.getBursts(auth, { order: 'time', offset: 0, limit: 1 });
 
       expect(first.total).toBe(2);
       expect(first.bursts).toHaveLength(1);
@@ -106,9 +106,29 @@ describe(BurstService.name, () => {
       // other job statuses are left alone
       expect(stored.find((row) => row.assetId === earlierIds[0])?.duplicatesDetectedAt).not.toBeNull();
 
-      const second = await sut.getBursts(auth, { offset: 1, limit: 1 });
+      const second = await sut.getBursts(auth, { order: 'time', offset: 1, limit: 1 });
       expect(second.bursts.map((burst) => burst.duplicateId)).toEqual([later]);
       expect(second.bursts[0].assets.map((asset) => asset.id)).toEqual(laterIds);
+    });
+
+    it('should put the largest burst first, then the oldest', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      const [small, large, alsoSmall] = [factory.uuid(), factory.uuid(), factory.uuid()];
+      await newPhoto(ctx, user.id, small, '2025-05-01T09:00:00');
+      await newPhoto(ctx, user.id, small, '2025-05-01T09:00:01');
+      for (const second of ['00', '01', '02']) {
+        await newPhoto(ctx, user.id, large, `2025-07-01T09:00:${second}`);
+      }
+      await newPhoto(ctx, user.id, alsoSmall, '2025-06-01T09:00:00');
+      await newPhoto(ctx, user.id, alsoSmall, '2025-06-01T09:00:01');
+
+      const bySize = await sut.getBursts(auth, { order: 'size', offset: 0, limit: 40 });
+      const byTime = await sut.getBursts(auth, { order: 'time', offset: 0, limit: 40 });
+
+      expect(bySize.bursts.map((burst) => burst.duplicateId)).toEqual([large, small, alsoSmall]);
+      expect(byTime.bursts.map((burst) => burst.duplicateId)).toEqual([small, alsoSmall, large]);
     });
 
     it('should not score photos again once scored', async () => {
@@ -120,8 +140,8 @@ describe(BurstService.name, () => {
       await newPhoto(ctx, user.id, duplicateId, '2025-05-01T09:00:01');
       const getSharpness = ctx.getMock(MediaRepository).getSharpness.mockResolvedValue(5);
 
-      await sut.getBursts(auth, { offset: 0, limit: 40 });
-      await sut.getBursts(auth, { offset: 0, limit: 40 });
+      await sut.getBursts(auth, { order: 'time', offset: 0, limit: 40 });
+      await sut.getBursts(auth, { order: 'time', offset: 0, limit: 40 });
 
       expect(getSharpness).toHaveBeenCalledTimes(2);
     });

@@ -676,6 +676,7 @@
   "bursts_description": "每格显示一组连拍里最清晰的那张。确认这一屏会保留它、删除其余；点开一组可以并排比较。",
   "bursts_done": "没有需要挑选的连拍了",
   "bursts_keep_all": "全部保留",
+  "bursts_largest_first": "大组在前",
   "bursts_pick": "连拍精选",
   "bursts_sharpness": "清晰度 {value}",
   "bursts_skip": "跳过",

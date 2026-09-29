@@ -30,7 +30,7 @@ describe(BurstService.name, () => {
         },
       ] as any);
 
-      const result = await sut.getBursts(authStub.admin, { offset: 0, limit: 40 });
+      const result = await sut.getBursts(authStub.admin, { order: 'size', offset: 0, limit: 40 });
 
       expect(result.total).toBe(7);
       expect(result.bursts).toEqual([
@@ -43,7 +43,7 @@ describe(BurstService.name, () => {
           recommendedAssetId: 'b',
         },
       ]);
-      expect(mocks.duplicateRepository.getBursts).toHaveBeenCalledWith(authStub.admin.user.id, 0, 40);
+      expect(mocks.duplicateRepository.getBursts).toHaveBeenCalledWith(authStub.admin.user.id, 'size', 0, 40);
       expect(mocks.media.getSharpness).not.toHaveBeenCalled();
       expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith();
     });
@@ -62,7 +62,7 @@ describe(BurstService.name, () => {
       ] as any);
       mocks.media.getSharpness.mockImplementation((path) => Promise.resolve(path === '/a.jpeg' ? 60 : 20));
 
-      const result = await sut.getBursts(authStub.admin, { offset: 0, limit: 40 });
+      const result = await sut.getBursts(authStub.admin, { order: 'size', offset: 0, limit: 40 });
 
       expect(mocks.media.getSharpness).toHaveBeenCalledTimes(2);
       expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith(
@@ -79,7 +79,7 @@ describe(BurstService.name, () => {
         { duplicateId: 'burst-1', assets: [photo('a', null, null, null), photo('b', null, null, null)] },
       ] as any);
 
-      const result = await sut.getBursts(authStub.admin, { offset: 0, limit: 40 });
+      const result = await sut.getBursts(authStub.admin, { order: 'size', offset: 0, limit: 40 });
 
       expect(mocks.media.getSharpness).not.toHaveBeenCalled();
       expect(result.bursts[0].recommendedAssetId).toBe('a');
@@ -92,7 +92,7 @@ describe(BurstService.name, () => {
       ] as any);
       mocks.media.getSharpness.mockRejectedValue(new Error('broken'));
 
-      const result = await sut.getBursts(authStub.admin, { offset: 0, limit: 40 });
+      const result = await sut.getBursts(authStub.admin, { order: 'size', offset: 0, limit: 40 });
 
       expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith({
         assetId: 'a',

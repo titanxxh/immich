@@ -681,6 +681,7 @@
   "bursts_description": "Each tile shows the sharpest photo of a burst. Confirm the screen to keep it and trash the others, or open a burst to compare its photos.",
   "bursts_done": "No bursts left to pick from",
   "bursts_keep_all": "Keep all",
+  "bursts_largest_first": "Largest first",
   "bursts_pick": "Pick from bursts",
   "bursts_sharpness": "Sharpness {value}",
   "bursts_skip": "Skip",

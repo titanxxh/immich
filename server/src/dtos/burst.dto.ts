@@ -2,8 +2,14 @@ import { createZodDto } from 'nestjs-zod';
 import { isoDatetimeToDate } from 'src/validation';
 import z from 'zod';
 
+const BurstOrderSchema = z
+  .enum(['size', 'time'])
+  .describe('Largest burst first, or oldest first')
+  .meta({ id: 'BurstOrder' });
+
 const BurstSearchSchema = z
   .object({
+    order: BurstOrderSchema.default('size'),
     offset: z.coerce.number().int().min(0).default(0).describe('Number of bursts to skip'),
     limit: z.coerce.number().int().min(1).max(200).default(40).describe('Number of bursts to return'),
   })
@@ -32,9 +38,11 @@ const BurstSchema = z
 const BurstsResponseSchema = z
   .object({
     total: z.int().describe('Number of bursts left'),
-    bursts: z.array(BurstSchema).describe('Bursts of this page, oldest first'),
+    bursts: z.array(BurstSchema).describe('Bursts of this page'),
   })
   .meta({ id: 'BurstsResponseDto' });
+
+export type BurstOrder = z.infer<typeof BurstOrderSchema>;
 
 export class BurstSearchDto extends createZodDto(BurstSearchSchema) {}
 export class BurstsResponseDto extends createZodDto(BurstsResponseSchema) {}

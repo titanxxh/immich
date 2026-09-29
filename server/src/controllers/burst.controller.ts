@@ -17,7 +17,7 @@ export class BurstController {
   @Endpoint({
     summary: 'Get bursts',
     description:
-      'Get a page of duplicate groups of photos, oldest first, with how sharp each photo is and the sharpest one suggested to keep.',
+      'Get a page of duplicate groups of photos, largest or oldest first, with how sharp each photo is and the sharpest one suggested to keep.',
     history: new HistoryBuilder().added('v3.2.4'),
   })
   getBursts(@Auth() auth: AuthDto, @Query() dto: BurstSearchDto): Promise<BurstsResponseDto> {
