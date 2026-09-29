@@ -277,6 +277,13 @@ export class JobRepository {
       case JobName.DatabaseBackup: {
         return { deduplication: { id: JobName.DatabaseBackup } };
       }
+      case JobName.FootprintAssign: {
+        // debounce: an import queues this for every photo, run once things are quiet for a minute
+        return {
+          delay: 60_000,
+          deduplication: { id: JobName.FootprintAssign, ttl: 60_000, extend: true, replace: true },
+        };
+      }
       default: {
         return null;
       }

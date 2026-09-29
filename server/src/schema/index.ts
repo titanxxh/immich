@@ -48,6 +48,7 @@ import { AssetMetadataAuditTable } from 'src/schema/tables/asset-metadata-audit.
 import { AssetMetadataTable } from 'src/schema/tables/asset-metadata.table';
 import { AssetOcrAuditTable } from 'src/schema/tables/asset-ocr-audit.table';
 import { AssetOcrTable } from 'src/schema/tables/asset-ocr.table';
+import { AssetRegionTable } from 'src/schema/tables/asset-region.table';
 import { AssetTable } from 'src/schema/tables/asset.table';
 import { ClusterGroupRequestTable } from 'src/schema/tables/cluster-group-request.table';
 import { ClusterGroupTable } from 'src/schema/tables/cluster-group.table';
@@ -71,6 +72,7 @@ import { PersonGroupTable } from 'src/schema/tables/person-group.table';
 import { PersonTable } from 'src/schema/tables/person.table';
 import { PluginMethodTable } from 'src/schema/tables/plugin-method.table';
 import { PluginTable } from 'src/schema/tables/plugin.table';
+import { RegionTable } from 'src/schema/tables/region.table';
 import { SessionTable } from 'src/schema/tables/session.table';
 import { SharedLinkAssetTable } from 'src/schema/tables/shared-link-asset.table';
 import { SharedLinkTable } from 'src/schema/tables/shared-link.table';
@@ -152,6 +154,8 @@ export class ImmichDatabase {
     SystemMetadataTable,
     TagTable,
     TripTable,
+    RegionTable,
+    AssetRegionTable,
     TagAssetTable,
     TagClosureTable,
     UserAuditTable,
@@ -282,6 +286,9 @@ export interface DB {
   tag_closure: TagClosureTable;
 
   trip: TripTable;
+
+  region: RegionTable;
+  asset_region: AssetRegionTable;
 
   user: UserTable;
   user_audit: UserAuditTable;

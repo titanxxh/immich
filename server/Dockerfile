@@ -99,6 +99,16 @@ COPY --from=cli /output/cli-pruned ./cli
 COPY --from=plugins /usr/src/app/packages/plugin-core/dist /build/plugins/immich-plugin-core/dist
 COPY --from=plugins /usr/src/app/packages/plugin-core/manifest.json /build/plugins/immich-plugin-core/manifest.json
 RUN ln -s ../../cli/bin/immich server/bin/immich
+
+# footprint regions, built by misc/footprint-regions/extract.py (ODbL, see its NOTICE)
+ARG FOOTPRINT_REGIONS=https://github.com/titanxxh/immich/releases/download/footprint-regions-2026-09-23.1
+ADD --checksum=sha256:487aa097455d0e72cf646123ddb1bee6341ef7f7b2b20ee084814c892c94f85a ${FOOTPRINT_REGIONS}/footprint-version.txt /build/footprints/
+ADD --checksum=sha256:a11420b2efd29a9b980775c65b6a929adf584e09f0edaa4dae1e613c059fcd85 ${FOOTPRINT_REGIONS}/footprint-regions.json.gz /build/footprints/
+ADD --checksum=sha256:3021fca9e69c0021fece6895a426136e3236199f73423b082c81d73b121d9a49 ${FOOTPRINT_REGIONS}/footprint-leaves.geojson.gz /build/footprints/
+ADD --checksum=sha256:f97193bdbe8cd6110bd92377b9a95999fe3f2b55c502861962636ad107352c8c ${FOOTPRINT_REGIONS}/footprint-countries.geojson.gz /build/footprints/
+ADD --checksum=sha256:d8f89f157eadf2c851ebb718abb01cf6d93ae7951a4691963745cda00ef1f37e ${FOOTPRINT_REGIONS}/footprint-display.geojson.gz /build/footprints/
+COPY misc/footprint-regions/NOTICE /licenses/footprint-regions.txt
+
 COPY LICENSE /licenses/LICENSE.txt
 COPY LICENSE /LICENSE
 

@@ -37,6 +37,7 @@ import { DownloadRepository } from 'src/repositories/download.repository';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository';
 import { EmailRepository } from 'src/repositories/email.repository';
 import { EventRepository } from 'src/repositories/event.repository';
+import { FootprintRepository } from 'src/repositories/footprint.repository';
 import { IntegrityRepository } from 'src/repositories/integrity.repository';
 import { JobRepository } from 'src/repositories/job.repository';
 import { LibraryRepository } from 'src/repositories/library.repository';
@@ -257,6 +258,7 @@ export type ServiceOverrides = {
   event: EventRepository;
   integrityReport: IntegrityRepository;
   job: JobRepository;
+  footprint: FootprintRepository;
   library: LibraryRepository;
   locate: LocateRepository;
   logger: LoggingRepository;
@@ -348,6 +350,7 @@ export const getMocks = () => {
     job: newJobRepositoryMock(),
     apiKey: automock(ApiKeyRepository),
     locate: automock(LocateRepository),
+    footprint: automock(FootprintRepository),
     library: automock(LibraryRepository, { strict: false }),
     machineLearning: automock(MachineLearningRepository, { args: [loggerMock], strict: false }),
     map: automock(MapRepository, { args: [undefined, undefined, { setContext: () => {} }] }),
@@ -424,6 +427,7 @@ export const newTestService = <T extends BaseService>(
     overrides.event || (mocks.event as As<EventRepository>),
     overrides.integrityReport || (mocks.integrityReport as As<IntegrityRepository>),
     overrides.job || (mocks.job as As<JobRepository>),
+    overrides.footprint || (mocks.footprint as As<FootprintRepository>),
     overrides.library || (mocks.library as As<LibraryRepository>),
     overrides.locate || (mocks.locate as As<LocateRepository>),
     overrides.machineLearning || (mocks.machineLearning as As<MachineLearningRepository>),

@@ -51,3 +51,21 @@ _Avoid_: Quality, focus score
 **Recommended photo**:
 The sharpest photo of a burst, kept unless the user picks another one.
 _Avoid_: Best shot, suggested keeper
+
+## Footprints
+
+**Region**:
+An area on the footprint map: a prefecture-level city in mainland China, or an area of the same scale abroad. Hong Kong and Macau are one region each; Taiwan's counties and cities are regions. It comes from a fixed set of boundaries, not from the place names written on each photo. The footprint page shows regions to users as "cities".
+_Avoid_: Place, city (in code and docs, since the photo's city field is a town or district in China)
+
+**Visited region**:
+A region where at least one camera photo was taken, unless the user hid it. The regions around a home count too.
+_Avoid_: Lit region, check-in
+
+**First visit**:
+The date of the earliest camera photo taken in a visited region.
+_Avoid_: First trip
+
+**Hidden region**:
+A region the user removed from the footprint map because its photos were placed there by mistake. Its photos keep their locations.
+_Avoid_: Ignored region, deleted region

@@ -18,6 +18,7 @@ import { DownloadRepository } from 'src/repositories/download.repository';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository';
 import { EmailRepository } from 'src/repositories/email.repository';
 import { EventRepository } from 'src/repositories/event.repository';
+import { FootprintRepository } from 'src/repositories/footprint.repository';
 import { IntegrityRepository } from 'src/repositories/integrity.repository';
 import { JobRepository } from 'src/repositories/job.repository';
 import { LibraryRepository } from 'src/repositories/library.repository';
@@ -79,6 +80,7 @@ export const repositories = [
   EventRepository,
   IntegrityRepository,
   JobRepository,
+  FootprintRepository,
   LibraryRepository,
   LocateRepository,
   LoggingRepository,

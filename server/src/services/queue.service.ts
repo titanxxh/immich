@@ -284,6 +284,9 @@ export class QueueService extends BaseService {
       jobs.push({ name: JobName.TripDetection });
     }
 
+    // cheap when nothing changed; catches photos whose location changed without a metadata extraction
+    jobs.push({ name: JobName.FootprintAssign });
+
     if (config.nightlyTasks.syncQuotaUsage) {
       jobs.push({ name: JobName.UserSyncUsage });
     }
