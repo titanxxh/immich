@@ -92,6 +92,13 @@ export interface EnvData {
       cities500: string;
       naturalEarthCountriesPath: string;
     };
+    footprints: {
+      versionFile: string;
+      regions: string;
+      leaves: string;
+      countries: string;
+      display: string;
+    };
     web: {
       root: string;
       indexHtml: string;
@@ -196,6 +203,7 @@ const getEnv = (): EnvData => {
   const buildFolder = dto.IMMICH_BUILD_DATA || '/build';
   const folders = {
     geodata: join(buildFolder, 'geodata'),
+    footprints: join(buildFolder, 'footprints'),
     web: join(buildFolder, 'www'),
   };
 
@@ -343,6 +351,13 @@ const getEnv = (): EnvData => {
         admin2: join(folders.geodata, 'admin2Codes.txt'),
         cities500: join(folders.geodata, citiesFile),
         naturalEarthCountriesPath: join(folders.geodata, 'ne_10m_admin_0_countries.geojson'),
+      },
+      footprints: {
+        versionFile: join(folders.footprints, 'footprint-version.txt'),
+        regions: join(folders.footprints, 'footprint-regions.json.gz'),
+        leaves: join(folders.footprints, 'footprint-leaves.geojson.gz'),
+        countries: join(folders.footprints, 'footprint-countries.geojson.gz'),
+        display: join(folders.footprints, 'footprint-display.geojson.gz'),
       },
       web: {
         root: folders.web,

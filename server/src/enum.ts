@@ -354,6 +354,7 @@ export const StorageFolderSchema = z.enum(StorageFolder).describe('Storage folde
 export enum SystemMetadataKey {
   MediaLocation = 'MediaLocation',
   ReverseGeocodingState = 'reverse-geocoding-state',
+  FootprintRegionsState = 'footprint-regions-state',
   FacialRecognitionState = 'facial-recognition-state',
   MemoriesState = 'memories-state',
   AdminOnboarding = 'admin-onboarding',
@@ -888,6 +889,8 @@ export enum JobName {
 
   TripDetection = 'TripDetection',
 
+  FootprintAssign = 'FootprintAssign',
+
   NotificationsCleanup = 'NotificationsCleanup',
 
   NotifyUserSignup = 'NotifyUserSignup',
@@ -1002,6 +1005,8 @@ export enum DatabaseLock {
   VersionCheck = 800,
   HlsSessionCleanup = 850,
   TripDetection = 900,
+  FootprintImport = 910,
+  FootprintAssign = 911,
 }
 
 export enum MaintenanceAction {

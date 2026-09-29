@@ -404,6 +404,9 @@ export type JobItem =
   // Trips
   | { name: JobName.TripDetection; data?: ITripDetectionJob }
 
+  // Footprints
+  | { name: JobName.FootprintAssign; data?: IBaseJob }
+
   // Filesystem
   | { name: JobName.FileDelete; data: IDeleteFilesJob }
 
@@ -552,6 +555,7 @@ export interface SystemMetadata extends Record<SystemMetadataKey, Record<string,
   [SystemMetadataKey.MaintenanceMode]: MaintenanceModeState;
   [SystemMetadataKey.MediaLocation]: MediaLocation;
   [SystemMetadataKey.ReverseGeocodingState]: { lastUpdate?: string; lastImportFileName?: string };
+  [SystemMetadataKey.FootprintRegionsState]: { version: string };
   [SystemMetadataKey.SystemConfig]: DeepPartial<SystemConfig>;
   [SystemMetadataKey.SystemFlags]: DeepPartial<SystemFlags>;
   [SystemMetadataKey.VersionCheckState]: VersionCheckMetadata;

@@ -1,0 +1,16 @@
+Footprint region files (footprint-*.gz, footprint-version.txt)
+
+Derived from Overture Maps Foundation divisions data, release 2026-09-23.1
+(https://overturemaps.org), and made available under the Open Database License (ODbL) 1.0:
+https://opendatacommons.org/licenses/odbl/1-0/
+
+  © OpenStreetMap contributors, available under ODbL (https://www.openstreetmap.org/copyright)
+  © Overture Maps Foundation
+  Also includes data from geoBoundaries (CC BY 4.0), Esri Community Maps contributors (CC BY 4.0)
+  and Land Information New Zealand (CC BY 4.0), as listed by Overture Maps for the divisions theme.
+
+Some Chinese names come from Natural Earth (https://www.naturalearthdata.com), which is in the
+public domain.
+
+The files are built by misc/footprint-regions/extract.py and published as a release of
+https://github.com/titanxxh/immich.

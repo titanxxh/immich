@@ -28,6 +28,7 @@ e2e/
 fastlane/
 machine-learning/
 misc/
+!misc/footprint-regions/NOTICE
 mobile/
 
 packages/sdk/build/

@@ -25,6 +25,7 @@ import { DownloadRepository } from 'src/repositories/download.repository';
 import { DuplicateRepository } from 'src/repositories/duplicate.repository';
 import { EmailRepository } from 'src/repositories/email.repository';
 import { EventRepository } from 'src/repositories/event.repository';
+import { FootprintRepository } from 'src/repositories/footprint.repository';
 import { IntegrityRepository } from 'src/repositories/integrity.repository';
 import { JobRepository } from 'src/repositories/job.repository';
 import { LibraryRepository } from 'src/repositories/library.repository';
@@ -92,6 +93,7 @@ export const BASE_SERVICE_DEPENDENCIES = [
   EventRepository,
   IntegrityRepository,
   JobRepository,
+  FootprintRepository,
   LibraryRepository,
   LocateRepository,
   MachineLearningRepository,
@@ -157,6 +159,7 @@ export class BaseService {
     protected eventRepository: EventRepository,
     protected integrityRepository: IntegrityRepository,
     protected jobRepository: JobRepository,
+    protected footprintRepository: FootprintRepository,
     protected libraryRepository: LibraryRepository,
     protected locateRepository: LocateRepository,
     protected machineLearningRepository: MachineLearningRepository,
@@ -231,6 +234,7 @@ export class BaseService {
       ctx.eventRepository,
       ctx.integrityRepository,
       ctx.jobRepository,
+      ctx.footprintRepository,
       ctx.libraryRepository,
       ctx.locateRepository,
       ctx.machineLearningRepository,

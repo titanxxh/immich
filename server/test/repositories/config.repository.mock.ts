@@ -72,6 +72,13 @@ export const envData: EnvData = {
       cities500: '/build/geodata/cities500.txt',
       naturalEarthCountriesPath: 'build/ne_10m_admin_0_countries.geojson',
     },
+    footprints: {
+      versionFile: '/build/footprints/footprint-version.txt',
+      regions: '/build/footprints/footprint-regions.json.gz',
+      leaves: '/build/footprints/footprint-leaves.geojson.gz',
+      countries: '/build/footprints/footprint-countries.geojson.gz',
+      display: '/build/footprints/footprint-display.geojson.gz',
+    },
     web: {
       root: '/build/www',
       indexHtml: '/build/www/index.html',
