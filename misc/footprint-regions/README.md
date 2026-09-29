@@ -3,7 +3,7 @@
 The footprint map assigns every located photo to a region: a prefecture-level city in mainland
 China, a province in Spain, France and Italy, and a first-level region elsewhere. The outlines
 come from [Overture Maps divisions](https://docs.overturemaps.org/guides/divisions/) and ship in
-the server image, the same way upstream Immich ships its reverse geocoding data.
+the server image, like upstream Immich's reverse geocoding data, but from a local folder rather than a download.
 
 `extract.py` builds the files:
 
@@ -17,12 +17,14 @@ the server image, the same way upstream Immich ships its reverse geocoding data.
 
 ## Updating
 
+The files are not published anywhere: they stay on the machine that builds the server image
+(`/home/xxh/immich-app/footprint-regions` here) and are passed to the build as a named context.
+
 1. `pip install duckdb shapely numpy`, then
-   `python extract.py out --release <overture release>` (about five minutes, most of it
+   `python extract.py <folder> --release <overture release>` (about five minutes, most of it
    downloading). Bump `SCRIPT_VERSION` instead when only the script changes.
-2. Publish the files as a release of the fork, with the attribution from `NOTICE`:
-   `gh release create footprint-regions-<overture release> out/* --repo titanxxh/immich --latest=false --notes-file NOTICE`
-3. Update the URLs and checksums in `server/Dockerfile` (`sha256sum out/*`).
+2. Build the server image with the folder as the `footprints` context:
+   `docker build -f server/Dockerfile --build-context footprints=<folder> ...`
 
 The server imports the region list on startup when `footprint-version.txt` changes, and the
 assignment job then finds the regions of every photo again.
