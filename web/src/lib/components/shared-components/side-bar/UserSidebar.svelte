@@ -10,6 +10,7 @@
   import {
     mdiAccount,
     mdiAirplane,
+    mdiMapMarkerMultipleOutline,
     mdiAccountMultiple,
     mdiAccountMultipleOutline,
     mdiAccountOutline,
@@ -88,6 +89,7 @@
   </NavbarItem>
 
   <NavbarItem title={$t('trips')} href={Route.trips()} icon={mdiAirplane} />
+  <NavbarItem title={$t('footprints')} href={Route.footprints()} icon={mdiMapMarkerMultipleOutline} />
 
   {#if authManager.preferences.tags.enabled && authManager.preferences.tags.sidebarWeb}
     <NavbarItem title={$t('tags')} href={Route.tags()} icon={{ icon: mdiTagMultipleOutline, flipped: true }} />

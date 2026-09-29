@@ -60,6 +60,10 @@ export const Route = {
   explore: () => '/explore',
   places: () => '/places',
   trips: () => '/trips',
+  footprints: () => '/footprints',
+  viewFootprintRegion: ({ id }: { id: string }) => `/footprints/${encodeURIComponent(id)}`,
+  viewFootprintAsset: ({ regionId, assetId }: { regionId: string; assetId: string }) =>
+    `/footprints/${encodeURIComponent(regionId)}/photos/${assetId}`,
 
   // folders
   folders: (params?: { path?: string }) => '/folders' + asQueryString(params),
