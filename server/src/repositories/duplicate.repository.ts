@@ -5,6 +5,7 @@ import { InjectKysely } from 'nestjs-kysely';
 import { columns } from 'src/database';
 import { Chunked, DummyValue, GenerateSql } from 'src/decorators';
 import { MapAsset } from 'src/dtos/asset-response.dto';
+import { BurstOrder } from 'src/dtos/burst.dto';
 import { AssetFileType, AssetType, VectorIndex } from 'src/enum';
 import { probes } from 'src/repositories/database.repository';
 import { DB } from 'src/schema';
@@ -96,6 +97,7 @@ export class DuplicateRepository {
         .$call(withDefaultVisibility)
         .select('asset.duplicateId')
         .select((eb) => eb.fn.min('asset.localDateTime').as('startAt'))
+        .select((eb) => eb.fn.count<number>('asset.id').as('size'))
         .where('asset.ownerId', '=', asUuid(userId))
         .where('asset.duplicateId', 'is not', null)
         .$narrowType<{ duplicateId: NotNull }>()
@@ -116,9 +118,9 @@ export class DuplicateRepository {
     return Number(count);
   }
 
-  /** A page of bursts, oldest first, with the preview and stored sharpness of each photo. */
-  @GenerateSql({ params: [DummyValue.UUID, 0, 40] })
-  getBursts(userId: string, offset: number, limit: number) {
+  /** A page of bursts, largest or oldest first, with the preview and stored sharpness of each photo. */
+  @GenerateSql({ params: [DummyValue.UUID, 'size', 0, 40] })
+  getBursts(userId: string, order: BurstOrder, offset: number, limit: number) {
     return this.withBursts(userId)
       .selectFrom('burst')
       .select('burst.duplicateId')
@@ -152,6 +154,7 @@ export class DuplicateRepository {
             .orderBy('asset.id'),
         ).as('assets'),
       )
+      .$if(order === 'size', (qb) => qb.orderBy('burst.size', 'desc'))
       .orderBy('burst.startAt')
       .orderBy('burst.duplicateId')
       .offset(offset)

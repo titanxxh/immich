@@ -61,7 +61,8 @@ with
   "burst" as (
     select
       "asset"."duplicateId",
-      min("asset"."localDateTime") as "startAt"
+      min("asset"."localDateTime") as "startAt",
+      count("asset"."id") as "size"
     from
       "asset"
     where
@@ -86,7 +87,8 @@ with
   "burst" as (
     select
       "asset"."duplicateId",
-      min("asset"."localDateTime") as "startAt"
+      min("asset"."localDateTime") as "startAt",
+      count("asset"."id") as "size"
     from
       "asset"
     where
@@ -142,6 +144,7 @@ select
 from
   "burst"
 order by
+  "burst"."size" desc,
   "burst"."startAt",
   "burst"."duplicateId"
 limit

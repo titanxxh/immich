@@ -12,7 +12,7 @@ export class BurstService extends BaseService {
   async getBursts(auth: AuthDto, dto: BurstSearchDto): Promise<BurstsResponseDto> {
     const [total, bursts] = await Promise.all([
       this.duplicateRepository.getBurstCount(auth.user.id),
-      this.duplicateRepository.getBursts(auth.user.id, dto.offset, dto.limit),
+      this.duplicateRepository.getBursts(auth.user.id, dto.order, dto.offset, dto.limit),
     ]);
 
     const unscored = bursts

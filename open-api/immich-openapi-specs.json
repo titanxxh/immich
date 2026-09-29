@@ -6121,7 +6121,7 @@
     },
     "/bursts": {
       "get": {
-        "description": "Get a page of duplicate groups of photos, oldest first, with how sharp each photo is and the sharpest one suggested to keep.",
+        "description": "Get a page of duplicate groups of photos, largest or oldest first, with how sharp each photo is and the sharpest one suggested to keep.",
         "operationId": "getBursts",
         "parameters": [
           {
@@ -6146,6 +6146,15 @@
               "maximum": 9007199254740991,
               "default": 0,
               "type": "integer"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "size",
+              "$ref": "#/components/schemas/BurstOrder"
             }
           }
         ],
@@ -21892,10 +21901,18 @@
         ],
         "type": "object"
       },
+      "BurstOrder": {
+        "description": "Largest burst first, or oldest first",
+        "enum": [
+          "size",
+          "time"
+        ],
+        "type": "string"
+      },
       "BurstsResponseDto": {
         "properties": {
           "bursts": {
-            "description": "Bursts of this page, oldest first",
+            "description": "Bursts of this page",
             "items": {
               "$ref": "#/components/schemas/BurstDto"
             },

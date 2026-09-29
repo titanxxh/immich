@@ -6,12 +6,13 @@
     AssetMediaSize,
     createStack,
     deleteDuplicate,
+    BurstOrder,
     getBursts,
     resolveDuplicates,
     updateAssets,
     type BurstDto,
   } from '@immich/sdk';
-  import { Button, LoadingSpinner, toastManager } from '@immich/ui';
+  import { Button, LoadingSpinner, Switch, toastManager } from '@immich/ui';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
   import BurstCompare from './BurstCompare.svelte';
@@ -24,6 +25,7 @@
   let decisions = $state<Record<string, BurstDecision>>({});
   // skipped bursts come back on the next visit; until then the next screen starts after them
   let skipped = $state<string[]>([]);
+  let isBySize = $state(true);
   let openIndex = $state<number>();
   let isSaving = $state(false);
 
@@ -32,7 +34,11 @@
 
   const load = async () => {
     try {
-      const response = await getBursts({ offset: skipped.length, limit: SCREEN_SIZE });
+      const response = await getBursts({
+        order: isBySize ? BurstOrder.Size : BurstOrder.Time,
+        offset: skipped.length,
+        limit: SCREEN_SIZE,
+      });
       bursts = response.bursts;
       total = response.total - skipped.length;
       decisions = {};
@@ -42,6 +48,13 @@
   };
 
   onMount(load);
+
+  // skipping only holds within one order: a new order starts from the top again
+  const changeOrder = async () => {
+    skipped = [];
+    bursts = undefined;
+    await load();
+  };
 
   const remove = (handled: BurstDto[]) => {
     const ids = new Set(handled.map((burst) => burst.duplicateId));
@@ -125,7 +138,21 @@
     <p class="p-8 text-center text-gray-500 dark:text-gray-300">{$t('bursts_done')}</p>
   {:else}
     <div class="p-4 pb-24">
-      <p class="mb-3 text-sm text-gray-500 dark:text-gray-300">{$t('bursts_description')}</p>
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <p class="text-gray-500 dark:text-gray-300">{$t('bursts_description')}</p>
+        <label class="flex items-center gap-2">
+          {$t('bursts_largest_first')}
+          <Switch
+            bind:checked={
+              () => isBySize,
+              (value) => {
+                isBySize = value;
+                void changeOrder();
+              }
+            }
+          />
+        </label>
+      </div>
       <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8">
         {#each bursts as burst, index (burst.duplicateId)}
           {@const decision = decisionOf(burst)}

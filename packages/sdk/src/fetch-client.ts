@@ -1554,7 +1554,7 @@ export type BurstDto = {
     recommendedAssetId: string;
 };
 export type BurstsResponseDto = {
-    /** Bursts of this page, oldest first */
+    /** Bursts of this page */
     bursts: BurstDto[];
     /** Number of bursts left */
     total: number;
@@ -5353,16 +5353,18 @@ export function validateAccessToken(opts?: Oazapfts.RequestOpts) {
 /**
  * Get bursts
  */
-export function getBursts({ limit, offset }: {
+export function getBursts({ limit, offset, order }: {
     limit?: number;
     offset?: number;
+    order?: BurstOrder;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchJson<{
         status: 200;
         data: BurstsResponseDto;
     }>(`/bursts${QS.query(QS.explode({
         limit,
-        offset
+        offset,
+        order
     }))}`, {
         ...opts
     }));
@@ -8474,6 +8476,10 @@ export enum AssetMediaSize {
     Fullsize = "fullsize",
     Preview = "preview",
     Thumbnail = "thumbnail"
+}
+export enum BurstOrder {
+    Size = "size",
+    Time = "time"
 }
 export enum SourceType {
     MachineLearning = "machine-learning",
