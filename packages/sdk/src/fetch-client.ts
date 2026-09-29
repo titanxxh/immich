@@ -1537,6 +1537,28 @@ export type ValidateAccessTokenResponseDto = {
     /** Authentication status */
     authStatus: boolean;
 };
+export type BurstAssetDto = {
+    /** Photo ID */
+    id: string;
+    /** Local time the photo was taken */
+    localDateTime: string;
+    /** How sharp the photo is compared to the other photos of the burst; null without a preview */
+    sharpness: number | null;
+};
+export type BurstDto = {
+    /** Photos of the burst, oldest first */
+    assets: BurstAssetDto[];
+    /** Duplicate group ID */
+    duplicateId: string;
+    /** The sharpest photo, suggested to keep */
+    recommendedAssetId: string;
+};
+export type BurstsResponseDto = {
+    /** Bursts of this page, oldest first */
+    bursts: BurstDto[];
+    /** Number of bursts left */
+    total: number;
+};
 export type ClusterGroupRequestResponseDto = {
     /** Cluster group the user is invited to join */
     clusterGroupId: string;
@@ -5326,6 +5348,23 @@ export function validateAccessToken(opts?: Oazapfts.RequestOpts) {
     }>("/auth/validateToken", {
         ...opts,
         method: "POST"
+    }));
+}
+/**
+ * Get bursts
+ */
+export function getBursts({ limit, offset }: {
+    limit?: number;
+    offset?: number;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: BurstsResponseDto;
+    }>(`/bursts${QS.query(QS.explode({
+        limit,
+        offset
+    }))}`, {
+        ...opts
     }));
 }
 /**

@@ -6,6 +6,7 @@
   import {
     mdiCellphoneArrowDownVariant,
     mdiContentDuplicate,
+    mdiImageFilterCenterFocus,
     mdiCrosshairsGps,
     mdiImageSizeSelectLarge,
     mdiLinkEdit,
@@ -16,6 +17,7 @@
 
   const links = [
     { href: Route.duplicatesUtility(), icon: mdiContentDuplicate, label: $t('review_duplicates') },
+    { href: Route.burstsUtility(), icon: mdiImageFilterCenterFocus, label: $t('bursts_pick') },
     { href: Route.largeFileUtility(), icon: mdiImageSizeSelectLarge, label: $t('review_large_files') },
     { href: Route.geolocationUtility(), icon: mdiCrosshairsGps, label: $t('manage_geolocation') },
     { href: Route.locateUtility(), icon: mdiMapMarkerQuestionOutline, label: $t('locate_photos') },

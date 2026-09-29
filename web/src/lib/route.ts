@@ -143,6 +143,7 @@ export const Route = {
   largeFileUtility: () => '/utilities/large-files',
   geolocationUtility: () => '/utilities/geolocation',
   locateUtility: () => '/utilities/locate',
+  burstsUtility: () => '/utilities/bursts',
 
   // workflows
   workflows: () => '/workflows',

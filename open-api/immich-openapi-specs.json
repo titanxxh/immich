@@ -6119,6 +6119,72 @@
         "x-immich-state": "Stable"
       }
     },
+    "/bursts": {
+      "get": {
+        "description": "Get a page of duplicate groups of photos, oldest first, with how sharp each photo is and the sharpest one suggested to keep.",
+        "operationId": "getBursts",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of bursts to return",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 40,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "description": "Number of bursts to skip",
+            "schema": {
+              "minimum": 0,
+              "maximum": 9007199254740991,
+              "default": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BurstsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get bursts",
+        "tags": [
+          "Duplicates"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "duplicate.read"
+      }
+    },
     "/cluster-groups/requests": {
       "get": {
         "description": "Retrieve the pending requests for the current user to join a cluster group.",
@@ -21771,6 +21837,80 @@
         },
         "required": [
           "ids"
+        ],
+        "type": "object"
+      },
+      "BurstAssetDto": {
+        "properties": {
+          "id": {
+            "description": "Photo ID",
+            "type": "string"
+          },
+          "localDateTime": {
+            "description": "Local time the photo was taken",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "sharpness": {
+            "description": "How sharp the photo is compared to the other photos of the burst; null without a preview",
+            "format": "double",
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "localDateTime",
+          "sharpness"
+        ],
+        "type": "object"
+      },
+      "BurstDto": {
+        "properties": {
+          "assets": {
+            "description": "Photos of the burst, oldest first",
+            "items": {
+              "$ref": "#/components/schemas/BurstAssetDto"
+            },
+            "type": "array"
+          },
+          "duplicateId": {
+            "description": "Duplicate group ID",
+            "type": "string"
+          },
+          "recommendedAssetId": {
+            "description": "The sharpest photo, suggested to keep",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assets",
+          "duplicateId",
+          "recommendedAssetId"
+        ],
+        "type": "object"
+      },
+      "BurstsResponseDto": {
+        "properties": {
+          "bursts": {
+            "description": "Bursts of this page, oldest first",
+            "items": {
+              "$ref": "#/components/schemas/BurstDto"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Number of bursts left",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bursts",
+          "total"
         ],
         "type": "object"
       },

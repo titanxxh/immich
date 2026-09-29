@@ -37,3 +37,17 @@ _Avoid_: Cluster, event
 **Scattered photos**:
 Photos to locate too few to form a location group; they are handled together in one list.
 _Avoid_: Leftovers, singles
+
+## Picking from bursts
+
+**Burst**:
+A duplicate group of at least two photos, most often shots taken seconds apart. The user keeps the best one (or a few) and trashes or stacks the rest.
+_Avoid_: Duplicate (for the whole group), series
+
+**Sharpness**:
+A score of how sharp a photo is, computed from its preview. It only means something compared to the other photos of the same burst.
+_Avoid_: Quality, focus score
+
+**Recommended photo**:
+The sharpest photo of a burst, kept unless the user picks another one.
+_Avoid_: Best shot, suggested keeper

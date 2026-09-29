@@ -5,7 +5,7 @@ import { InjectKysely } from 'nestjs-kysely';
 import { columns } from 'src/database';
 import { Chunked, DummyValue, GenerateSql } from 'src/decorators';
 import { MapAsset } from 'src/dtos/asset-response.dto';
-import { AssetType, VectorIndex } from 'src/enum';
+import { AssetFileType, AssetType, VectorIndex } from 'src/enum';
 import { probes } from 'src/repositories/database.repository';
 import { DB } from 'src/schema';
 import { AssetExifTable } from 'src/schema/tables/asset-exif.table';
@@ -86,6 +86,77 @@ export class DuplicateRepository {
         .where((eb) => eb(eb.fn('json_array_length', ['assets']), '>', 1))
         .execute()
     );
+  }
+
+  /** Duplicate groups of at least two photos: the bursts the user can pick the best photo of. */
+  private withBursts(userId: string) {
+    return this.db.with('burst', (qb) =>
+      qb
+        .selectFrom('asset')
+        .$call(withDefaultVisibility)
+        .select('asset.duplicateId')
+        .select((eb) => eb.fn.min('asset.localDateTime').as('startAt'))
+        .where('asset.ownerId', '=', asUuid(userId))
+        .where('asset.duplicateId', 'is not', null)
+        .$narrowType<{ duplicateId: NotNull }>()
+        .where('asset.deletedAt', 'is', null)
+        .where('asset.stackId', 'is', null)
+        .where('asset.type', '=', AssetType.Image)
+        .groupBy('asset.duplicateId')
+        .having((eb) => eb.fn.count('asset.id'), '>', 1),
+    );
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID] })
+  async getBurstCount(userId: string): Promise<number> {
+    const { count } = await this.withBursts(userId)
+      .selectFrom('burst')
+      .select((eb) => eb.fn.countAll<number>().as('count'))
+      .executeTakeFirstOrThrow();
+    return Number(count);
+  }
+
+  /** A page of bursts, oldest first, with the preview and stored sharpness of each photo. */
+  @GenerateSql({ params: [DummyValue.UUID, 0, 40] })
+  getBursts(userId: string, offset: number, limit: number) {
+    return this.withBursts(userId)
+      .selectFrom('burst')
+      .select('burst.duplicateId')
+      .select((eb) =>
+        jsonArrayFrom(
+          eb
+            .selectFrom('asset')
+            .$call(withDefaultVisibility)
+            .leftJoin('asset_job_status', 'asset_job_status.assetId', 'asset.id')
+            .select([
+              'asset.id',
+              'asset.localDateTime',
+              'asset_job_status.sharpness',
+              'asset_job_status.sharpnessVersion',
+            ])
+            .select((qb) =>
+              qb
+                .selectFrom('asset_file')
+                .select('asset_file.path')
+                .whereRef('asset_file.assetId', '=', 'asset.id')
+                .where('asset_file.type', '=', AssetFileType.Preview)
+                .where('asset_file.isEdited', '=', false)
+                .limit(1)
+                .as('previewPath'),
+            )
+            .where('asset.duplicateId', '=', eb.ref('burst.duplicateId'))
+            .where('asset.deletedAt', 'is', null)
+            .where('asset.stackId', 'is', null)
+            .where('asset.type', '=', AssetType.Image)
+            .orderBy('asset.localDateTime')
+            .orderBy('asset.id'),
+        ).as('assets'),
+      )
+      .orderBy('burst.startAt')
+      .orderBy('burst.duplicateId')
+      .offset(offset)
+      .limit(limit)
+      .execute();
   }
 
   @GenerateSql({ params: [DummyValue.UUID] })
