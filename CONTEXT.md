@@ -55,8 +55,8 @@ _Avoid_: Best shot, suggested keeper
 ## Footprints
 
 **Region**:
-An area on the footprint map: a prefecture-level city in mainland China, or an area of the same scale abroad. It comes from a fixed set of boundaries, not from the place names written on each photo.
-_Avoid_: Place, city (the photo's city field is a town or district in China)
+An area on the footprint map: a prefecture-level city in mainland China, or an area of the same scale abroad. Hong Kong and Macau are one region each; Taiwan's counties and cities are regions. It comes from a fixed set of boundaries, not from the place names written on each photo. The footprint page shows regions to users as "cities".
+_Avoid_: Place, city (in code and docs, since the photo's city field is a town or district in China)
 
 **Visited region**:
 A region where at least one camera photo was taken, unless the user hid it. The regions around a home count too.
