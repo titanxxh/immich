@@ -8248,6 +8248,91 @@
         "x-immich-permission": "asset.read"
       }
     },
+    "/locate/suspects": {
+      "get": {
+        "description": "List the photos whose location contradicts a photo taken at the same moment, found by trip detection.",
+        "operationId": "getLocateSuspects",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocateSuspectsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get photos with a suspect location",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      }
+    },
+    "/locate/suspects/confirm": {
+      "post": {
+        "description": "Say the photos are placed right, so they are no longer flagged.",
+        "operationId": "confirmLocateSuspects",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocateAssetIdsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Confirm suspect locations",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.update"
+      }
+    },
     "/map/markers": {
       "get": {
         "description": "Retrieve a list of latitude and longitude coordinates for every asset with location data.",
@@ -23915,6 +24000,90 @@
         },
         "required": [
           "suggestion"
+        ],
+        "type": "object"
+      },
+      "LocateSuspectDto": {
+        "properties": {
+          "assetId": {
+            "description": "The photo whose location is in doubt",
+            "type": "string"
+          },
+          "latitude": {
+            "description": "Latitude of the photo",
+            "format": "double",
+            "type": "number"
+          },
+          "localDateTime": {
+            "description": "Local time of the photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "longitude": {
+            "description": "Longitude of the photo",
+            "format": "double",
+            "type": "number"
+          },
+          "otherAssetId": {
+            "description": "A photo taken at the same moment that it contradicts",
+            "type": "string"
+          },
+          "otherLatitude": {
+            "description": "Latitude of the other photo",
+            "format": "double",
+            "type": "number"
+          },
+          "otherLocalDateTime": {
+            "description": "Local time of the other photo",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "otherLongitude": {
+            "description": "Longitude of the other photo",
+            "format": "double",
+            "type": "number"
+          },
+          "otherPlace": {
+            "description": "Place name of the other photo",
+            "nullable": true,
+            "type": "string"
+          },
+          "place": {
+            "description": "Place name of the photo",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "latitude",
+          "localDateTime",
+          "longitude",
+          "otherAssetId",
+          "otherLatitude",
+          "otherLocalDateTime",
+          "otherLongitude",
+          "otherPlace",
+          "place"
+        ],
+        "type": "object"
+      },
+      "LocateSuspectsResponseDto": {
+        "properties": {
+          "suspects": {
+            "description": "Photos with a suspect location, oldest first",
+            "items": {
+              "$ref": "#/components/schemas/LocateSuspectDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "suspects"
         ],
         "type": "object"
       },

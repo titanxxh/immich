@@ -3,6 +3,7 @@ import { Kysely, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { DummyValue, GenerateSql } from 'src/decorators';
 import { AssetVisibility } from 'src/enum';
+import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY } from 'src/repositories/trip.repository';
 import { DB } from 'src/schema';
 
 /** Marks a photo the user chose not to locate, so it is no longer offered. */
@@ -96,6 +97,78 @@ export class LocateRepository {
       .insertInto('asset_metadata')
       .values(assetIds.map((assetId) => ({ assetId, key: LOCATE_IGNORED_KEY, value: {} })))
       .onConflict((oc) => oc.columns(['assetId', 'key']).doNothing())
+      .execute();
+  }
+
+  /** Photos of the user flagged as suspect locations, each with the photo it contradicts, oldest first. */
+  @GenerateSql({ params: [DummyValue.UUID] })
+  getSuspects(ownerId: string) {
+    return this.db
+      .selectFrom('asset_metadata')
+      .innerJoin('asset', 'asset.id', 'asset_metadata.assetId')
+      .innerJoin('asset_exif', 'asset_exif.assetId', 'asset.id')
+      .innerJoin('asset as other', (join) =>
+        join.on('other.id', '=', sql<string>`("asset_metadata"."value"->>'otherAssetId')::uuid`),
+      )
+      .innerJoin('asset_exif as otherExif', 'otherExif.assetId', 'other.id')
+      .select([
+        'asset.id as assetId',
+        'asset.localDateTime',
+        'asset_exif.latitude',
+        'asset_exif.longitude',
+        'asset_exif.city',
+        'asset_exif.country',
+        'other.id as otherAssetId',
+        'other.localDateTime as otherLocalDateTime',
+        'otherExif.latitude as otherLatitude',
+        'otherExif.longitude as otherLongitude',
+        'otherExif.city as otherCity',
+        'otherExif.country as otherCountry',
+      ])
+      .where('asset_metadata.key', '=', TRIP_SUSPECT_KEY)
+      .where('asset.ownerId', '=', ownerId)
+      .where('asset.deletedAt', 'is', null)
+      .where('other.deletedAt', 'is', null)
+      .where('asset_exif.latitude', 'is not', null)
+      .where('otherExif.latitude', 'is not', null)
+      .orderBy('asset.localDateTime')
+      .orderBy('asset.id')
+      .$narrowType<{ latitude: number; longitude: number; otherLatitude: number; otherLongitude: number }>()
+      .execute();
+  }
+
+  /** The user said these photos are placed right: they are no longer flagged. */
+  @GenerateSql({ params: [[DummyValue.UUID]] })
+  async confirmSuspects(assetIds: string[]) {
+    if (assetIds.length === 0) {
+      return;
+    }
+
+    await this.db.transaction().execute(async (tx) => {
+      await tx
+        .insertInto('asset_metadata')
+        .values(assetIds.map((assetId) => ({ assetId, key: TRIP_SUSPECT_OK_KEY, value: {} })))
+        .onConflict((oc) => oc.columns(['assetId', 'key']).doNothing())
+        .execute();
+      await tx
+        .deleteFrom('asset_metadata')
+        .where('key', '=', TRIP_SUSPECT_KEY)
+        .where('assetId', 'in', assetIds)
+        .execute();
+    });
+  }
+
+  /** The photos were given a location: they are no longer flagged until detection finds them again. */
+  @GenerateSql({ params: [[DummyValue.UUID]] })
+  async clearSuspects(assetIds: string[]) {
+    if (assetIds.length === 0) {
+      return;
+    }
+
+    await this.db
+      .deleteFrom('asset_metadata')
+      .where('key', '=', TRIP_SUSPECT_KEY)
+      .where('assetId', 'in', assetIds)
       .execute();
   }
 }

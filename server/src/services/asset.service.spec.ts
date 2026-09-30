@@ -360,6 +360,10 @@ describe(AssetService.name, () => {
   });
 
   describe('updateAll', () => {
+    beforeEach(() => {
+      mocks.locate.clearSuspects.mockResolvedValue();
+    });
+
     it('should require asset write access for all ids', async () => {
       const auth = AuthFactory.create();
       await expect(sut.updateAll(auth, { ids: ['asset-1'] })).rejects.toBeInstanceOf(BadRequestException);
@@ -420,6 +424,7 @@ describe(AssetService.name, () => {
         duplicateId: undefined,
         rating: undefined,
       });
+      expect(mocks.locate.clearSuspects).toHaveBeenCalledWith(['asset-1']);
       expect(mocks.asset.updateAll).toHaveBeenCalled();
       expect(mocks.asset.updateAllExif).toHaveBeenCalledWith(['asset-1'], {
         dateTimeOriginal,

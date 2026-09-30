@@ -1,11 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { AuthDto } from 'src/dtos/auth.dto';
-import { LocateAssetIdsDto, LocateGroupsResponseDto, LocateSuggestionResponseDto } from 'src/dtos/locate.dto';
+import {
+  LocateAssetIdsDto,
+  LocateGroupsResponseDto,
+  LocateSuggestionResponseDto,
+  LocateSuspectsResponseDto,
+} from 'src/dtos/locate.dto';
 import { Permission } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
 import { findDensestPoint, getDirectory, groupUnlocated, LOCATE_SUGGESTION_WINDOW_DAYS } from 'src/utils/locate';
 
 const DAY = 24 * 60 * 60 * 1000;
+
+const placeOf = (city: string | null, country: string | null) => city ?? country ?? null;
 
 @Injectable()
 export class LocateService extends BaseService {
@@ -53,5 +60,29 @@ export class LocateService extends BaseService {
   async ignore(auth: AuthDto, dto: LocateAssetIdsDto) {
     await this.requireAccess({ auth, permission: Permission.AssetUpdate, ids: dto.assetIds });
     await this.locateRepository.ignore(dto.assetIds);
+  }
+
+  /** Photos placed where they contradict a photo taken at the same moment, as found by trip detection. */
+  async getSuspects(auth: AuthDto): Promise<LocateSuspectsResponseDto> {
+    const rows = await this.locateRepository.getSuspects(auth.user.id);
+    return {
+      suspects: rows.map((row) => ({
+        assetId: row.assetId,
+        localDateTime: new Date(row.localDateTime),
+        latitude: row.latitude,
+        longitude: row.longitude,
+        place: placeOf(row.city, row.country),
+        otherAssetId: row.otherAssetId,
+        otherLocalDateTime: new Date(row.otherLocalDateTime),
+        otherLatitude: row.otherLatitude,
+        otherLongitude: row.otherLongitude,
+        otherPlace: placeOf(row.otherCity, row.otherCountry),
+      })),
+    };
+  }
+
+  async confirmSuspects(auth: AuthDto, dto: LocateAssetIdsDto) {
+    await this.requireAccess({ auth, permission: Permission.AssetUpdate, ids: dto.assetIds });
+    await this.locateRepository.confirmSuspects(dto.assetIds);
   }
 }

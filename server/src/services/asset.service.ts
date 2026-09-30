@@ -109,6 +109,9 @@ export class AssetService extends BaseService {
     }
 
     await this.updateExif({ id, description, dateTimeOriginal, latitude, longitude, rating });
+    if (latitude !== undefined || longitude !== undefined) {
+      await this.locateRepository.clearSuspects([id]);
+    }
 
     const asset = await this.assetRepository.update({ id, ...rest });
 
@@ -157,6 +160,10 @@ export class AssetService extends BaseService {
 
     if (Object.keys(exifDto).length > 0) {
       await this.assetRepository.updateAllExif(ids, exifDto);
+    }
+    // a photo given a new location is no longer a suspect of trip detection
+    if (latitude !== undefined || longitude !== undefined) {
+      await this.locateRepository.clearSuspects(ids);
     }
 
     const extractedTimeZone = extractTimeZone(dateTimeOriginal);

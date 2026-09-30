@@ -83,3 +83,49 @@ insert into
 values
   ($1, $2, $3)
 on conflict ("assetId", "key") do nothing
+
+-- LocateRepository.getSuspects
+select
+  "asset"."id" as "assetId",
+  "asset"."localDateTime",
+  "asset_exif"."latitude",
+  "asset_exif"."longitude",
+  "asset_exif"."city",
+  "asset_exif"."country",
+  "other"."id" as "otherAssetId",
+  "other"."localDateTime" as "otherLocalDateTime",
+  "otherExif"."latitude" as "otherLatitude",
+  "otherExif"."longitude" as "otherLongitude",
+  "otherExif"."city" as "otherCity",
+  "otherExif"."country" as "otherCountry"
+from
+  "asset_metadata"
+  inner join "asset" on "asset"."id" = "asset_metadata"."assetId"
+  inner join "asset_exif" on "asset_exif"."assetId" = "asset"."id"
+  inner join "asset" as "other" on "other"."id" = ("asset_metadata"."value" ->> 'otherAssetId')::uuid
+  inner join "asset_exif" as "otherExif" on "otherExif"."assetId" = "other"."id"
+where
+  "asset_metadata"."key" = $1
+  and "asset"."ownerId" = $2
+  and "asset"."deletedAt" is null
+  and "other"."deletedAt" is null
+  and "asset_exif"."latitude" is not null
+  and "otherExif"."latitude" is not null
+order by
+  "asset"."localDateTime",
+  "asset"."id"
+
+-- LocateRepository.confirmSuspects
+begin
+insert into
+  "asset_metadata" ("assetId", "key", "value")
+values
+  ($1, $2, $3)
+on conflict ("assetId", "key") do nothing
+rollback
+
+-- LocateRepository.clearSuspects
+delete from "asset_metadata"
+where
+  "key" = $1
+  and "assetId" in ($2)
