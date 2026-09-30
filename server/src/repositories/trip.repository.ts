@@ -16,6 +16,11 @@ export type TripPointPlace = {
   admin2Name: string | null;
 };
 
+/** A photo whose location contradicts one taken at the same moment, flagged by trip detection for the user to check. */
+export const TRIP_SUSPECT_KEY = 'trip-suspect-location';
+/** A flagged photo the user said is placed right; detection does not flag it again. */
+export const TRIP_SUSPECT_OK_KEY = 'trip-suspect-location-ok';
+
 @Injectable()
 export class TripRepository {
   constructor(@InjectKysely() private db: Kysely<DB>) {}
@@ -64,10 +69,12 @@ export class TripRepository {
         'asset.id',
         'asset.localDateTime',
         'asset.createdAt',
+        'asset.fileCreatedAt as takenAt',
         'asset.originalFileName',
         'asset_exif.latitude',
         'asset_exif.longitude',
         'asset_exif.make',
+        'asset_exif.model',
       ])
       .where('album_asset.albumId', '=', albumId)
       .where('asset.deletedAt', 'is', null)
@@ -97,10 +104,12 @@ export class TripRepository {
         'asset.id',
         'asset.localDateTime',
         'asset.createdAt',
+        'asset.fileCreatedAt as takenAt',
         'asset.originalFileName',
         'asset_exif.latitude',
         'asset_exif.longitude',
         'asset_exif.make',
+        'asset_exif.model',
       ])
       .where('asset.ownerId', '=', ownerId)
       .where('asset.deletedAt', 'is', null)
@@ -179,5 +188,41 @@ export class TripRepository {
       .execute();
 
     return new Map(rows.map((row) => [`${row.name}|${row.admin1Name}`, row.alternateNames]));
+  }
+
+  /** Replaces the photos of the user flagged by trip detection, leaving out those the user said are placed right. */
+  @GenerateSql({ params: [DummyValue.UUID, [{ assetId: DummyValue.UUID, otherAssetId: DummyValue.UUID }]] })
+  async replaceSuspects(ownerId: string, suspects: Array<{ assetId: string; otherAssetId: string }>) {
+    await this.db.transaction().execute(async (tx) => {
+      await tx
+        .deleteFrom('asset_metadata')
+        .where('key', '=', TRIP_SUSPECT_KEY)
+        .where('assetId', 'in', (eb) => eb.selectFrom('asset').select('asset.id').where('asset.ownerId', '=', ownerId))
+        .execute();
+      if (suspects.length === 0) {
+        return;
+      }
+
+      const confirmed = await tx
+        .selectFrom('asset_metadata')
+        .select('assetId')
+        .where('key', '=', TRIP_SUSPECT_OK_KEY)
+        .where(
+          'assetId',
+          'in',
+          suspects.map(({ assetId }) => assetId),
+        )
+        .execute();
+      const skip = new Set(confirmed.map(({ assetId }) => assetId));
+      const rows = suspects
+        .filter(({ assetId }) => !skip.has(assetId))
+        .map(({ assetId, otherAssetId }) => ({ assetId, key: TRIP_SUSPECT_KEY, value: { otherAssetId } }));
+      for (let index = 0; index < rows.length; index += 1000) {
+        await tx
+          .insertInto('asset_metadata')
+          .values(rows.slice(index, index + 1000))
+          .execute();
+      }
+    });
   }
 }

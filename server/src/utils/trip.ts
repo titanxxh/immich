@@ -10,8 +10,14 @@ export const TRIP_WINDOW_PADDING_HOURS = 12;
 /** A photo in a trip's album widens the trip only this close to it; one further away most likely has a wrong date. */
 export const TRIP_ALBUM_MAX_GAP_DAYS = 7;
 
-/** Trips at the same time are told apart, e.g. two family members travelling separately, when this far apart. */
-export const TRIP_CONCURRENT_MIN_KM = 300;
+/** Photos by two devices this close in time but this far apart show two groups apart, e.g. a family split up. */
+export const TRIP_APART_MINUTES = 15;
+export const TRIP_APART_KM = 30;
+/** Two groups are only told apart when seen apart in this many different hours, each with this many photos. */
+export const TRIP_APART_MIN_HOURS = 2;
+export const TRIP_APART_MIN_ASSETS = 3;
+/** Two groups met when they took photos this close in time and within the apart distance of each other. */
+export const TRIP_MEET_HOURS = 3;
 
 const HOUR = 60 * 60 * 1000;
 
@@ -39,7 +45,10 @@ export type TripAsset = {
   createdAt: Date;
   latitude: number | null;
   longitude: number | null;
+  /** when the photo was taken, used to tell photos taken at the same moment in different time zones */
+  takenAt: Date;
   make: string | null;
+  model: string | null;
   originalFileName: string;
 };
 
@@ -57,9 +66,13 @@ export type PlannedTrip = TripWindow & {
   assets: TripAsset[];
 };
 
+/** A photo whose location contradicts a photo taken at the same moment, most likely placed wrong. */
+export type TripSuspect = { assetId: string; otherAssetId: string };
+
 export type TripPlan = {
   existing: Array<PlannedTrip & { id: string }>;
   created: PlannedTrip[];
+  suspects: TripSuspect[];
 };
 
 const toLocalDate = (date: Date) => date.toISOString().slice(0, 10);
@@ -188,9 +201,166 @@ export const widenToAlbum = (window: TripWindow, dates: Date[]): TripWindow => {
   return { startAt: new Date(startAt), endAt: new Date(endAt) };
 };
 
-/** Whether two trips went to places far enough apart to be separate trips even when they overlap in time. */
-export const isFarApart = (a: TripPoint[], b: TripPoint[]) =>
-  a.length > 0 && b.length > 0 && a.every((point) => distanceToPoints(b, point) > TRIP_CONCURRENT_MIN_KM);
+/** The device a photo was taken with, or undefined for images without one such as those saved from a chat app. */
+export const getDevice = (asset: TripAsset) => (asset.make ? `${asset.make} ${asset.model ?? ''}`.trim() : undefined);
+
+const APART_MS = TRIP_APART_MINUTES * 60 * 1000;
+const MEET_MS = TRIP_MEET_HOURS * HOUR;
+
+/** Every pair of photos taken within `ms` of each other, earlier photo first. */
+const pairsWithin = <T extends { takenAt: Date }>(sorted: T[], ms: number, visit: (a: T, b: T) => void) => {
+  let start = 0;
+  for (let index = 0; index < sorted.length; index++) {
+    const b = sorted[index];
+    while (b.takenAt.getTime() - sorted[start].takenAt.getTime() > ms) {
+      start++;
+    }
+    for (let other = start; other < index; other++) {
+      visit(sorted[other], b);
+    }
+  }
+};
+
+const byTakenAt = (a: { takenAt: Date }, b: { takenAt: Date }) => a.takenAt.getTime() - b.takenAt.getTime();
+
+/** Whether two sets of photos were ever taken together: close in time and in place. */
+export const wereTogether = (a: TripAsset[], b: TripAsset[]) => {
+  const tagged = [
+    ...a.filter(isLocated).map((asset) => ({ asset, side: 0, takenAt: asset.takenAt })),
+    ...b.filter(isLocated).map((asset) => ({ asset, side: 1, takenAt: asset.takenAt })),
+  ].toSorted(byTakenAt);
+  let met = false;
+  pairsWithin(tagged, MEET_MS, (x, y) => {
+    met ||= x.side !== y.side && distanceKm(x.asset, y.asset) <= TRIP_APART_KM;
+  });
+  return met;
+};
+
+/**
+ * Splits a run into the groups that took it when two groups were apart at the same time, e.g. family members on
+ * separate trips. Devices seen apart are two-coloured into two groups; the other devices join the group they were
+ * with. The run stays whole when the groups met, when they were apart too little to be sure, or when the devices
+ * cannot be told into two groups; the photos behind a doubt are returned as suspects.
+ */
+export const splitIntoGroups = (run: Located[]): { groups: Located[][]; suspects: TripSuspect[] } => {
+  const sorted = run.filter((asset) => getDevice(asset)).toSorted(byTakenAt);
+  const apart: Array<[Located, Located]> = [];
+  pairsWithin(sorted, APART_MS, (a, b) => {
+    if (getDevice(a) !== getDevice(b) && distanceKm(a, b) > TRIP_APART_KM) {
+      apart.push([a, b]);
+    }
+  });
+  if (apart.length === 0) {
+    return { groups: [run], suspects: [] };
+  }
+
+  const flagPairs = () =>
+    apart.flatMap(([a, b]) => [
+      { assetId: a.id, otherAssetId: b.id },
+      { assetId: b.id, otherAssetId: a.id },
+    ]);
+
+  // two-colour the devices seen apart
+  const neighbours = new Map<string, Set<string>>();
+  for (const [a, b] of apart) {
+    const [deviceA, deviceB] = [getDevice(a)!, getDevice(b)!];
+    neighbours.set(deviceA, (neighbours.get(deviceA) ?? new Set()).add(deviceB));
+    neighbours.set(deviceB, (neighbours.get(deviceB) ?? new Set()).add(deviceA));
+  }
+  const color = new Map<string, number>();
+  for (const start of neighbours.keys()) {
+    if (color.has(start)) {
+      continue;
+    }
+    color.set(start, 0);
+    const stack = [start];
+    while (stack.length > 0) {
+      const device = stack.pop()!;
+      for (const other of neighbours.get(device)!) {
+        if (!color.has(other)) {
+          color.set(other, 1 - color.get(device)!);
+          stack.push(other);
+        } else if (color.get(other) === color.get(device)) {
+          return { groups: [run], suspects: flagPairs() };
+        }
+      }
+    }
+  }
+
+  // a device never seen apart joins the group it took photos with
+  const votes = new Map<string, [number, number]>();
+  pairsWithin(sorted, MEET_MS, (a, b) => {
+    for (const [asset, other] of [
+      [a, b],
+      [b, a],
+    ]) {
+      const device = getDevice(asset)!;
+      const otherColor = color.get(getDevice(other)!);
+      if (!neighbours.has(device) && otherColor !== undefined && distanceKm(asset, other) <= TRIP_APART_KM) {
+        const vote = votes.get(device) ?? [0, 0];
+        vote[otherColor]++;
+        votes.set(device, vote);
+      }
+    }
+  });
+  for (const [device, [zero, one]] of votes) {
+    color.set(device, zero >= one ? 0 : 1);
+  }
+
+  // the rest go with the coloured photo nearest in time
+  const coloured = sorted.filter((asset) => color.has(getDevice(asset)!));
+  const sideOf = (asset: Located) => {
+    const device = getDevice(asset);
+    if (device && color.has(device)) {
+      return color.get(device)!;
+    }
+    let nearest = coloured[0];
+    for (const other of coloured) {
+      if (
+        Math.abs(other.takenAt.getTime() - asset.takenAt.getTime()) <
+        Math.abs(nearest.takenAt.getTime() - asset.takenAt.getTime())
+      ) {
+        nearest = other;
+      }
+    }
+    return color.get(getDevice(nearest)!)!;
+  };
+
+  // a photo far from its own group and next to the other one at the same moment was most likely placed wrong
+  const suspects = new Map<string, TripSuspect>();
+  const farFromOwn = new Set<string>();
+  pairsWithin(sorted, APART_MS, (a, b) => {
+    if (sideOf(a) === sideOf(b) && distanceKm(a, b) > TRIP_APART_KM) {
+      farFromOwn.add(a.id).add(b.id);
+    }
+  });
+  pairsWithin(sorted, APART_MS, (a, b) => {
+    for (const [asset, other] of [
+      [a, b],
+      [b, a],
+    ]) {
+      if (farFromOwn.has(asset.id) && sideOf(asset) !== sideOf(other) && distanceKm(asset, other) <= TRIP_APART_KM) {
+        suspects.set(asset.id, { assetId: asset.id, otherAssetId: other.id });
+      }
+    }
+  });
+
+  const sides: Located[][] = [[], []];
+  for (const asset of run) {
+    sides[sideOf(asset)].push(asset);
+  }
+  const trusted = sides.map((side) => side.filter((asset) => !suspects.has(asset.id)));
+  const hours = new Set(apart.map(([a]) => Math.floor(a.takenAt.getTime() / HOUR))).size;
+  const isSure = hours >= TRIP_APART_MIN_HOURS && trusted.every((side) => side.length >= TRIP_APART_MIN_ASSETS);
+  if (!isSure) {
+    return { groups: [run], suspects: [...flagPairs(), ...suspects.values()] };
+  }
+  if (wereTogether(trusted[0], trusted[1])) {
+    return { groups: [run], suspects: [] };
+  }
+
+  return { groups: sides, suspects: suspects.values().toArray() };
+};
 
 /**
  * Clusters all of a user's photos into trips and matches them to the trips already known. Existing trips are never
@@ -206,17 +376,26 @@ export const planTrips = (assets: TripAsset[], options: TripOptions, existingTri
     assets: [] as TripAsset[],
   }));
   const created: PlannedTrip[] = [];
+  const suspects = new Map<string, TripSuspect>();
 
   for (const run of splitIntoRuns(assets, options.homes)) {
+    const split = splitIntoGroups(run);
+    for (const suspect of split.suspects) {
+      suspects.set(suspect.assetId, suspect);
+    }
+
+    // existing trips are never split: only a new stretch becomes a trip per group
     const overlapping = existing.filter((trip) => paddedOverlaps(trip, run));
     if (overlapping.length === 0) {
-      if (isQualifyingRun(run, options)) {
-        created.push({
-          startAt: run[0].localDateTime,
-          endAt: run.at(-1)!.localDateTime,
-          locatedAssets: [...run],
-          assets: [],
-        });
+      for (const group of split.groups) {
+        if (isQualifyingRun(group, options)) {
+          created.push({
+            startAt: group[0].localDateTime,
+            endAt: group.at(-1)!.localDateTime,
+            locatedAssets: [...group],
+            assets: [],
+          });
+        }
       }
       continue;
     }
@@ -242,25 +421,46 @@ export const planTrips = (assets: TripAsset[], options: TripOptions, existingTri
     trip.assets.push(...trip.locatedAssets);
   }
 
+  const locatedByDevice = new Map<string, Located[]>();
+  for (const asset of assets) {
+    const device = getDevice(asset);
+    if (device && isLocated(asset)) {
+      locatedByDevice.set(device, [...(locatedByDevice.get(device) ?? []), asset]);
+    }
+  }
+
   for (const asset of assets) {
     if (!isCameraOriginal(asset)) {
       continue;
     }
 
-    // with trips at the same time, the photo goes where the located photo nearest in time went
     const candidates = trips.filter((trip) => paddedContains(trip, asset.localDateTime));
+    if (candidates.length === 0) {
+      continue;
+    }
+
+    // a photo goes with the trip its device was on; a device located elsewhere meanwhile, e.g. at home, was not on it
+    const device = getDevice(asset);
+    const onTrip = candidates.filter((trip) => trip.locatedAssets.some((located) => getDevice(located) === device));
+    const wasElsewhere = (locatedByDevice.get(device!) ?? []).some((located) =>
+      candidates.some((trip) => paddedContains(trip, located.localDateTime)),
+    );
+    if (onTrip.length === 0 && wasElsewhere) {
+      continue;
+    }
+
+    // otherwise it goes where the located photo nearest in time went
     const nearestInTime = (trip: PlannedTrip) =>
       Math.min(
         ...trip.locatedAssets.map((located) =>
           Math.abs(located.localDateTime.getTime() - asset.localDateTime.getTime()),
         ),
       );
-    const trip =
-      candidates.length > 1 ? candidates.toSorted((a, b) => nearestInTime(a) - nearestInTime(b))[0] : candidates[0];
-    trip?.assets.push(asset);
+    const pool = onTrip.length > 0 ? onTrip : candidates;
+    pool.toSorted((a, b) => nearestInTime(a) - nearestInTime(b))[0].assets.push(asset);
   }
 
-  return { existing, created };
+  return { existing, created, suspects: suspects.values().toArray() };
 };
 
 export type TripPlace = {
@@ -441,6 +641,16 @@ export const buildDays = (assets: TripAsset[], stops: TripStop[]): TripDay[] => 
 };
 
 /** The stop with the most photos, which stands for the whole trip on a map and provides its cover. */
+/** The located photos taken away from every home. */
+export const getAwayAssets = (assets: TripAsset[], homes: TripHome[]) =>
+  assets
+    .filter(isLocated)
+    .filter((asset) =>
+      homes.every(
+        (home) => !isHomeActive(home, toLocalDate(asset.localDateTime)) || distanceKm(home, asset) > home.radiusKm,
+      ),
+    );
+
 /** Where a trip went: the centres of its stops, leaving out those at a home. */
 export const getAwayPoints = (assets: TripAsset[], homes: TripHome[]): TripPoint[] =>
   buildStops(assets)

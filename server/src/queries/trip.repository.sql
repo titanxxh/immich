@@ -42,10 +42,12 @@ select
   "asset"."id",
   "asset"."localDateTime",
   "asset"."createdAt",
+  "asset"."fileCreatedAt" as "takenAt",
   "asset"."originalFileName",
   "asset_exif"."latitude",
   "asset_exif"."longitude",
-  "asset_exif"."make"
+  "asset_exif"."make",
+  "asset_exif"."model"
 from
   "album_asset"
   inner join "asset" on "asset"."id" = "album_asset"."assetId"
@@ -78,10 +80,12 @@ select
   "asset"."id",
   "asset"."localDateTime",
   "asset"."createdAt",
+  "asset"."fileCreatedAt" as "takenAt",
   "asset"."originalFileName",
   "asset_exif"."latitude",
   "asset_exif"."longitude",
-  "asset_exif"."make"
+  "asset_exif"."make",
+  "asset_exif"."model"
 from
   "asset"
   inner join "asset_exif" on "asset_exif"."assetId" = "asset"."id"
@@ -142,3 +146,29 @@ order by
   "name",
   "admin1Name",
   length("alternateNames") desc nulls last
+
+-- TripRepository.replaceSuspects
+begin
+delete from "asset_metadata"
+where
+  "key" = $1
+  and "assetId" in (
+    select
+      "asset"."id"
+    from
+      "asset"
+    where
+      "asset"."ownerId" = $2
+  )
+select
+  "assetId"
+from
+  "asset_metadata"
+where
+  "key" = $1
+  and "assetId" in ($2)
+insert into
+  "asset_metadata" ("assetId", "key", "value")
+values
+  ($1, $2, $3)
+rollback

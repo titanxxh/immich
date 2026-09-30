@@ -8,7 +8,6 @@ import {
   getCoverAssetId,
   getFarthestKm,
   getMainStop,
-  isFarApart,
   pickChineseName,
   planTrips,
   splitIntoRuns,
@@ -16,6 +15,7 @@ import {
   TripAsset,
   TripHome,
   TripOptions,
+  wereTogether,
   widenToAlbum,
 } from 'src/utils/trip';
 import { describe, expect, it } from 'vitest';
@@ -34,22 +34,37 @@ const asset = (
 ): TripAsset => ({
   id: `asset-${nextId++}`,
   localDateTime: new Date(`${localDateTime}Z`),
+  takenAt: new Date(`${localDateTime}Z`),
   createdAt: new Date('2026-01-01T00:00:00Z'),
   latitude: location?.latitude ?? null,
   longitude: location?.longitude ?? null,
   make: 'Canon',
+  model: 'EOS 80D',
   originalFileName: 'IMG_0001.JPG',
   ...overrides,
 });
 
 /** `count` photos at `location`, one every `everyHours` hours from `start`. */
-const series = (start: string, count: number, location: { latitude: number; longitude: number }, everyHours = 1) =>
+const series = (
+  start: string,
+  count: number,
+  location: { latitude: number; longitude: number },
+  everyHours = 1,
+  overrides: Partial<TripAsset> = {},
+) =>
   Array.from({ length: count }, (_, index) =>
     asset(
       new Date(new Date(`${start}Z`).getTime() + index * everyHours * 3_600_000).toISOString().slice(0, 19),
       location,
+      overrides,
     ),
   );
+
+// two phones, e.g. two family members travelling separately
+const phoneA = { make: 'HUAWEI', model: 'NOH-AN00' };
+const phoneB = { make: 'Xiaomi', model: '2203121C' };
+// ~200km east of `away`, closer than the concurrent-trip distance of old
+const elsewhere = { latitude: 31, longitude: 122.1 };
 
 const options = (overrides: Partial<TripOptions> = {}): TripOptions => ({
   homes: [home],
@@ -120,17 +135,14 @@ describe(getAwayPoints.name, () => {
   });
 });
 
-describe(isFarApart.name, () => {
-  it('should tell trips in different places apart', () => {
-    expect(isFarApart([away], [farAway])).toBe(true);
+describe(wereTogether.name, () => {
+  it('should find photos taken together', () => {
+    expect(wereTogether([asset('2025-05-01T08:00:00', away)], [asset('2025-05-01T10:00:00', away)])).toBe(true);
   });
 
-  it('should treat trips with any place in common as the same trip', () => {
-    expect(isFarApart([away, farAway], [{ latitude: 40.5, longitude: 120 }])).toBe(false);
-  });
-
-  it('should not tell anything without places', () => {
-    expect(isFarApart([], [farAway])).toBe(false);
+  it('should tell groups that were only apart', () => {
+    expect(wereTogether([asset('2025-05-01T08:00:00', away)], [asset('2025-05-01T08:00:00', elsewhere)])).toBe(false);
+    expect(wereTogether([asset('2025-05-01T08:00:00', away)], [asset('2025-05-01T12:00:00', away)])).toBe(false);
   });
 });
 
@@ -163,6 +175,86 @@ describe(widenToAlbum.name, () => {
 });
 
 describe(planTrips.name, () => {
+  describe('two groups at the same time', () => {
+    it('should split a stretch where two groups were apart', () => {
+      const assets = [
+        ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
+        ...series('2025-05-01T08:05:00', 6, elsewhere, 6, phoneB),
+      ];
+
+      const { created, suspects } = planTrips(assets, options(), []);
+
+      expect(created.map((trip) => trip.assets.map(({ make }) => make))).toEqual(
+        expect.arrayContaining([Array.from({ length: 6 }, () => 'HUAWEI'), Array.from({ length: 6 }, () => 'Xiaomi')]),
+      );
+      expect(suspects).toEqual([]);
+    });
+
+    it('should keep one trip when the groups met', () => {
+      const assets = [
+        ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
+        ...series('2025-05-01T08:05:00', 4, elsewhere, 6, phoneB),
+        // together for the last day
+        ...series('2025-05-02T08:10:00', 2, away, 6, phoneB),
+      ];
+
+      expect(planTrips(assets, options(), []).created).toHaveLength(1);
+    });
+
+    it('should not split for a single hour apart but flag those photos', () => {
+      const assets = [
+        ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
+        asset('2025-05-01T14:05:00', elsewhere, phoneB),
+        ...series('2025-05-01T20:00:00', 3, away, 6, phoneB),
+      ];
+
+      const { created, suspects } = planTrips(assets, options(), []);
+
+      expect(created).toHaveLength(1);
+      expect(suspects).toHaveLength(2);
+    });
+
+    it('should flag a photo placed with the other group', () => {
+      const wrong = asset('2025-05-01T20:01:00', elsewhere, phoneA);
+      const assets = [
+        ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
+        ...series('2025-05-01T08:05:00', 6, elsewhere, 6, phoneB),
+        wrong,
+      ];
+
+      const { created, suspects } = planTrips(assets, options(), []);
+
+      expect(created).toHaveLength(2);
+      expect(suspects.map(({ assetId }) => assetId)).toEqual([wrong.id]);
+    });
+
+    it('should give a photo without a location to the group its device was with', () => {
+      const unlocated = asset('2025-05-01T21:00:00', null, phoneB);
+      const assets = [
+        ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
+        ...series('2025-05-01T08:05:00', 6, elsewhere, 6, phoneB),
+        unlocated,
+      ];
+
+      const trip = planTrips(assets, options(), []).created.find((trip) => trip.assets.includes(unlocated));
+
+      expect(trip?.assets.every(({ make }) => make === 'Xiaomi')).toBe(true);
+    });
+
+    it('should leave out a photo without a location whose device was at home', () => {
+      const unlocated = asset('2025-05-01T21:00:00', null, phoneB);
+      const assets = [
+        ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
+        ...series('2025-05-01T09:00:00', 3, home, 6, phoneB),
+        unlocated,
+      ];
+
+      const [trip] = planTrips(assets, options(), []).created;
+
+      expect(trip.assets).not.toContainEqual(unlocated);
+    });
+  });
+
   it('should create a trip spanning several days', () => {
     const assets = series('2025-05-01T20:00:00', 6, away, 2);
 

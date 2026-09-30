@@ -30,11 +30,11 @@ import {
   buildTripName,
   countDays,
   describeDay,
+  getAwayAssets,
   getAwayPoints,
   getCoverAssetId,
   getFarthestKm,
   getMainStop,
-  isFarApart,
   isHomeActive,
   pickChineseName,
   PlannedTrip,
@@ -43,6 +43,7 @@ import {
   TripAsset,
   TripHome,
   TripPoint,
+  wereTogether,
   widenToAlbum,
 } from 'src/utils/trip';
 
@@ -55,13 +56,18 @@ const toDate = (value: Date | string) => new Date(value);
 
 const toTripAssets = (
   assets: Array<
-    Omit<TripAsset, 'localDateTime' | 'createdAt'> & { localDateTime: Date | string; createdAt: Date | string }
+    Omit<TripAsset, 'localDateTime' | 'createdAt' | 'takenAt'> & {
+      localDateTime: Date | string;
+      createdAt: Date | string;
+      takenAt: Date | string;
+    }
   >,
 ) =>
   assets.map((asset) => ({
     ...asset,
     localDateTime: toDate(asset.localDateTime),
     createdAt: toDate(asset.createdAt),
+    takenAt: toDate(asset.takenAt),
   }));
 
 type TripRow = Awaited<ReturnType<TripService['tripRepository']['getByOwnerId']>>[number];
@@ -179,16 +185,16 @@ export class TripService extends BaseService {
     const endAt = assets.at(-1)!.localDateTime;
     const trips = await this.tripRepository.getByOwnerId(auth.user.id);
     const { homes } = getPreferences(await this.userRepository.getMetadata(auth.user.id)).trips;
-    const points = getAwayPoints(assets, homes);
+    const away = getAwayAssets(assets, homes);
     const overlapping: typeof trips = [];
     for (const trip of trips) {
       if (trip.albumId === null || toDate(trip.startAt) > endAt || toDate(trip.endAt) < startAt) {
         continue;
       }
 
-      // a trip at the same time somewhere far away, e.g. another family member's, can stay
+      // a trip at the same time that never met this one, e.g. another family member's, can stay
       const tripAssets = toTripAssets(await this.tripRepository.getAlbumAssets(trip.albumId));
-      if (!isFarApart(points, getAwayPoints(tripAssets, homes))) {
+      if (wereTogether(away, getAwayAssets(tripAssets, homes))) {
         overlapping.push(trip);
       }
     }
@@ -293,6 +299,7 @@ export class TripService extends BaseService {
         points: points.get(trip.id),
       })),
     );
+    await this.tripRepository.replaceSuspects(ownerId, plan.suspects);
 
     for (const planned of plan.existing) {
       const trip = trips.find(({ id }) => id === planned.id)!;
