@@ -14,6 +14,7 @@ import {
   TripAsset,
   TripHome,
   TripOptions,
+  widenToAlbum,
 } from 'src/utils/trip';
 import { describe, expect, it } from 'vitest';
 
@@ -103,6 +104,34 @@ describe(splitIntoRuns.name, () => {
     const assets = series('2024-06-01T08:00:00', 3, away);
 
     expect(splitIntoRuns(assets, [{ ...home, from: '2025-01-01' }])).toEqual([]);
+  });
+});
+
+describe(widenToAlbum.name, () => {
+  const window = { startAt: new Date('2025-05-10T08:00:00Z'), endAt: new Date('2025-05-12T20:00:00Z') };
+  const at = (date: string) => new Date(`${date}Z`);
+
+  it('should reach album photos a few days before and after', () => {
+    expect(
+      widenToAlbum(window, [at('2025-05-07T09:00:00'), at('2025-05-11T08:00:00'), at('2025-05-14T10:00:00')]),
+    ).toEqual({
+      startAt: at('2025-05-07T09:00:00'),
+      endAt: at('2025-05-14T10:00:00'),
+    });
+  });
+
+  it('should step from photo to photo', () => {
+    expect(widenToAlbum(window, [at('2025-04-28T08:00:00'), at('2025-05-04T08:00:00')]).startAt).toEqual(
+      at('2025-04-28T08:00:00'),
+    );
+  });
+
+  it('should ignore a photo far from the trip, most likely with a wrong date', () => {
+    expect(widenToAlbum(window, [at('2025-04-20T08:00:00'), at('2034-01-01T08:00:00')])).toEqual(window);
+  });
+
+  it('should never narrow the trip', () => {
+    expect(widenToAlbum(window, [at('2025-05-11T08:00:00')])).toEqual(window);
   });
 });
 

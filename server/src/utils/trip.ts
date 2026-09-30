@@ -7,6 +7,9 @@ export const TRIP_HOME_BREAK_HOURS = 12;
 /** A trip also claims photos taken this long before its first or after its last away photo. */
 export const TRIP_WINDOW_PADDING_HOURS = 12;
 
+/** A photo in a trip's album widens the trip only this close to it; one further away most likely has a wrong date. */
+export const TRIP_ALBUM_MAX_GAP_DAYS = 7;
+
 const HOUR = 60 * 60 * 1000;
 
 export type TripHome = {
@@ -150,6 +153,30 @@ const extend = (trip: PlannedTrip, asset: Located) => {
     trip.endAt = asset.localDateTime;
   }
   trip.locatedAssets.push(asset);
+};
+
+/**
+ * Widens a trip to the photos the user added to its album, stepping outwards from photo to photo while each is at
+ * most the album gap away. It never narrows the trip.
+ */
+export const widenToAlbum = (window: TripWindow, dates: Date[]): TripWindow => {
+  const maxGap = TRIP_ALBUM_MAX_GAP_DAYS * 24 * HOUR;
+  let startAt = window.startAt.getTime();
+  let endAt = window.endAt.getTime();
+  const times = dates.map((date) => date.getTime());
+  for (const time of times.filter((time) => time < startAt).toSorted((a, b) => b - a)) {
+    if (startAt - time > maxGap) {
+      break;
+    }
+    startAt = time;
+  }
+  for (const time of times.filter((time) => time > endAt).toSorted((a, b) => a - b)) {
+    if (time - endAt > maxGap) {
+      break;
+    }
+    endAt = time;
+  }
+  return { startAt: new Date(startAt), endAt: new Date(endAt) };
 };
 
 /**

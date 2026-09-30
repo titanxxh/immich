@@ -156,6 +156,34 @@ describe(TripService.name, () => {
       expect(updated.endAt).toEqual(new Date('2025-05-03T08:00:00Z'));
     });
 
+    it('should widen the dates to the photos the user added to the album', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      await enableTrips(ctx, user.id);
+      const [firstId] = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await sut.handleTripDetection({ userId: user.id });
+      const [trip] = await getTrips(ctx, user.id);
+
+      // e.g. a day spent there that detection split off, and a photo from the way home
+      const [earlyId] = await newPhotos(ctx, user.id, '2025-04-28T08:00:00', 1, hangzhou);
+      const [lateId] = await newPhotos(ctx, user.id, '2025-05-05T08:00:00', 1, {
+        latitude: home.latitude,
+        longitude: home.longitude,
+      });
+      await ctx.get(AlbumRepository).addAssetIds(trip.albumId!, [earlyId, lateId]);
+      await ctx.get(AlbumRepository).removeAssetIds(trip.albumId!, [firstId]);
+      await sut.handleTripDetection({ userId: user.id });
+      await sut.handleTripDetection({ userId: user.id });
+
+      await expect(getTrips(ctx, user.id)).resolves.toEqual([
+        expect.objectContaining({
+          id: trip.id,
+          startAt: new Date('2025-04-28T08:00:00Z'),
+          endAt: new Date('2025-05-05T08:00:00Z'),
+        }),
+      ]);
+    });
+
     it('should rename the album when the trip reaches another city', async () => {
       const { sut, ctx } = setup();
       const { user } = await ctx.newUser();
