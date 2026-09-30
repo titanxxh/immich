@@ -40,6 +40,7 @@ import {
   stripAdmin2Suffix,
   TripAsset,
   TripHome,
+  widenToAlbum,
 } from 'src/utils/trip';
 
 /** How many located photos of a trip are geocoded to name it. */
@@ -239,7 +240,7 @@ export class TripService extends BaseService {
     ]);
 
     // a manual trip spans whatever its album holds, which the user may have changed since the last run;
-    // a detected trip also covers the photos the user added to its album, but never shrinks
+    // a detected trip also covers the photos the user added to its album nearby, but never shrinks
     for (const trip of trips) {
       if (!trip.albumId) {
         continue;
@@ -250,11 +251,18 @@ export class TripService extends BaseService {
         continue;
       }
 
-      const first = toDate(albumAssets[0].localDateTime).getTime();
-      const last = toDate(albumAssets.at(-1)!.localDateTime).getTime();
-      const isManual = trip.source === TripSource.Manual;
-      trip.startAt = new Date(isManual ? first : Math.min(first, toDate(trip.startAt).getTime()));
-      trip.endAt = new Date(isManual ? last : Math.max(last, toDate(trip.endAt).getTime()));
+      if (trip.source === TripSource.Manual) {
+        trip.startAt = albumAssets[0].localDateTime;
+        trip.endAt = albumAssets.at(-1)!.localDateTime;
+        continue;
+      }
+
+      const widened = widenToAlbum(
+        { startAt: toDate(trip.startAt), endAt: toDate(trip.endAt) },
+        albumAssets.map((asset) => toDate(asset.localDateTime)),
+      );
+      trip.startAt = widened.startAt;
+      trip.endAt = widened.endAt;
     }
 
     const plan = planTrips(
