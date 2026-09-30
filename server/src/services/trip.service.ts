@@ -30,9 +30,11 @@ import {
   buildTripName,
   countDays,
   describeDay,
+  getAwayPoints,
   getCoverAssetId,
   getFarthestKm,
   getMainStop,
+  isFarApart,
   isHomeActive,
   pickChineseName,
   PlannedTrip,
@@ -40,6 +42,7 @@ import {
   stripAdmin2Suffix,
   TripAsset,
   TripHome,
+  TripPoint,
   widenToAlbum,
 } from 'src/utils/trip';
 
@@ -175,9 +178,20 @@ export class TripService extends BaseService {
     const startAt = assets[0].localDateTime;
     const endAt = assets.at(-1)!.localDateTime;
     const trips = await this.tripRepository.getByOwnerId(auth.user.id);
-    const overlapping = trips.filter(
-      (trip) => trip.albumId !== null && toDate(trip.startAt) <= endAt && toDate(trip.endAt) >= startAt,
-    );
+    const { homes } = getPreferences(await this.userRepository.getMetadata(auth.user.id)).trips;
+    const points = getAwayPoints(assets, homes);
+    const overlapping: typeof trips = [];
+    for (const trip of trips) {
+      if (trip.albumId === null || toDate(trip.startAt) > endAt || toDate(trip.endAt) < startAt) {
+        continue;
+      }
+
+      // a trip at the same time somewhere far away, e.g. another family member's, can stay
+      const tripAssets = toTripAssets(await this.tripRepository.getAlbumAssets(trip.albumId));
+      if (!isFarApart(points, getAwayPoints(tripAssets, homes))) {
+        overlapping.push(trip);
+      }
+    }
     const replaced = new Set(dto.replaceTripIds);
     const conflicts = overlapping.filter((trip) => !replaced.has(trip.id));
     if (conflicts.length > 0) {
@@ -241,6 +255,8 @@ export class TripService extends BaseService {
 
     // a manual trip spans whatever its album holds, which the user may have changed since the last run;
     // a detected trip also covers the photos the user added to its album nearby, but never shrinks
+    // where each trip went, so trips at the same time in different places each get their own photos
+    const points = new Map<string, TripPoint[]>();
     for (const trip of trips) {
       if (!trip.albumId) {
         continue;
@@ -250,6 +266,8 @@ export class TripService extends BaseService {
       if (albumAssets.length === 0) {
         continue;
       }
+
+      points.set(trip.id, getAwayPoints(toTripAssets(albumAssets), options.homes));
 
       if (trip.source === TripSource.Manual) {
         trip.startAt = albumAssets[0].localDateTime;
@@ -268,7 +286,12 @@ export class TripService extends BaseService {
     const plan = planTrips(
       toTripAssets(assets),
       options,
-      trips.map((trip) => ({ id: trip.id, startAt: toDate(trip.startAt), endAt: toDate(trip.endAt) })),
+      trips.map((trip) => ({
+        id: trip.id,
+        startAt: toDate(trip.startAt),
+        endAt: toDate(trip.endAt),
+        points: points.get(trip.id),
+      })),
     );
 
     for (const planned of plan.existing) {

@@ -4,9 +4,11 @@ import {
   buildStops,
   buildTripName,
   describeDay,
+  getAwayPoints,
   getCoverAssetId,
   getFarthestKm,
   getMainStop,
+  isFarApart,
   pickChineseName,
   planTrips,
   splitIntoRuns,
@@ -107,6 +109,31 @@ describe(splitIntoRuns.name, () => {
   });
 });
 
+describe(getAwayPoints.name, () => {
+  it('should list the stops away from home', () => {
+    const points = getAwayPoints(
+      [...series('2025-05-01T08:00:00', 2, home), ...series('2025-05-01T20:00:00', 2, farAway)],
+      [home],
+    );
+
+    expect(points).toEqual([{ latitude: 40, longitude: 120 }]);
+  });
+});
+
+describe(isFarApart.name, () => {
+  it('should tell trips in different places apart', () => {
+    expect(isFarApart([away], [farAway])).toBe(true);
+  });
+
+  it('should treat trips with any place in common as the same trip', () => {
+    expect(isFarApart([away, farAway], [{ latitude: 40.5, longitude: 120 }])).toBe(false);
+  });
+
+  it('should not tell anything without places', () => {
+    expect(isFarApart([], [farAway])).toBe(false);
+  });
+});
+
 describe(widenToAlbum.name, () => {
   const window = { startAt: new Date('2025-05-10T08:00:00Z'), endAt: new Date('2025-05-12T20:00:00Z') };
   const at = (date: string) => new Date(`${date}Z`);
@@ -159,6 +186,35 @@ describe(planTrips.name, () => {
 
     expect(planTrips(assets, options(), []).created).toEqual([]);
     expect(planTrips(assets, options({ includeDayTrips: true }), []).created).toHaveLength(1);
+  });
+
+  it('should give each photo to the nearest of two trips at the same time', () => {
+    const window = { startAt: new Date('2025-05-01T00:00:00Z'), endAt: new Date('2025-05-05T00:00:00Z') };
+    const assets = [...series('2025-05-01T10:00:00', 3, away, 24), ...series('2025-05-01T22:00:00', 3, farAway, 24)];
+
+    const { existing } = planTrips(assets, options(), [
+      { id: 'near', ...window, points: [away] },
+      { id: 'far', ...window, points: [farAway] },
+    ]);
+
+    expect(existing.map(({ locatedAssets }) => locatedAssets.map(({ latitude }) => latitude))).toEqual([
+      [31, 31, 31],
+      [40, 40, 40],
+    ]);
+  });
+
+  it('should give a photo without a location to the trip of the nearest located photo', () => {
+    const window = { startAt: new Date('2025-05-01T00:00:00Z'), endAt: new Date('2025-05-05T00:00:00Z') };
+    const unlocated = asset('2025-05-03T09:00:00', null);
+    const assets = [asset('2025-05-01T10:00:00', away), asset('2025-05-03T10:00:00', farAway), unlocated];
+
+    const { existing } = planTrips(assets, options(), [
+      { id: 'near', ...window, points: [away] },
+      { id: 'far', ...window, points: [farAway] },
+    ]);
+
+    expect(existing[1].assets).toContainEqual(unlocated);
+    expect(existing[0].assets).not.toContainEqual(unlocated);
   });
 
   it('should add camera originals without a location taken during the trip', () => {
