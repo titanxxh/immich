@@ -17109,6 +17109,68 @@
         "x-immich-permission": "album.read"
       }
     },
+    "/trips/{id}/merge": {
+      "post": {
+        "description": "Merge a trip at the same time into this one: its photos are added to this album and its album is deleted.",
+        "operationId": "mergeTrip",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripMergeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Merge trips",
+        "tags": [
+          "Users"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "album.update"
+      }
+    },
     "/users": {
       "get": {
         "description": "Retrieve a list of all users on the server.",
@@ -33041,6 +33103,13 @@
             "minimum": -9007199254740991,
             "type": "integer"
           },
+          "concurrentTrips": {
+            "description": "Other trips at the same time, e.g. of family members travelling separately",
+            "items": {
+              "$ref": "#/components/schemas/TripResponseDto"
+            },
+            "type": "array"
+          },
           "dayCount": {
             "description": "Number of calendar days with photos",
             "maximum": 9007199254740991,
@@ -33121,6 +33190,7 @@
         "required": [
           "albumId",
           "assetCount",
+          "concurrentTrips",
           "dayCount",
           "days",
           "endAt",
@@ -33210,6 +33280,20 @@
           "from",
           "isLongJump",
           "to"
+        ],
+        "type": "object"
+      },
+      "TripMergeDto": {
+        "properties": {
+          "tripId": {
+            "description": "The trip at the same time to merge into this one; its album is deleted",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tripId"
         ],
         "type": "object"
       },

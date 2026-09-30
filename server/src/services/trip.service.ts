@@ -5,6 +5,7 @@ import { AuthDto } from 'src/dtos/auth.dto';
 import {
   TripCreateDto,
   TripDetailResponseDto,
+  TripMergeDto,
   TripPreviewDto,
   TripPreviewResponseDto,
   TripResponseDto,
@@ -153,11 +154,19 @@ export class TripService extends BaseService {
       describeDay(day.stops.map((index) => ({ place: stopPlaces[index], count: stops[index].assetIds.length }))),
     );
     const farthestKm = getFarthestKm(stops, preferences.trips.homes);
+    const concurrentTrips = (await this.tripRepository.getByOwnerId(auth.user.id)).filter(
+      (other) =>
+        other.id !== trip.id &&
+        other.albumId !== null &&
+        toDate(other.startAt) <= toDate(trip.endAt) &&
+        toDate(other.endAt) >= toDate(trip.startAt),
+    );
 
     return {
       ...mapTrip(trip),
       places: [...new Set(dayPlaces.flatMap((place) => place.split(' → ')).filter(Boolean))],
       farthestKm: farthestKm === undefined ? null : Math.round(farthestKm),
+      concurrentTrips: concurrentTrips.map((other) => mapTrip(other)),
       days: days.map((day, index) => ({ ...day, place: dayPlaces[index] })),
       stops: stops.map((stop, index) => ({
         latitude: stop.latitude,
@@ -224,6 +233,34 @@ export class TripService extends BaseService {
     await this.refreshSummary({ ...created, albumName: album?.albumName ?? '', albumThumbnailAssetId: null });
 
     return mapTrip((await this.tripRepository.getById(created.id))!);
+  }
+
+  /** Merges a trip at the same time into this one, e.g. when detection split a trip that was taken together. */
+  async merge(auth: AuthDto, id: string, dto: TripMergeDto): Promise<TripResponseDto> {
+    if (id === dto.tripId) {
+      throw new BadRequestException('Cannot merge a trip into itself');
+    }
+
+    const trip = await this.findTrip(auth, id);
+    const other = await this.findTrip(auth, dto.tripId);
+    await this.requireAccess({ auth, permission: Permission.AlbumUpdate, ids: [trip.albumId!] });
+    await this.requireAccess({ auth, permission: Permission.AlbumDelete, ids: [other.albumId!] });
+
+    const assets = await this.tripRepository.getAlbumAssets(other.albumId!);
+    await this.albumRepository.addAssetIds(
+      trip.albumId!,
+      assets.map((asset) => asset.id),
+    );
+    // the merged trip is dismissed first, so deleting its album does not leave a trip to recreate
+    await this.dismissOrDelete(other);
+    await this.albumRepository.delete(other.albumId!);
+
+    const startAt = toDate(trip.startAt) < toDate(other.startAt) ? trip.startAt : other.startAt;
+    const endAt = toDate(trip.endAt) > toDate(other.endAt) ? trip.endAt : other.endAt;
+    await this.tripRepository.update(trip.id, { startAt: toDate(startAt), endAt: toDate(endAt) });
+    await this.refreshSummary((await this.tripRepository.getById(trip.id))!);
+
+    return mapTrip((await this.tripRepository.getById(trip.id))!);
   }
 
   async remove(auth: AuthDto, id: string) {

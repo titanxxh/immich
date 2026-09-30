@@ -5,6 +5,7 @@ import { AuthDto } from 'src/dtos/auth.dto';
 import {
   TripCreateDto,
   TripDetailResponseDto,
+  TripMergeDto,
   TripPreviewDto,
   TripPreviewResponseDto,
   TripResponseDto,
@@ -76,6 +77,19 @@ export class TripController {
   })
   getTrip(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto): Promise<TripDetailResponseDto> {
     return this.service.get(auth, id);
+  }
+
+  @Post(':id/merge')
+  @HttpCode(HttpStatus.OK)
+  @Authenticated({ permission: Permission.AlbumUpdate })
+  @Endpoint({
+    summary: 'Merge trips',
+    description:
+      'Merge a trip at the same time into this one: its photos are added to this album and its album is deleted.',
+    history: new HistoryBuilder().added('v3.2.4'),
+  })
+  mergeTrip(@Auth() auth: AuthDto, @Param() { id }: UUIDParamDto, @Body() dto: TripMergeDto): Promise<TripResponseDto> {
+    return this.service.merge(auth, id, dto);
   }
 
   @Delete(':id')

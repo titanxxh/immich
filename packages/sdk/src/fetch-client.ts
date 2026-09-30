@@ -3370,6 +3370,8 @@ export type TripDetailResponseDto = {
     albumId: string;
     /** Number of photos */
     assetCount: number;
+    /** Other trips at the same time, e.g. of family members travelling separately */
+    concurrentTrips: TripResponseDto[];
     /** Number of calendar days with photos */
     dayCount: number;
     days: TripDayDto[];
@@ -3392,6 +3394,10 @@ export type TripDetailResponseDto = {
     stops: TripStopDto[];
     /** Album cover */
     thumbnailAssetId: string | null;
+};
+export type TripMergeDto = {
+    /** The trip at the same time to merge into this one; its album is deleted */
+    tripId: string;
 };
 export type UserUpdateMeDto = {
     avatarColor?: (UserAvatarColor) | null;
@@ -7870,6 +7876,22 @@ export function getTrip({ id }: {
     }>(`/trips/${encodeURIComponent(id)}`, {
         ...opts
     }));
+}
+/**
+ * Merge trips
+ */
+export function mergeTrip({ id, tripMergeDto }: {
+    id: string;
+    tripMergeDto: TripMergeDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: TripResponseDto;
+    }>(`/trips/${encodeURIComponent(id)}/merge`, oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: tripMergeDto
+    })));
 }
 /**
  * Get all users
