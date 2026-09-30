@@ -17,7 +17,7 @@ A trip whose photos all fall on a single calendar day. It only gets an album whe
 _Avoid_: Excursion, outing
 
 **Trip album**:
-The ordinary album created for a trip. The user can rename or edit it freely; deleting it dismisses the trip.
+The ordinary album created for a trip. The user can rename or edit it freely; deleting it dismisses the trip. Photos the user adds to it widen the trip's dates, but removing photos never narrows them.
 _Avoid_: Smart album, auto album
 
 **Dismissed trip**:

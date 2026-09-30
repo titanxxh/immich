@@ -238,17 +238,23 @@ export class TripService extends BaseService {
       this.tripRepository.getByOwnerId(ownerId),
     ]);
 
-    // a manual trip spans whatever its album holds, which the user may have changed since the last run
+    // a manual trip spans whatever its album holds, which the user may have changed since the last run;
+    // a detected trip also covers the photos the user added to its album, but never shrinks
     for (const trip of trips) {
-      if (trip.source !== TripSource.Manual || !trip.albumId) {
+      if (!trip.albumId) {
         continue;
       }
 
-      const albumAssets = await this.tripRepository.getAlbumAssets(trip.albumId!);
-      if (albumAssets.length > 0) {
-        trip.startAt = albumAssets[0].localDateTime;
-        trip.endAt = albumAssets.at(-1)!.localDateTime;
+      const albumAssets = await this.tripRepository.getAlbumAssets(trip.albumId);
+      if (albumAssets.length === 0) {
+        continue;
       }
+
+      const first = toDate(albumAssets[0].localDateTime).getTime();
+      const last = toDate(albumAssets.at(-1)!.localDateTime).getTime();
+      const isManual = trip.source === TripSource.Manual;
+      trip.startAt = new Date(isManual ? first : Math.min(first, toDate(trip.startAt).getTime()));
+      trip.endAt = new Date(isManual ? last : Math.max(last, toDate(trip.endAt).getTime()));
     }
 
     const plan = planTrips(
