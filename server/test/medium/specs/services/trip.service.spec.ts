@@ -5,7 +5,7 @@ import { AlbumRepository } from 'src/repositories/album.repository';
 import { AssetRepository } from 'src/repositories/asset.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
 import { LoggingRepository } from 'src/repositories/logging.repository';
-import { TripRepository } from 'src/repositories/trip.repository';
+import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY, TripRepository } from 'src/repositories/trip.repository';
 import { UserRepository } from 'src/repositories/user.repository';
 import { DB } from 'src/schema';
 import { TripService } from 'src/services/trip.service';
@@ -48,12 +48,13 @@ const newPhotos = async (
   start: string,
   count: number,
   location: { latitude: number; longitude: number },
+  device?: { make: string; model: string },
 ) => {
   const ids: string[] = [];
   for (let index = 0; index < count; index++) {
     const localDateTime = new Date(new Date(`${start}Z`).getTime() + index * 12 * 3_600_000);
     const { asset } = await ctx.newAsset({ ownerId, localDateTime, fileCreatedAt: localDateTime });
-    await ctx.newExif({ assetId: asset.id, ...location, make: 'Canon' });
+    await ctx.newExif({ assetId: asset.id, ...location, ...(device ?? { make: 'Canon', model: 'EOS 80D' }) });
     ids.push(asset.id);
   }
   return ids;
@@ -184,6 +185,48 @@ describe(TripService.name, () => {
           endAt: new Date('2025-05-05T08:00:00Z'),
         }),
       ]);
+    });
+
+    it('should give two groups apart at the same time a trip each', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      await enableTrips(ctx, user.id);
+      const phoneA = { make: 'HUAWEI', model: 'NOH-AN00' };
+      const phoneB = { make: 'Xiaomi', model: '2203121C' };
+      const aIds = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou, phoneA);
+      const bIds = await newPhotos(ctx, user.id, '2025-05-01T08:05:00', 4, suzhou, phoneB);
+
+      await sut.handleTripDetection({ userId: user.id });
+
+      const trips = await getTrips(ctx, user.id);
+      expect(trips).toHaveLength(2);
+      const albums = await Promise.all(trips.map((trip) => getAlbumAssetIds(ctx, trip.albumId!)));
+      expect(albums).toEqual(expect.arrayContaining([aIds.toSorted(), bIds.toSorted()]));
+    });
+
+    it('should flag photos apart for too short a time and respect the ones the user confirmed', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      await enableTrips(ctx, user.id);
+      await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou, { make: 'HUAWEI', model: 'NOH-AN00' });
+      const [strayId] = await newPhotos(ctx, user.id, '2025-05-01T08:05:00', 1, suzhou, {
+        make: 'Xiaomi',
+        model: '2203121C',
+      });
+      const getFlags = (key: string) =>
+        ctx.database.selectFrom('asset_metadata').select('assetId').where('key', '=', key).execute();
+
+      await sut.handleTripDetection({ userId: user.id });
+      await expect(getFlags(TRIP_SUSPECT_KEY)).resolves.toHaveLength(2);
+
+      await ctx.database
+        .insertInto('asset_metadata')
+        .values({ assetId: strayId, key: TRIP_SUSPECT_OK_KEY, value: {} })
+        .execute();
+      await sut.handleTripDetection({ userId: user.id });
+      const flagged = await getFlags(TRIP_SUSPECT_KEY);
+      expect(flagged).toHaveLength(1);
+      expect(flagged[0].assetId).not.toBe(strayId);
     });
 
     it('should rename the album when the trip reaches another city', async () => {

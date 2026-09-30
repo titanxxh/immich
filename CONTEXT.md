@@ -13,8 +13,12 @@ A stretch of photos taken away from every home, not interrupted by 12 hours at h
 _Avoid_: Journey, vacation, event
 
 **Concurrent trips**:
-Trips that overlap in time but whose places away from home are all more than 300 km apart, such as two family members travelling separately. They can both be trips; each takes the photos taken nearest to it.
+Trips at the same time by two groups apart, such as family members travelling separately. Two groups are apart when photos by two different devices are taken within 15 minutes of each other more than 30 km apart, in at least two different hours with at least three photos on each side; they met, and stay one trip, when their photos were ever taken within 3 hours and 30 km of each other. Detection gives each group of a new stretch its own trip; existing trips are never split.
 _Avoid_: Parallel trips, overlapping trips
+
+**Suspect location**:
+A located photo that contradicts one taken at the same moment: either apart from the rest too briefly to split a trip, or placed with the other group. Trip detection flags it for the user to check on the Locate page, unless the user said it is placed right.
+_Avoid_: Wrong location, bad GPS
 
 **Day trip**:
 A trip whose photos all fall on a single calendar day. It only gets an album when the user asks for day trips.
