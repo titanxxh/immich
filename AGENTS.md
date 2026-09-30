@@ -1,3 +1,7 @@
+## Fork features
+
+`docs/fork-features.md` lists what this fork adds on top of upstream Immich. Any PR that adds, changes or removes a feature updates it in the same PR.
+
 ## Agent skills
 
 ### Issue tracker
