@@ -10,6 +10,9 @@ export const TRIP_WINDOW_PADDING_HOURS = 12;
 /** A photo in a trip's album widens the trip only this close to it; one further away most likely has a wrong date. */
 export const TRIP_ALBUM_MAX_GAP_DAYS = 7;
 
+/** Trips at the same time are told apart, e.g. two family members travelling separately, when this far apart. */
+export const TRIP_CONCURRENT_MIN_KM = 300;
+
 const HOUR = 60 * 60 * 1000;
 
 export type TripHome = {
@@ -42,7 +45,10 @@ export type TripAsset = {
 
 export type TripWindow = { startAt: Date; endAt: Date };
 
-export type ExistingTrip = TripWindow & { id: string };
+export type TripPoint = { latitude: number; longitude: number };
+
+/** `points` are where the trip went, used to tell apart trips that overlap in time. */
+export type ExistingTrip = TripWindow & { id: string; points?: TripPoint[] };
 
 export type PlannedTrip = TripWindow & {
   /** the away photos that located the trip, used for naming */
@@ -57,6 +63,9 @@ export type TripPlan = {
 };
 
 const toLocalDate = (date: Date) => date.toISOString().slice(0, 10);
+
+const distanceToPoints = (points: TripPoint[] | undefined, point: TripPoint) =>
+  points && points.length > 0 ? Math.min(...points.map((other) => distanceKm(other, point))) : Infinity;
 
 export const distanceKm = (a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) => {
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -179,6 +188,10 @@ export const widenToAlbum = (window: TripWindow, dates: Date[]): TripWindow => {
   return { startAt: new Date(startAt), endAt: new Date(endAt) };
 };
 
+/** Whether two trips went to places far enough apart to be separate trips even when they overlap in time. */
+export const isFarApart = (a: TripPoint[], b: TripPoint[]) =>
+  a.length > 0 && b.length > 0 && a.every((point) => distanceToPoints(b, point) > TRIP_CONCURRENT_MIN_KM);
+
 /**
  * Clusters all of a user's photos into trips and matches them to the trips already known. Existing trips are never
  * merged or split: a run touching one or more of them extends them instead of becoming a new trip.
@@ -188,6 +201,7 @@ export const planTrips = (assets: TripAsset[], options: TripOptions, existingTri
     id: trip.id,
     startAt: trip.startAt,
     endAt: trip.endAt,
+    points: trip.points,
     locatedAssets: [] as TripAsset[],
     assets: [] as TripAsset[],
   }));
@@ -210,8 +224,12 @@ export const planTrips = (assets: TripAsset[], options: TripOptions, existingTri
     // decide against the windows as they were before this run touched them, so the order of assets does not matter
     const windows = overlapping.map((trip) => ({ trip, startAt: trip.startAt, endAt: trip.endAt }));
     for (const asset of run) {
+      // trips at the same time in different places each take the photos nearest to them
+      const containing = windows
+        .filter((window) => paddedContains(window, asset.localDateTime))
+        .toSorted((a, b) => distanceToPoints(a.trip.points, asset) - distanceToPoints(b.trip.points, asset));
       const target =
-        windows.find((window) => paddedContains(window, asset.localDateTime)) ??
+        containing[0] ??
         windows.toSorted(
           (a, b) => distanceToWindow(a, asset.localDateTime) - distanceToWindow(b, asset.localDateTime),
         )[0];
@@ -229,7 +247,16 @@ export const planTrips = (assets: TripAsset[], options: TripOptions, existingTri
       continue;
     }
 
-    const trip = trips.find((trip) => paddedContains(trip, asset.localDateTime));
+    // with trips at the same time, the photo goes where the located photo nearest in time went
+    const candidates = trips.filter((trip) => paddedContains(trip, asset.localDateTime));
+    const nearestInTime = (trip: PlannedTrip) =>
+      Math.min(
+        ...trip.locatedAssets.map((located) =>
+          Math.abs(located.localDateTime.getTime() - asset.localDateTime.getTime()),
+        ),
+      );
+    const trip =
+      candidates.length > 1 ? candidates.toSorted((a, b) => nearestInTime(a) - nearestInTime(b))[0] : candidates[0];
     trip?.assets.push(asset);
   }
 
@@ -414,6 +441,12 @@ export const buildDays = (assets: TripAsset[], stops: TripStop[]): TripDay[] => 
 };
 
 /** The stop with the most photos, which stands for the whole trip on a map and provides its cover. */
+/** Where a trip went: the centres of its stops, leaving out those at a home. */
+export const getAwayPoints = (assets: TripAsset[], homes: TripHome[]): TripPoint[] =>
+  buildStops(assets)
+    .filter((stop) => homes.every((home) => !isHomeActive(home, stop.date) || distanceKm(home, stop) > home.radiusKm))
+    .map(({ latitude, longitude }) => ({ latitude, longitude }));
+
 export const getMainStop = (stops: TripStop[]) => {
   let main: TripStop | undefined;
   for (const stop of stops) {

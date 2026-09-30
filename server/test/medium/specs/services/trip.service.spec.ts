@@ -21,6 +21,8 @@ const home: TripHome = { name: 'Home', latitude: 30, longitude: 120, radiusKm: 5
 const hangzhou = { latitude: 31, longitude: 120 };
 // ~95km east of hangzhou
 const suzhou = { latitude: 31, longitude: 121 };
+// ~1000km north of home
+const beijing = { latitude: 40, longitude: 116 };
 
 const setup = (db?: Kysely<DB>) => {
   return newMediumService(TripService, {
@@ -393,6 +395,36 @@ describe(TripService.name, () => {
       await expect(sut.getAll(auth, {})).resolves.toEqual([expect.objectContaining({ id: manual.id })]);
       // the replaced trip keeps its album as an ordinary album
       await expect(ctx.get(AlbumRepository).getById(detected.albumId, { withAssets: false })).resolves.toBeDefined();
+    });
+
+    it('should keep a detected trip at the same time somewhere far away', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await enableTrips(ctx, user.id);
+      await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou);
+      await sut.handleTripDetection({ userId: user.id });
+      const [detected] = await sut.getAll(auth, {});
+      // e.g. another family member's photos from a separate trip, moved to their own album
+      const album = await newAlbum(ctx, user.id, await newPhotos(ctx, user.id, '2025-05-01T09:00:00', 4, beijing));
+
+      const manual = await sut.create(auth, { albumId: album.id });
+
+      await expect(sut.getAll(auth, {})).resolves.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: detected.id }),
+          expect.objectContaining({ id: manual.id }),
+        ]),
+      );
+
+      // later photos go to the trip they were taken on
+      const lateIds = await newPhotos(ctx, user.id, '2025-05-02T21:00:00', 1, hangzhou);
+      await newPhotos(ctx, user.id, '2025-05-02T22:00:00', 1, beijing);
+      await sut.handleTripDetection({ userId: user.id });
+
+      const detectedIds = await getAlbumAssetIds(ctx, detected.albumId);
+      expect(detectedIds).toEqual(expect.arrayContaining(lateIds));
+      expect(detectedIds).toHaveLength(5);
     });
 
     it('should not mark an album twice', async () => {

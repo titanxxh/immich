@@ -12,6 +12,10 @@ _Avoid_: Base, residence
 A stretch of photos taken away from every home, not interrupted by 12 hours at home or by a gap longer than 36 hours, with at least the minimum number of located photos.
 _Avoid_: Journey, vacation, event
 
+**Concurrent trips**:
+Trips that overlap in time but whose places away from home are all more than 300 km apart, such as two family members travelling separately. They can both be trips; each takes the photos taken nearest to it.
+_Avoid_: Parallel trips, overlapping trips
+
 **Day trip**:
 A trip whose photos all fall on a single calendar day. It only gets an album when the user asks for day trips.
 _Avoid_: Excursion, outing
