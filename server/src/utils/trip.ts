@@ -307,19 +307,22 @@ export const splitIntoGroups = (run: Located[]): { groups: Located[][]; suspects
     color.set(device, zero >= one ? 0 : 1);
   }
 
-  // the rest go with the coloured photo nearest in time
+  // the rest, e.g. images without a device, go with the group they were placed next to around that time,
+  // or else with the coloured photo nearest in time
   const coloured = sorted.filter((asset) => color.has(getDevice(asset)!));
   const sideOf = (asset: Located) => {
     const device = getDevice(asset);
     if (device && color.has(device)) {
       return color.get(device)!;
     }
+    const gap = (other: Located) => Math.abs(other.takenAt.getTime() - asset.takenAt.getTime());
     let nearest = coloured[0];
     for (const other of coloured) {
-      if (
-        Math.abs(other.takenAt.getTime() - asset.takenAt.getTime()) <
-        Math.abs(nearest.takenAt.getTime() - asset.takenAt.getTime())
-      ) {
+      const isCloser =
+        gap(other) <= MEET_MS && gap(nearest) <= MEET_MS
+          ? distanceKm(other, asset) < distanceKm(nearest, asset)
+          : gap(other) < gap(nearest);
+      if (isCloser) {
         nearest = other;
       }
     }
@@ -349,7 +352,8 @@ export const splitIntoGroups = (run: Located[]): { groups: Located[][]; suspects
   for (const asset of run) {
     sides[sideOf(asset)].push(asset);
   }
-  const trusted = sides.map((side) => side.filter((asset) => !suspects.has(asset.id)));
+  // only photos with a device tell whether the groups met; an image without one proves nothing
+  const trusted = sides.map((side) => side.filter((asset) => getDevice(asset) && !suspects.has(asset.id)));
   const hours = new Set(apart.map(([a]) => Math.floor(a.takenAt.getTime() / HOUR))).size;
   const isSure = hours >= TRIP_APART_MIN_HOURS && trusted.every((side) => side.length >= TRIP_APART_MIN_ASSETS);
   if (!isSure) {

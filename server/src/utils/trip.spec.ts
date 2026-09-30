@@ -190,6 +190,21 @@ describe(planTrips.name, () => {
       expect(suspects).toEqual([]);
     });
 
+    it('should split even when an image without a device sits with one group', () => {
+      // e.g. an image saved from a chat app by one group, taken right after a photo of the other group
+      const saved = asset('2025-05-01T14:01:00', elsewhere, { make: null, model: null });
+      const assets = [
+        ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
+        ...series('2025-05-01T08:05:00', 6, elsewhere, 6, phoneB),
+        saved,
+      ];
+
+      const { created } = planTrips(assets, options(), []);
+
+      expect(created).toHaveLength(2);
+      expect(created.find((trip) => trip.locatedAssets.includes(saved))?.locatedAssets[0].make).toBe('Xiaomi');
+    });
+
     it('should keep one trip when the groups met', () => {
       const assets = [
         ...series('2025-05-01T08:00:00', 6, away, 6, phoneA),
