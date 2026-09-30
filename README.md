@@ -1,3 +1,6 @@
+> [!NOTE]
+> This is a personal fork of [Immich](https://github.com/immich-app/immich), with features I wanted for my own library: trips, locating photos, picking from bursts and footprints. See [docs/fork-features.md](docs/fork-features.md) for what it adds. Everything below is the upstream README.
+
 <p align="center"> 
   <br/>
   <a href="https://opensource.org/license/agpl-v3"><img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg?color=3F51B5&style=for-the-badge&label=License&logoColor=000000&labelColor=ececec" alt="License: AGPLv3"></a>
