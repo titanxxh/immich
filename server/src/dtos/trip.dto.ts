@@ -92,9 +92,19 @@ const TripDetailResponseSchema = TripResponseSchema.extend({
   days: z.array(TripDaySchema),
   stops: z.array(TripStopSchema),
   legs: z.array(TripLegSchema),
+  concurrentTrips: z
+    .array(TripResponseSchema)
+    .describe('Other trips at the same time, e.g. of family members travelling separately'),
 }).meta({ id: 'TripDetailResponseDto' });
+
+const TripMergeSchema = z
+  .object({
+    tripId: z.uuidv4().describe('The trip at the same time to merge into this one; its album is deleted'),
+  })
+  .meta({ id: 'TripMergeDto' });
 
 export class TripSearchDto extends createZodDto(TripSearchSchema) {}
 export class TripCreateDto extends createZodDto(TripCreateSchema) {}
 export class TripResponseDto extends createZodDto(TripResponseSchema) {}
 export class TripDetailResponseDto extends createZodDto(TripDetailResponseSchema) {}
+export class TripMergeDto extends createZodDto(TripMergeSchema) {}

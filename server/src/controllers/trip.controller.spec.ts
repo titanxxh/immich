@@ -87,6 +87,22 @@ describe(TripController.name, () => {
     });
   });
 
+  describe('POST /trips/:id/merge', () => {
+    it('should merge a trip into another', async () => {
+      const [id, tripId] = [factory.uuid(), factory.uuid()];
+      const { status } = await request(ctx.getHttpServer()).post(`/trips/${id}/merge`).send({ tripId });
+      expect(status).toBe(200);
+      expect(service.merge).toHaveBeenCalledWith(undefined, id, { tripId });
+    });
+
+    it('should require a valid trip id', async () => {
+      const { status } = await request(ctx.getHttpServer())
+        .post(`/trips/${factory.uuid()}/merge`)
+        .send({ tripId: 'invalid' });
+      expect(status).toBe(400);
+    });
+  });
+
   describe('DELETE /trips/:id', () => {
     it('should unmark a trip', async () => {
       const { status } = await request(ctx.getHttpServer()).delete(`/trips/${factory.uuid()}`);

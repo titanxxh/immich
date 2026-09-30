@@ -721,7 +721,15 @@
     {/if}
   </div>
   {#if trip && viewMode === AlbumPageViewMode.VIEW}
-    <TripPanel {trip} selectedDate={selectedTripDate} onSelectDay={handleSelectTripDay} />
+    <TripPanel
+      {trip}
+      selectedDate={selectedTripDate}
+      onSelectDay={handleSelectTripDay}
+      onMerged={async () => {
+        await refreshAlbum();
+        await loadTrip(album.id);
+      }}
+    />
   {/if}
   {#if album.albumUsers.length > 1 && album && assetViewerManager.isShowActivityPanel && authManager.authenticated && !assetViewerManager.isViewing}
     <div class="flex">

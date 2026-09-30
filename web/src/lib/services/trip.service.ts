@@ -1,4 +1,4 @@
-import { createTrip, isHttpError, removeTrip, type TripResponseDto } from '@immich/sdk';
+import { createTrip, isHttpError, mergeTrip, removeTrip, type TripResponseDto } from '@immich/sdk';
 import { modalManager, toastManager } from '@immich/ui';
 import { handleError } from '$lib/utils/handle-error';
 import { getFormatter } from '$lib/utils/i18n';
@@ -46,6 +46,26 @@ export const unmarkTrip = async (tripId: string) => {
     return true;
   } catch (error) {
     handleError(error, $t('errors.unable_to_unmark_trip'));
+    return false;
+  }
+};
+
+/** Merges a trip at the same time into this one, after asking; the other trip's album is deleted. */
+export const mergeTrips = async (tripId: string, other: TripResponseDto) => {
+  const $t = await getFormatter();
+  const isConfirmed = await modalManager.showDialog({
+    prompt: $t('trip_merge_prompt', { values: { trip: `《${other.name}》` } }),
+  });
+  if (!isConfirmed) {
+    return false;
+  }
+
+  try {
+    await mergeTrip({ id: tripId, tripMergeDto: { tripId: other.id } });
+    toastManager.primary($t('trip_merged'));
+    return true;
+  } catch (error) {
+    handleError(error, $t('errors.unable_to_merge_trips'));
     return false;
   }
 };

@@ -403,6 +403,53 @@ describe(TripService.name, () => {
     });
   });
 
+  describe('trips at the same time', () => {
+    const phoneA = { make: 'HUAWEI', model: 'NOH-AN00' };
+    const phoneB = { make: 'Xiaomi', model: '2203121C' };
+
+    const setupApart = async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      await enableTrips(ctx, user.id);
+      const aIds = await newPhotos(ctx, user.id, '2025-05-01T08:00:00', 4, hangzhou, phoneA);
+      const bIds = await newPhotos(ctx, user.id, '2025-05-01T08:05:00', 4, suzhou, phoneB);
+      await sut.handleTripDetection({ userId: user.id });
+      const trips = await sut.getAll(auth, {});
+      return { sut, ctx, auth, aIds, bIds, trips };
+    };
+
+    it('should list the other trip at the same time', async () => {
+      const { sut, auth, trips } = await setupApart();
+
+      const detail = await sut.get(auth, trips[0].id);
+
+      expect(detail.concurrentTrips).toEqual([expect.objectContaining({ id: trips[1].id })]);
+    });
+
+    it('should merge the other trip into this one', async () => {
+      const { sut, ctx, auth, aIds, bIds, trips } = await setupApart();
+      const [kept, merged] = trips;
+
+      await sut.merge(auth, kept.id, { tripId: merged.id });
+
+      await expect(getAlbumAssetIds(ctx, kept.albumId)).resolves.toEqual([...aIds, ...bIds].toSorted());
+      await expect(sut.getAll(auth, {})).resolves.toEqual([expect.objectContaining({ id: kept.id, assetCount: 8 })]);
+      await expect(ctx.get(AlbumRepository).getById(merged.albumId, { withAssets: false })).resolves.toBeUndefined();
+
+      // detection does not bring the merged trip back
+      await sut.handleTripDetection({ userId: auth.user.id });
+      await expect(sut.getAll(auth, {})).resolves.toHaveLength(1);
+      await expect(getAlbumAssetIds(ctx, kept.albumId)).resolves.toHaveLength(8);
+    });
+
+    it('should not merge a trip into itself', async () => {
+      const { sut, auth, trips } = await setupApart();
+
+      await expect(sut.merge(auth, trips[0].id, { tripId: trips[0].id })).rejects.toThrow();
+    });
+  });
+
   describe('create', () => {
     it('should mark an album as a manual trip that detection leaves alone', async () => {
       const { sut, ctx } = setup();

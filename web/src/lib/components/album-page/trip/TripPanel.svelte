@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { mergeTrips } from '$lib/services/trip.service';
   import { locale } from '$lib/stores/preferences.store';
   import type { TripDayDto, TripDetailResponseDto } from '@immich/sdk';
   import { t } from 'svelte-i18n';
@@ -9,9 +10,10 @@
     trip: TripDetailResponseDto;
     selectedDate?: string;
     onSelectDay: (day?: TripDayDto) => void;
+    onMerged?: () => void;
   };
 
-  let { trip, selectedDate, onSelectDay }: Props = $props();
+  let { trip, selectedDate, onSelectDay, onMerged }: Props = $props();
 
   let dayElements = $state<Record<string, HTMLElement>>({});
 
@@ -40,6 +42,24 @@
     {/if}
     <span>{$t('trips_photos', { values: { count: trip.assetCount } })}</span>
   </div>
+
+  {#each trip.concurrentTrips as other (other.id)}
+    <div class="flex items-center gap-2 rounded-xl bg-subtle px-3 py-1.5 text-sm">
+      <span class="shrink-0 text-gray-500 dark:text-gray-300">{$t('trip_concurrent')}</span>
+      <a href="/albums/{other.albumId}" class="min-w-0 flex-1 truncate text-primary hover:underline">{other.name}</a>
+      <button
+        type="button"
+        class="shrink-0 rounded-lg border px-2 py-0.5 text-xs hover:bg-primary/10 dark:border-gray-700"
+        onclick={async () => {
+          if (await mergeTrips(trip.id, other)) {
+            onMerged?.();
+          }
+        }}
+      >
+        {$t('trip_merge')}
+      </button>
+    </div>
+  {/each}
 
   {#if trip.stops.length > 0}
     <TripRouteMap {trip} {selectedDate} class="h-[42vh] shrink-0" {onSelectDate} />
