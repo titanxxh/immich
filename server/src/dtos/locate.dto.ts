@@ -36,6 +36,26 @@ const LocateSuggestionResponseSchema = z
   .object({ suggestion: LocateSuggestionSchema.nullable().describe('Suggested position; null without any clue') })
   .meta({ id: 'LocateSuggestionResponseDto' });
 
+const LocateSuspectSchema = z
+  .object({
+    assetId: z.string().describe('The photo whose location is in doubt'),
+    localDateTime: isoDatetimeToDate.describe('Local time of the photo'),
+    latitude: z.number().meta({ format: 'double' }).describe('Latitude of the photo'),
+    longitude: z.number().meta({ format: 'double' }).describe('Longitude of the photo'),
+    place: z.string().nullable().describe('Place name of the photo'),
+    otherAssetId: z.string().describe('A photo taken at the same moment that it contradicts'),
+    otherLocalDateTime: isoDatetimeToDate.describe('Local time of the other photo'),
+    otherLatitude: z.number().meta({ format: 'double' }).describe('Latitude of the other photo'),
+    otherLongitude: z.number().meta({ format: 'double' }).describe('Longitude of the other photo'),
+    otherPlace: z.string().nullable().describe('Place name of the other photo'),
+  })
+  .meta({ id: 'LocateSuspectDto' });
+
+const LocateSuspectsResponseSchema = z
+  .object({ suspects: z.array(LocateSuspectSchema).describe('Photos with a suspect location, oldest first') })
+  .meta({ id: 'LocateSuspectsResponseDto' });
+
+export class LocateSuspectsResponseDto extends createZodDto(LocateSuspectsResponseSchema) {}
 export class LocateGroupsResponseDto extends createZodDto(LocateGroupsResponseSchema) {}
 export class LocateAssetIdsDto extends createZodDto(LocateAssetIdsSchema) {}
 export class LocateSuggestionResponseDto extends createZodDto(LocateSuggestionResponseSchema) {}

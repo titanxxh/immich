@@ -57,4 +57,29 @@ describe(LocateController.name, () => {
       expect(service.ignore).toHaveBeenCalled();
     });
   });
+
+  describe('GET /locate/suspects', () => {
+    it('should list suspect photos', async () => {
+      const { status } = await request(ctx.getHttpServer()).get('/locate/suspects');
+      expect(status).toBe(200);
+      expect(service.getSuspects).toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /locate/suspects/confirm', () => {
+    it('should require valid ids', async () => {
+      const { status } = await request(ctx.getHttpServer())
+        .post('/locate/suspects/confirm')
+        .send({ assetIds: ['invalid'] });
+      expect(status).toBe(400);
+    });
+
+    it('should confirm photos', async () => {
+      const { status } = await request(ctx.getHttpServer())
+        .post('/locate/suspects/confirm')
+        .send({ assetIds: [factory.uuid()] });
+      expect(status).toBe(204);
+      expect(service.confirmSuspects).toHaveBeenCalled();
+    });
+  });
 });

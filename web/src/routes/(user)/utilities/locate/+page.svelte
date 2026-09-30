@@ -3,6 +3,7 @@
   import GeolocationPointPickerModal from '$lib/modals/GeolocationPointPickerModal.svelte';
   import LocatePickMap from './LocatePickMap.svelte';
   import LocatePreview from './LocatePreview.svelte';
+  import LocateSuspects from './LocateSuspects.svelte';
   import { locale } from '$lib/stores/preferences.store';
   import type { LatLng } from '$lib/types';
   import { getAssetMediaUrl } from '$lib/utils';
@@ -11,6 +12,7 @@
     AssetMediaSize,
     getLocateGroups,
     getLocateSuggestion,
+    getLocateSuspects,
     ignoreLocateAssets,
     updateAssets,
     type LocateGroupsResponseDto,
@@ -32,6 +34,8 @@
   let point = $state<LatLng>();
   let suggestion = $state<LocateSuggestionDto | null>();
   let isSaving = $state(false);
+  let tab = $state<'unlocated' | 'suspects'>('unlocated');
+  let suspectCount = $state<number>();
 
   const items = $derived.by<Item[]>(() => {
     if (!data) {
@@ -56,6 +60,11 @@
   };
 
   onMount(load);
+  onMount(() => {
+    void getLocateSuspects()
+      .then(({ suspects }) => (suspectCount = suspects.length))
+      .catch(() => {});
+  });
 
   // a new group starts with all its photos selected (scattered photos with none) and asks for a suggestion
   $effect(() => {
@@ -190,7 +199,17 @@
 </script>
 
 <UserPageLayout title={$t('locate_photos')}>
-  {#if !data}
+  <div class="flex gap-1 px-4 pt-2">
+    <Button size="small" variant={tab === 'unlocated' ? 'filled' : 'ghost'} onclick={() => (tab = 'unlocated')}>
+      {$t('locate_tab_unlocated')}{data ? ` (${photoCount})` : ''}
+    </Button>
+    <Button size="small" variant={tab === 'suspects' ? 'filled' : 'ghost'} onclick={() => (tab = 'suspects')}>
+      {$t('locate_tab_suspects')}{suspectCount === undefined ? '' : ` (${suspectCount})`}
+    </Button>
+  </div>
+  {#if tab === 'suspects'}
+    <LocateSuspects onCount={(count) => (suspectCount = count)} />
+  {:else if !data}
     <div class="flex justify-center p-8"><LoadingSpinner /></div>
   {:else if items.length === 0}
     <p class="p-8 text-center text-gray-500 dark:text-gray-300">{$t('locate_done')}</p>

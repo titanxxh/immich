@@ -2008,6 +2008,32 @@ export type LocateSuggestionResponseDto = {
     /** Suggested position; null without any clue */
     suggestion: (LocateSuggestionDto) | null;
 };
+export type LocateSuspectDto = {
+    /** The photo whose location is in doubt */
+    assetId: string;
+    /** Latitude of the photo */
+    latitude: number;
+    /** Local time of the photo */
+    localDateTime: string;
+    /** Longitude of the photo */
+    longitude: number;
+    /** A photo taken at the same moment that it contradicts */
+    otherAssetId: string;
+    /** Latitude of the other photo */
+    otherLatitude: number;
+    /** Local time of the other photo */
+    otherLocalDateTime: string;
+    /** Longitude of the other photo */
+    otherLongitude: number;
+    /** Place name of the other photo */
+    otherPlace: string | null;
+    /** Place name of the photo */
+    place: string | null;
+};
+export type LocateSuspectsResponseDto = {
+    /** Photos with a suspect location, oldest first */
+    suspects: LocateSuspectDto[];
+};
 export type MapReverseGeocodeResponseDto = {
     /** City name */
     city: string | null;
@@ -5934,6 +5960,29 @@ export function getLocateSuggestion({ locateAssetIdsDto }: {
         status: 200;
         data: LocateSuggestionResponseDto;
     }>("/locate/suggestion", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: locateAssetIdsDto
+    })));
+}
+/**
+ * Get photos with a suspect location
+ */
+export function getLocateSuspects(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: LocateSuspectsResponseDto;
+    }>("/locate/suspects", {
+        ...opts
+    }));
+}
+/**
+ * Confirm suspect locations
+ */
+export function confirmLocateSuspects({ locateAssetIdsDto }: {
+    locateAssetIdsDto: LocateAssetIdsDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/locate/suspects/confirm", oazapfts.json({
         ...opts,
         method: "POST",
         body: locateAssetIdsDto

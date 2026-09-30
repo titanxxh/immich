@@ -2,7 +2,12 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/commo
 import { ApiTags } from '@nestjs/swagger';
 import { Endpoint, HistoryBuilder } from 'src/decorators';
 import { AuthDto } from 'src/dtos/auth.dto';
-import { LocateAssetIdsDto, LocateGroupsResponseDto, LocateSuggestionResponseDto } from 'src/dtos/locate.dto';
+import {
+  LocateAssetIdsDto,
+  LocateGroupsResponseDto,
+  LocateSuggestionResponseDto,
+  LocateSuspectsResponseDto,
+} from 'src/dtos/locate.dto';
 import { ApiTag, Permission } from 'src/enum';
 import { Auth, Authenticated } from 'src/middleware/auth.guard';
 import { LocateService } from 'src/services/locate.service';
@@ -45,5 +50,29 @@ export class LocateController {
   })
   ignoreLocateAssets(@Auth() auth: AuthDto, @Body() dto: LocateAssetIdsDto): Promise<void> {
     return this.service.ignore(auth, dto);
+  }
+
+  @Get('suspects')
+  @Authenticated({ permission: Permission.AssetRead })
+  @Endpoint({
+    summary: 'Get photos with a suspect location',
+    description:
+      'List the photos whose location contradicts a photo taken at the same moment, found by trip detection.',
+    history: new HistoryBuilder().added('v3.2.4'),
+  })
+  getLocateSuspects(@Auth() auth: AuthDto): Promise<LocateSuspectsResponseDto> {
+    return this.service.getSuspects(auth);
+  }
+
+  @Post('suspects/confirm')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Authenticated({ permission: Permission.AssetUpdate })
+  @Endpoint({
+    summary: 'Confirm suspect locations',
+    description: 'Say the photos are placed right, so they are no longer flagged.',
+    history: new HistoryBuilder().added('v3.2.4'),
+  })
+  confirmLocateSuspects(@Auth() auth: AuthDto, @Body() dto: LocateAssetIdsDto): Promise<void> {
+    return this.service.confirmSuspects(auth, dto);
   }
 }

@@ -3,6 +3,7 @@ import { AccessRepository } from 'src/repositories/access.repository';
 import { AssetRepository } from 'src/repositories/asset.repository';
 import { LocateRepository } from 'src/repositories/locate.repository';
 import { LoggingRepository } from 'src/repositories/logging.repository';
+import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY } from 'src/repositories/trip.repository';
 import { DB } from 'src/schema';
 import { LocateService } from 'src/services/locate.service';
 import { newMediumService } from 'test/medium.factory';
@@ -41,6 +42,12 @@ const newPhoto = async (
   });
   return asset.id;
 };
+
+const flag = (ctx: Context, assetId: string, otherAssetId: string) =>
+  ctx.database
+    .insertInto('asset_metadata')
+    .values({ assetId, key: TRIP_SUSPECT_KEY, value: { otherAssetId } })
+    .execute();
 
 describe(LocateService.name, () => {
   beforeAll(async () => {
@@ -133,6 +140,56 @@ describe(LocateService.name, () => {
       await expect(sut.getSuggestion(factory.auth({ user }), { assetIds: [id] })).resolves.toEqual({
         suggestion: null,
       });
+    });
+  });
+
+  describe('suspects', () => {
+    it('should list suspect photos with the photo they contradict', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      const suspect = await newPhoto(ctx, user.id, '2025-05-01T09:00:00', {
+        location: { latitude: 31, longitude: 121 },
+      });
+      const other = await newPhoto(ctx, user.id, '2025-05-01T09:05:00', { location: { latitude: 40, longitude: 116 } });
+      await flag(ctx, suspect, other);
+
+      await expect(sut.getSuspects(auth)).resolves.toEqual({
+        suspects: [expect.objectContaining({ assetId: suspect, latitude: 31, otherAssetId: other, otherLatitude: 40 })],
+      });
+    });
+
+    it('should stop flagging a photo the user confirmed', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const auth = factory.auth({ user });
+      const suspect = await newPhoto(ctx, user.id, '2025-05-01T09:00:00', {
+        location: { latitude: 31, longitude: 121 },
+      });
+      const other = await newPhoto(ctx, user.id, '2025-05-01T09:05:00', { location: { latitude: 40, longitude: 116 } });
+      await flag(ctx, suspect, other);
+
+      await sut.confirmSuspects(auth, { assetIds: [suspect] });
+
+      await expect(sut.getSuspects(auth)).resolves.toEqual({ suspects: [] });
+      const keys = await ctx.database
+        .selectFrom('asset_metadata')
+        .select('key')
+        .where('assetId', '=', suspect)
+        .execute();
+      expect(keys).toEqual([{ key: TRIP_SUSPECT_OK_KEY }]);
+    });
+
+    it('should not list the suspects of another user', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const { user: other } = await ctx.newUser();
+      const suspect = await newPhoto(ctx, other.id, '2025-05-01T09:00:00', {
+        location: { latitude: 31, longitude: 121 },
+      });
+      await flag(ctx, suspect, suspect);
+
+      await expect(sut.getSuspects(factory.auth({ user }))).resolves.toEqual({ suspects: [] });
     });
   });
 });
