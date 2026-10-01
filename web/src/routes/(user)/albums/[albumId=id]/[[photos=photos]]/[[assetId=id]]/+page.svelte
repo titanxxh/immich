@@ -77,6 +77,7 @@
     mdiAccountEyeOutline,
     mdiAirplane,
     mdiAirplaneOff,
+    mdiFolderMoveOutline,
     mdiArrowLeft,
     mdiCogOutline,
     mdiDeleteOutline,
@@ -676,6 +677,11 @@
                     icon={trip ? mdiAirplaneOff : mdiAirplane}
                     text={trip ? $t('trip_unmark') : $t('trip_mark')}
                     onClick={handleToggleTrip}
+                  />
+                  <MenuOption
+                    icon={mdiFolderMoveOutline}
+                    text={$t('reorganize_menu')}
+                    onClick={() => goto(Route.reorganizeUtility({ album: album.id }))}
                   />
                 {/if}
 

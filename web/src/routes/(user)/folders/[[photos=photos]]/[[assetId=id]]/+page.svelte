@@ -29,8 +29,15 @@
   import { foldersStore } from '$lib/stores/folders.svelte';
   import { toTimelineAsset } from '$lib/utils/timeline-util';
   import { joinPaths } from '$lib/utils/tree-utils';
-  import { ActionButton, CommandPaletteDefaultProvider, IconButton, Text } from '@immich/ui';
-  import { mdiDotsVertical, mdiFolder, mdiFolderHome, mdiFolderOutline, mdiSelectAll } from '@mdi/js';
+  import { ActionButton, Button, CommandPaletteDefaultProvider, IconButton, Text } from '@immich/ui';
+  import {
+    mdiDotsVertical,
+    mdiFolder,
+    mdiFolderHome,
+    mdiFolderMoveOutline,
+    mdiFolderOutline,
+    mdiSelectAll,
+  } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import type { PageData } from './$types';
 
@@ -91,6 +98,20 @@
         </div>
       </section>
     </Sidebar>
+  {/snippet}
+
+  {#snippet buttons()}
+    {#if data.tree.path}
+      <Button
+        size="small"
+        variant="ghost"
+        color="secondary"
+        leadingIcon={mdiFolderMoveOutline}
+        href={Route.reorganizeUtility({ folder: data.tree.path })}
+      >
+        {$t('reorganize_menu')}
+      </Button>
+    {/if}
   {/snippet}
 
   <OnEvents onAssetsDelete={invalidateAll} />

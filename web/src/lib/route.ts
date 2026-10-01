@@ -148,6 +148,7 @@ export const Route = {
   geolocationUtility: () => '/utilities/geolocation',
   locateUtility: () => '/utilities/locate',
   burstsUtility: () => '/utilities/bursts',
+  reorganizeUtility: (params?: { folder?: string; album?: string }) => '/utilities/reorganize' + asQueryString(params),
 
   // workflows
   workflows: () => '/workflows',
