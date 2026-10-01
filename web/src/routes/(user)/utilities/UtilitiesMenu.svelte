@@ -8,6 +8,7 @@
     mdiContentDuplicate,
     mdiImageFilterCenterFocus,
     mdiCrosshairsGps,
+    mdiFolderMoveOutline,
     mdiImageSizeSelectLarge,
     mdiLinkEdit,
     mdiMapMarkerQuestionOutline,
@@ -21,6 +22,7 @@
     { href: Route.largeFileUtility(), icon: mdiImageSizeSelectLarge, label: $t('review_large_files') },
     { href: Route.geolocationUtility(), icon: mdiCrosshairsGps, label: $t('manage_geolocation') },
     { href: Route.locateUtility(), icon: mdiMapMarkerQuestionOutline, label: $t('locate_photos') },
+    { href: Route.reorganizeUtility(), icon: mdiFolderMoveOutline, label: $t('reorganize') },
     { href: Route.workflows(), icon: mdiStateMachine, label: $t('workflows') },
   ];
 </script>

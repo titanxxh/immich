@@ -77,3 +77,25 @@ _Avoid_: First trip
 **Hidden region**:
 A region the user removed from the footprint map because its photos were placed there by mistake. Its photos keep their locations.
 _Avoid_: Ignored region, deleted region
+
+## Reorganizing
+
+**Reorganization**:
+Moving the photos of one source (a folder of an external library, or an album) into date folders under a target folder, while each photo stays the same photo with its albums, people and edits. The user starts it once, after a preview; it is not a standing rule.
+_Avoid_: Move, migration, archive (which already means hiding a photo from the timeline)
+
+**Date folder**:
+A folder a reorganization puts photos in, named after a month or a day. A day folder can carry a label after the date, such as `2026-09-27 match`; a day has one folder per reorganization.
+_Avoid_: Day directory, bucket
+
+**Date source**:
+Where a photo's capture date comes from: the photo's own metadata (or its sidecar), or, when that has no date, the times of the file. A date that fell back on the file times is not trusted, and a reorganization leaves such a photo where it is.
+_Avoid_: Date quality, reliable flag
+
+**Reorganization record**:
+What one reorganization did, photo by photo: where each was and where it went, or why it stayed. It is what an undo goes by, and it is kept until the user deletes it.
+_Avoid_: Move history (an unrelated upstream table), log
+
+**Undo** (of a reorganization):
+Moving the photos of a reorganization back to where they were, all of them at once. A photo goes back only if it is still where the reorganization put it and its old place is free.
+_Avoid_: Revert, rollback

@@ -53,7 +53,8 @@ Moves the photos of a folder of an external library, or of an album, into date f
 - **Undo**: any past reorganization can be undone as a whole. A photo goes back only if it is still where the reorganization put it and its old place is free; undoing again retries the ones that were left. The _reorganization record_ (tables `reorganization`, `reorganization_item`) is kept until the user deletes it.
 - **Limits**: one microservices worker is assumed (a second one starting up would mark a running reorganization as interrupted). Emptied subfolders are only removed for a folder source.
 - **Deployment**: the external library folders must be mounted writable in the server container (upstream suggests read-only).
-- **Code**: `server/src/utils/reorganize.ts` (the plan), `reorganize.service.ts` (preview and API), `reorganize-job.service.ts` (moving files), `reorganize.controller.ts` (`/reorganizations`), `reorganize.repository.ts`.
+- **Page** (Utilities → Reorganize): settings on the left (source, target, structure, auto rename, libraries of an album source), the target's date folders after the reorganization on the right with a label field per day, the photos that stay grouped by reason, and each expandable into the photos concerned. A second tab lists past reorganizations with continue, retry, undo, details and delete. The folder view and the album menu link to the page with the source filled in.
+- **Code**: `server/src/utils/reorganize.ts` (the plan), `reorganize.service.ts` (preview and API), `reorganize-job.service.ts` (moving files), `reorganize.controller.ts` (`/reorganizations`), `reorganize.repository.ts`; web `routes/(user)/utilities/reorganize`.
 
 ## Smaller fixes
 
