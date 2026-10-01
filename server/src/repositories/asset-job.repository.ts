@@ -49,6 +49,19 @@ export class AssetJobRepository {
       .executeTakeFirst();
   }
 
+  /** The given assets whose date source was never recorded, with what is needed to read their date tags. */
+  @GenerateSql({ params: [[DummyValue.UUID]] })
+  getForDateSource(ids: string[]) {
+    return this.db
+      .selectFrom('asset')
+      .leftJoin('asset_job_status', 'asset_job_status.assetId', 'asset.id')
+      .where('asset.id', '=', anyUuid(ids))
+      .where('asset_job_status.dateFromExif', 'is', null)
+      .select(['asset.id', 'asset.originalPath'])
+      .select((eb) => withFiles(eb, AssetFileType.Sidecar))
+      .execute();
+  }
+
   @GenerateSql({ params: [DummyValue.UUID] })
   getForSidecarCheckJob(id: string) {
     return this.db

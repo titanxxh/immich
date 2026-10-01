@@ -373,6 +373,7 @@ export class AssetRepository {
               ocrAt: eb.ref('excluded.ocrAt'),
               sharpness: eb.ref('excluded.sharpness'),
               sharpnessVersion: eb.ref('excluded.sharpnessVersion'),
+              dateFromExif: eb.ref('excluded.dateFromExif'),
             },
             values[0],
           ),
