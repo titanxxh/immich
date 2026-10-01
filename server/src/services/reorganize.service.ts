@@ -128,6 +128,8 @@ export class ReorganizeService extends BaseService {
 
     const isMonthly = dto.preset === 'year-month';
     const { otherFileCount, emptyFolderCount } = await this.getLeftovers(plan, dto.includeSubfolders);
+    const suggestedAlbumId = await this.reorganizeRepository.getLastAlbumId(auth.user.id, targetPath);
+    const [suggestedAlbum] = suggestedAlbumId ? await this.getAlbums(auth, [suggestedAlbumId]) : [];
 
     return {
       targetLibraryId: plan.targetLibrary.id,
@@ -166,6 +168,7 @@ export class ReorganizeService extends BaseService {
           isExcluded: dto.excludedLibraryIds.includes(library.id),
         }))
         .filter((library) => library.count > 0),
+      suggestedAlbum: suggestedAlbum ?? null,
     };
   }
 
@@ -321,6 +324,9 @@ export class ReorganizeService extends BaseService {
       throw new BadRequestException('There is nothing to move');
     }
     await this.requireWritable(plan, moving);
+    if (dto.albumId) {
+      await this.requireAccess({ auth, permission: Permission.AlbumAssetCreate, ids: [dto.albumId] });
+    }
 
     let sourceName = plan.sourcePath;
     if (dto.sourceType === 'album') {
@@ -338,6 +344,7 @@ export class ReorganizeService extends BaseService {
         targetPath: plan.targetPath,
         preset: dto.preset,
         autoRename: dto.autoRename,
+        albumId: dto.albumId ?? null,
         status: 'queued' satisfies ReorganizationStatus,
         inPlaceCount: plan.items.filter((item) => item.action === 'in-place').length,
       },
@@ -369,6 +376,9 @@ export class ReorganizeService extends BaseService {
   async getAll(auth: AuthDto): Promise<ReorganizationResponseDto[]> {
     const records = await this.reorganizeRepository.getAll(auth.user.id);
     const counts = await this.reorganizeRepository.getItemCounts(records.map((record) => record.id));
+    const albums = await this.getAlbums(auth, [
+      ...new Set(records.map((record) => record.albumId).filter((id) => id !== null)),
+    ]);
 
     return records.map((record) => {
       const count = (...statuses: ReorganizationItemStatus[]) =>
@@ -387,6 +397,7 @@ export class ReorganizeService extends BaseService {
         targetPath: record.targetPath,
         preset: record.preset as ReorganizeDto['preset'],
         autoRename: record.autoRename,
+        album: albums.find((album) => album.id === record.albumId) ?? null,
         status: record.status as ReorganizationStatus,
         isUndo: record.isUndo,
         error: record.error,
@@ -484,6 +495,13 @@ export class ReorganizeService extends BaseService {
       throw new BadRequestException('The reorganization is still running');
     }
     await this.reorganizeRepository.delete(id);
+  }
+
+  /** The albums among these that still exist and that the user can add photos to. */
+  private async getAlbums(auth: AuthDto, ids: string[]) {
+    const allowed = await this.checkAccess({ auth, permission: Permission.AlbumAssetCreate, ids });
+    const albums = await Promise.all([...allowed].map((id) => this.albumRepository.getById(id, { withAssets: false })));
+    return albums.filter((album) => !!album).map((album) => ({ id: album.id, albumName: album.albumName }));
   }
 
   private async requireRecord(auth: AuthDto, id: string) {

@@ -102,6 +102,11 @@
     {record.sourceName}
     {#if record.sourceName !== record.targetPath}→ {record.targetPath}{/if}
   </p>
+  {#if record.album}
+    <p class="text-sm text-gray-500 dark:text-gray-300">
+      {$t('reorganize_record_album', { values: { album: record.album.albumName } })}
+    </p>
+  {/if}
 
   {#if isRunning(record)}
     <div class="my-3 h-2 rounded-sm bg-gray-200 dark:bg-gray-700">

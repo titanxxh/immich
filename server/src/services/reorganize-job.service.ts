@@ -167,6 +167,7 @@ export class ReorganizeJobService extends BaseService {
         try {
           await this.transfer(this.toTransfer(item, isUndo), onFoldersCreated);
           await this.reorganizeRepository.updateItem(item.id, { status: done });
+          await this.syncAlbum(record, item, isUndo);
         } catch (error) {
           if (error instanceof StorageGone) {
             // the photo stays marked as busy; continuing sorts out how far it got
@@ -185,6 +186,44 @@ export class ReorganizeJobService extends BaseService {
     await (isUndo ? this.removeCreatedFolders(record) : this.removeEmptiedFolders(record));
 
     return { status: 'completed', error: null };
+  }
+
+  /**
+   * Keeps the album of a reorganization in step with a photo that just arrived: a photo that moved is added to the
+   * album, and one that an undo moved back is taken out again if the reorganization is what put it there. An album
+   * that is gone, or a photo already in it, is simply left alone.
+   */
+  private async syncAlbum(record: Reorganization, item: Item, isUndo: boolean) {
+    const { albumId } = record;
+    if (!albumId || !item.assetId) {
+      return;
+    }
+
+    try {
+      if (isUndo) {
+        if (item.addedToAlbum) {
+          await this.albumRepository.removeAssetIds(albumId, [item.assetId]);
+          await this.reorganizeRepository.updateItem(item.id, { addedToAlbum: false });
+        }
+        return;
+      }
+
+      const album = await this.albumRepository.getById(albumId, { withAssets: false });
+      const present = await this.albumRepository.getAssetIds(albumId, [item.assetId]);
+      if (!album || present.has(item.assetId)) {
+        return;
+      }
+      await this.albumRepository.addAssetIds(albumId, [item.assetId]);
+      await this.reorganizeRepository.updateItem(item.id, { addedToAlbum: true });
+      await this.albumRepository.update(
+        albumId,
+        { id: albumId, updatedAt: new Date(), albumThumbnailAssetId: album.albumThumbnailAssetId ?? item.assetId },
+        record.ownerId,
+      );
+    } catch (error) {
+      // the photo is where it should be; its album can be fixed by hand
+      this.logger.warn(`Unable to update album ${albumId} for asset ${item.assetId}: ${error}`);
+    }
   }
 
   private toTransfer(item: Item, isUndo: boolean): Transfer {
@@ -472,6 +511,9 @@ export class ReorganizeJobService extends BaseService {
             ? 'moved'
             : 'pending';
         await this.reorganizeRepository.updateItem(item.id, { status, error: null });
+        if (arrived) {
+          await this.syncAlbum(record, item, wasUndoing);
+        }
       } catch (error) {
         const classified = this.classify(error);
         if (classified instanceof StorageGone) {

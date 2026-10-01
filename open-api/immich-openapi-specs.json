@@ -28573,6 +28573,15 @@
       },
       "ReorganizationResponseDto": {
         "properties": {
+          "album": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReorganizeAlbumDto"
+              }
+            ],
+            "description": "Album the moved photos are added to, if it still exists",
+            "nullable": true
+          },
           "autoRename": {
             "description": "Whether photos whose name was taken moved under a new name",
             "type": "boolean"
@@ -28672,6 +28681,7 @@
           }
         },
         "required": [
+          "album",
           "autoRename",
           "createdAt",
           "error",
@@ -28716,8 +28726,31 @@
         ],
         "type": "string"
       },
+      "ReorganizeAlbumDto": {
+        "properties": {
+          "albumName": {
+            "description": "Album name",
+            "type": "string"
+          },
+          "id": {
+            "description": "Album ID",
+            "type": "string"
+          }
+        },
+        "required": [
+          "albumName",
+          "id"
+        ],
+        "type": "object"
+      },
       "ReorganizeDto": {
         "properties": {
+          "albumId": {
+            "description": "Album to add the photos that move to",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
           "autoRename": {
             "default": false,
             "description": "Move photos whose name is taken under a new name",
@@ -28916,6 +28949,12 @@
         "properties": {
           "action": {
             "$ref": "#/components/schemas/ReorganizeAction"
+          },
+          "albumId": {
+            "description": "Album to add the photos that move to",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
           },
           "autoRename": {
             "default": false,
@@ -29130,6 +29169,15 @@
             },
             "type": "array"
           },
+          "suggestedAlbum": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReorganizeAlbumDto"
+              }
+            ],
+            "description": "The album the last reorganization into this target added its photos to",
+            "nullable": true
+          },
           "targetLibraryId": {
             "description": "Library the target folder belongs to",
             "type": "string"
@@ -29154,6 +29202,7 @@
           "sidecarCount",
           "skipCount",
           "staying",
+          "suggestedAlbum",
           "targetLibraryId",
           "total"
         ],

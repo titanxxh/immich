@@ -48,6 +48,7 @@ const ReorganizeSchema = z
       .describe('Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder'),
     autoRename: z.boolean().default(false).describe('Move photos whose name is taken under a new name'),
     excludedLibraryIds: z.array(z.uuidv4()).default([]).describe('Source libraries to leave out, for an album'),
+    albumId: z.uuidv4().optional().describe('Album to add the photos that move to'),
   })
   .meta({ id: 'ReorganizeDto' });
 
@@ -92,6 +93,13 @@ const ReorganizeLibrarySchema = z
   })
   .meta({ id: 'ReorganizeLibraryDto' });
 
+const ReorganizeAlbumSchema = z
+  .object({
+    id: z.string().describe('Album ID'),
+    albumName: z.string().describe('Album name'),
+  })
+  .meta({ id: 'ReorganizeAlbumDto' });
+
 const ReorganizePreviewResponseSchema = z
   .object({
     targetLibraryId: z.string().describe('Library the target folder belongs to'),
@@ -108,6 +116,9 @@ const ReorganizePreviewResponseSchema = z
     folders: z.array(ReorganizeFolderSchema).describe('Date folders after the reorganization, oldest first'),
     staying: z.array(ReorganizeStayingSchema).describe('Photos that stay, by reason'),
     libraries: z.array(ReorganizeLibrarySchema).describe('Libraries the photos of the source are in'),
+    suggestedAlbum: ReorganizeAlbumSchema.nullable().describe(
+      'The album the last reorganization into this target added its photos to',
+    ),
   })
   .meta({ id: 'ReorganizePreviewResponseDto' });
 
@@ -167,6 +178,7 @@ const ReorganizationSchema = z
     targetPath: z.string().describe('Folder the date folders were created in'),
     preset: ReorganizePresetSchema,
     autoRename: z.boolean().describe('Whether photos whose name was taken moved under a new name'),
+    album: ReorganizeAlbumSchema.nullable().describe('Album the moved photos are added to, if it still exists'),
     status: ReorganizationStatusSchema,
     isUndo: z.boolean().describe('Whether the status is about undoing it rather than carrying it out'),
     error: z.string().nullable().describe('Why the whole run stopped'),

@@ -50,6 +50,9 @@
   let labels = $state<Record<string, string>>({});
   let autoRename = $state(false);
   let excludedLibraryIds = $state<string[]>([]);
+  // the album the photos that move are added to; offered from the last reorganization into the same target
+  let targetAlbum = $state<{ id: string; name: string }>();
+  let isAlbumChosen = $state(false);
 
   // what that would do
   let preview = $state<ReorganizePreviewResponseDto>();
@@ -107,6 +110,11 @@
       if (id === requestId) {
         preview = result;
         previewError = undefined;
+        if (!isAlbumChosen) {
+          targetAlbum = result.suggestedAlbum
+            ? { id: result.suggestedAlbum.id, name: result.suggestedAlbum.albumName }
+            : undefined;
+        }
       }
     } catch (error) {
       if (id === requestId) {
@@ -182,6 +190,7 @@
       // most reorganizations tidy a folder in place
       if (!targetPath || targetPath === sourcePath) {
         targetPath = path;
+        isAlbumChosen = false;
       }
       sourcePath = path;
       labels = {};
@@ -206,7 +215,21 @@
     if (path) {
       targetPath = path;
       labels = {};
+      isAlbumChosen = false;
     }
+  };
+
+  const pickTargetAlbum = async () => {
+    const [picked] = (await modalManager.show(AlbumPickerModal, {})) ?? [];
+    if (picked) {
+      targetAlbum = { id: picked.id, name: picked.albumName };
+      isAlbumChosen = true;
+    }
+  };
+
+  const clearTargetAlbum = () => {
+    targetAlbum = undefined;
+    isAlbumChosen = true;
   };
 
   const toggleLibrary = (id: string, isIncluded: boolean) => {
@@ -241,7 +264,9 @@
 
     isStarting = true;
     try {
-      const record = await createReorganization({ reorganizeDto: $state.snapshot(dto) as ReorganizeDto });
+      const record = await createReorganization({
+        reorganizeDto: { ...($state.snapshot(dto) as ReorganizeDto), albumId: targetAlbum?.id },
+      });
       records = [record, ...records];
       featuredId = record.id;
     } catch (error) {
@@ -397,6 +422,22 @@
               <Switch bind:checked={autoRename} />
               {$t('reorganize_auto_rename')}
             </label>
+          </section>
+
+          <section>
+            <h3 class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-300">{$t('reorganize_album')}</h3>
+            <div class="rounded-xl border border-gray-300 p-3 dark:border-immich-dark-gray">
+              <p class="break-all">{targetAlbum?.name ?? $t('reorganize_album_none')}</p>
+              {#if targetAlbum}
+                <p class="text-xs text-gray-500 dark:text-gray-300">{$t('reorganize_album_hint')}</p>
+              {/if}
+              <button type="button" class="underline" onclick={pickTargetAlbum}>{$t('reorganize_choose')}</button>
+              {#if targetAlbum}
+                <button type="button" class="ms-3 underline" onclick={clearTargetAlbum}>
+                  {$t('reorganize_album_clear')}
+                </button>
+              {/if}
+            </div>
           </section>
 
           {#if preview && preview.libraries.length > 1}

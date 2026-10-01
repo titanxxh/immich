@@ -105,6 +105,20 @@ where
 order by
   "createdAt" desc
 
+-- ReorganizeRepository.getLastAlbumId
+select
+  "albumId"
+from
+  "reorganization"
+where
+  "ownerId" = $1::uuid
+  and "targetPath" = $2
+  and "albumId" is not null
+order by
+  "createdAt" desc
+limit
+  $3
+
 -- ReorganizeRepository.getActive
 select
   *

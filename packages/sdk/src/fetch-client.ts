@@ -2344,7 +2344,15 @@ export type QueueJobResponseDto = {
     /** Job creation timestamp */
     timestamp: number;
 };
+export type ReorganizeAlbumDto = {
+    /** Album name */
+    albumName: string;
+    /** Album ID */
+    id: string;
+};
 export type ReorganizationResponseDto = {
+    /** Album the moved photos are added to, if it still exists */
+    album: (ReorganizeAlbumDto) | null;
     /** Whether photos whose name was taken moved under a new name */
     autoRename: boolean;
     /** When it was started */
@@ -2382,6 +2390,8 @@ export type ReorganizationResponseDto = {
     undoneCount: number;
 };
 export type ReorganizeDto = {
+    /** Album to add the photos that move to */
+    albumId?: string;
     /** Move photos whose name is taken under a new name */
     autoRename?: boolean;
     /** Source libraries to leave out, for an album */
@@ -2471,6 +2481,8 @@ export type ReorganizePreviewResponseDto = {
     skipCount: number;
     /** Photos that stay, by reason */
     staying: ReorganizeStayingDto[];
+    /** The album the last reorganization into this target added its photos to */
+    suggestedAlbum: (ReorganizeAlbumDto) | null;
     /** Library the target folder belongs to */
     targetLibraryId: string;
     /** Photos of the source */
@@ -2478,6 +2490,8 @@ export type ReorganizePreviewResponseDto = {
 };
 export type ReorganizeItemsDto = {
     action?: ReorganizeAction;
+    /** Album to add the photos that move to */
+    albumId?: string;
     /** Move photos whose name is taken under a new name */
     autoRename?: boolean;
     /** Source libraries to leave out, for an album */

@@ -29,6 +29,10 @@ export class ReorganizationItemTable {
   @Column({ type: 'text', nullable: true })
   error!: string | null;
 
+  /** whether the reorganization put the photo in its album, so that an undo only takes out what it put in */
+  @Column({ type: 'boolean', default: false })
+  addedToAlbum!: Generated<boolean>;
+
   @Column({ type: 'text' })
   fromPath!: string;
 
