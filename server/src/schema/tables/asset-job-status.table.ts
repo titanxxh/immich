@@ -23,4 +23,8 @@ export class AssetJobStatusTable {
 
   @Column({ type: 'smallint', nullable: true })
   sharpnessVersion!: number | null;
+
+  /** Whether the capture date comes from the file's metadata (true) or fell back on the file times (false). */
+  @Column({ type: 'boolean', nullable: true })
+  dateFromExif!: boolean | null;
 }

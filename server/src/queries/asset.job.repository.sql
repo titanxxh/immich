@@ -47,6 +47,34 @@ where
 limit
   $3
 
+-- AssetJobRepository.getForDateSource
+select
+  "asset"."id",
+  "asset"."originalPath",
+  (
+    select
+      coalesce(json_agg(agg), '[]')
+    from
+      (
+        select
+          "asset_file"."id",
+          "asset_file"."path",
+          "asset_file"."type",
+          "asset_file"."isEdited"
+        from
+          "asset_file"
+        where
+          "asset_file"."assetId" = "asset"."id"
+          and "asset_file"."type" = $1
+      ) as agg
+  ) as "files"
+from
+  "asset"
+  left join "asset_job_status" on "asset_job_status"."assetId" = "asset"."id"
+where
+  "asset"."id" = any ($2::uuid[])
+  and "asset_job_status"."dateFromExif" is null
+
 -- AssetJobRepository.getForSidecarCheckJob
 select
   "id",

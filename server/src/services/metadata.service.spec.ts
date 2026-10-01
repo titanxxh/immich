@@ -165,6 +165,66 @@ describe(MetadataService.name, () => {
     });
   });
 
+  describe('backfillDateSources', () => {
+    it('should do nothing without assets', async () => {
+      await sut.backfillDateSources([]);
+
+      expect(mocks.assetJob.getForDateSource).not.toHaveBeenCalled();
+    });
+
+    it('should record a date found in the file', async () => {
+      const asset = AssetFactory.create();
+      mocks.assetJob.getForDateSource.mockResolvedValue([
+        { id: asset.id, originalPath: asset.originalPath, files: [] },
+      ]);
+      mocks.metadata.readTags.mockReset();
+      mocks.metadata.readTags.mockResolvedValueOnce({ DateTimeOriginal: '2022:01:01 00:00:00' });
+
+      await sut.backfillDateSources([asset.id]);
+
+      expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith({ assetId: asset.id, dateFromExif: true });
+      expect(mocks.asset.upsertExif).not.toHaveBeenCalled();
+    });
+
+    it('should record a date that only the sidecar has', async () => {
+      const asset = AssetFactory.from().file({ type: AssetFileType.Sidecar }).build();
+      mocks.assetJob.getForDateSource.mockResolvedValue([
+        { id: asset.id, originalPath: asset.originalPath, files: asset.files },
+      ]);
+      mockReadTags({ Make: 'Canon' }, { DateTimeOriginal: '2022:01:01 00:00:00' });
+
+      await sut.backfillDateSources([asset.id]);
+
+      expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith({ assetId: asset.id, dateFromExif: true });
+    });
+
+    it('should record that a file without date tags fell back on the file times', async () => {
+      const asset = AssetFactory.create();
+      mocks.assetJob.getForDateSource.mockResolvedValue([
+        { id: asset.id, originalPath: asset.originalPath, files: [] },
+      ]);
+      mocks.metadata.readTags.mockReset();
+      mocks.metadata.readTags.mockResolvedValueOnce({ Make: 'Canon' });
+
+      await sut.backfillDateSources([asset.id]);
+
+      expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith({ assetId: asset.id, dateFromExif: false });
+    });
+
+    it('should leave a file that cannot be read unknown', async () => {
+      const asset = AssetFactory.create();
+      mocks.assetJob.getForDateSource.mockResolvedValue([
+        { id: asset.id, originalPath: asset.originalPath, files: [] },
+      ]);
+      mocks.metadata.readTags.mockReset();
+      mocks.metadata.readTags.mockResolvedValueOnce({});
+
+      await sut.backfillDateSources([asset.id]);
+
+      expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith();
+    });
+  });
+
   describe('handleMetadataExtraction', () => {
     beforeEach(() => {
       const time = new Date('2022-01-01T00:00:00.000Z');
@@ -210,6 +270,9 @@ describe(MetadataService.name, () => {
           localDateTime: sidecarDate,
         }),
       );
+      expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ assetId: asset.id, dateFromExif: true }),
+      );
     });
 
     it('should take the file modification date when missing exif and earlier than creation date', async () => {
@@ -242,6 +305,9 @@ describe(MetadataService.name, () => {
         width: null,
         height: null,
       });
+      expect(mocks.asset.upsertJobStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ assetId: asset.id, dateFromExif: false }),
+      );
     });
 
     it('should take the file creation date when missing exif and earlier than modification date', async () => {

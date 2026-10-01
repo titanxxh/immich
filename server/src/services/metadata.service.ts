@@ -400,7 +400,11 @@ export class MetadataService extends BaseService {
       await this.linkLivePhotos(asset, exifData);
     }
 
-    await this.assetRepository.upsertJobStatus({ assetId: asset.id, metadataExtractedAt: new Date() });
+    await this.assetRepository.upsertJobStatus({
+      assetId: asset.id,
+      metadataExtractedAt: new Date(),
+      dateFromExif: dates.fromExif,
+    });
 
     await this.eventRepository.emit('AssetMetadataExtracted', {
       assetId: asset.id,
@@ -523,6 +527,36 @@ export class MetadataService extends BaseService {
     await this.assetRepository.unlockProperties(asset.id, lockedProperties);
 
     return JobStatus.Success;
+  }
+
+  /**
+   * Records whether the capture date of each asset comes from its metadata, for assets extracted before this was
+   * tracked. Only reads the date tags: nothing else about the asset changes and no workflow runs.
+   */
+  async backfillDateSources(assetIds: string[]): Promise<void> {
+    if (assetIds.length === 0) {
+      return;
+    }
+
+    const assets = await this.assetJobRepository.getForDateSource(assetIds);
+    for (const batch of _.chunk(assets, 8)) {
+      const statuses = await Promise.all(
+        batch.map(async (asset) => {
+          const { sidecarFile } = getAssetFiles(asset.files);
+          const [mediaTags, sidecarTags] = await Promise.all([
+            this.metadataRepository.readTags(asset.originalPath),
+            sidecarFile ? this.metadataRepository.readTags(sidecarFile.path) : null,
+          ]);
+          // a file that cannot be read has no tags at all: leave it unknown rather than call its date unreliable
+          if (Object.keys(mediaTags).length === 0) {
+            return;
+          }
+          const dateTime = (sidecarTags && firstDateTime(sidecarTags)) ?? firstDateTime(mediaTags);
+          return { assetId: asset.id, dateFromExif: !!dateTime };
+        }),
+      );
+      await this.assetRepository.upsertJobStatus(...statuses.filter((status) => status !== undefined));
+    }
   }
 
   private getSidecarCandidates({ files, originalPath }: { files: AssetFile[]; originalPath: string }) {
@@ -1057,6 +1091,7 @@ export class MetadataService extends BaseService {
       timeZone,
       localDateTime: localDateTime.toJSDate(),
       dateTimeOriginal: dateTimeOriginal.toJSDate(),
+      fromExif: !!dateTime,
     };
   }
 
