@@ -55,6 +55,10 @@ export class ReorganizationTable {
   @Column({ type: 'boolean', default: false })
   autoRename!: Generated<boolean>;
 
+  /** album the moved photos are added to; not a foreign key, the record outlives the album */
+  @Column({ type: 'uuid', nullable: true })
+  albumId!: string | null;
+
   @Column({ type: 'character varying' })
   status!: string;
 

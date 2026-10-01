@@ -89,6 +89,21 @@ export class ReorganizeRepository {
       .execute();
   }
 
+  /** The album the latest reorganization of a user into a target added its photos to. */
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.STRING] })
+  async getLastAlbumId(ownerId: string, targetPath: string) {
+    const row = await this.db
+      .selectFrom('reorganization')
+      .select('albumId')
+      .where('ownerId', '=', asUuid(ownerId))
+      .where('targetPath', '=', targetPath)
+      .where('albumId', 'is not', null)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+    return row?.albumId ?? undefined;
+  }
+
   /** The reorganization that is running or about to, of any user: only one runs at a time. */
   @GenerateSql()
   getActive() {

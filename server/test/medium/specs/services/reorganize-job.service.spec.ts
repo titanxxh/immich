@@ -723,6 +723,88 @@ describe(ReorganizeJobService.name, () => {
     await expect(sut.get(auth, created.id)).resolves.toMatchObject({ removedFolderCount: 2 });
   });
 
+  it('should add the photos that move to the album, and take them out again on undo', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, getItems, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    const moved = await newPhoto(libraryId, `${team}/a.jpg`);
+    const alreadyThere = await newPhoto(libraryId, `${team}/b.jpg`);
+    const inPlace = await newPhoto(libraryId, `${team}/2026-03-15/c.jpg`);
+    const stays = await newPhoto(libraryId, `${team}/d.jpg`);
+    await ctx.database
+      .updateTable('asset_job_status')
+      .set({ dateFromExif: false })
+      .where('assetId', '=', stays)
+      .execute();
+    const { album } = await ctx.newAlbum({ ownerId: auth.user.id }, [alreadyThere]);
+    const albumAssets = async () => {
+      const rows = await ctx.database
+        .selectFrom('album_asset')
+        .select('assetId')
+        .where('albumId', '=', album.id)
+        .execute();
+      return rows.map((row) => row.assetId).toSorted((a, b) => a.localeCompare(b));
+    };
+
+    const created = await sut.create(auth, dto(team, { albumId: album.id }));
+    expect(created.album).toEqual({ id: album.id, albumName: album.albumName });
+    await job.handleReorganize({ id: created.id });
+
+    // only what moved goes in: not the photo already in its folder, not the one left out
+    await expect(albumAssets()).resolves.toEqual([moved, alreadyThere].toSorted((a, b) => a.localeCompare(b)));
+    const items = await getItems(created.id);
+    expect(items.map((item) => [item.status, item.addedToAlbum])).toEqual([
+      ['moved', true],
+      ['moved', false],
+      ['stayed', false],
+    ]);
+    expect(inPlace).toBeDefined();
+    const updated = await ctx.database
+      .selectFrom('album')
+      .selectAll()
+      .where('id', '=', album.id)
+      .executeTakeFirstOrThrow();
+    expect(updated.albumThumbnailAssetId).not.toBeNull();
+
+    // the next reorganization into the same folder is offered the same album
+    await expect(sut.preview(auth, dto(team))).resolves.toMatchObject({
+      suggestedAlbum: { id: album.id, albumName: album.albumName },
+    });
+
+    await sut.undo(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    // the photo that was in the album before the reorganization stays in it
+    await expect(albumAssets()).resolves.toEqual([alreadyThere]);
+  });
+
+  it('should move the photos even when their album was deleted in the meantime', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    await newPhoto(libraryId, `${team}/a.jpg`);
+    const { album } = await ctx.newAlbum({ ownerId: auth.user.id });
+
+    const created = await sut.create(auth, dto(team, { albumId: album.id }));
+    await ctx.database.deleteFrom('album').where('id', '=', album.id).execute();
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['2026-03-15/a.jpg']);
+    await expect(sut.get(auth, created.id)).resolves.toMatchObject({ status: 'completed', movedCount: 1, album: null });
+  });
+
+  it('should refuse an album the user cannot add photos to', async () => {
+    const { sut, ctx, auth, root, newLibrary, newPhoto, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    await newPhoto(libraryId, `${team}/a.jpg`);
+    const { user: other } = await ctx.newUser();
+    const { album } = await ctx.newAlbum({ ownerId: other.id });
+
+    await expect(sut.create(auth, dto(team, { albumId: album.id }))).rejects.toThrow();
+    await expect(tree(team)).resolves.toEqual(['a.jpg']);
+  });
+
   it('should only run one reorganization at a time', async () => {
     const { sut, job, auth, root, newLibrary, newPhoto, dto } = await setup();
     const libraryId = await newLibrary('photos');

@@ -61,6 +61,7 @@ describe(ReorganizeService.name, () => {
       disk[folder] ? Promise.resolve(disk[folder].map((entry) => entry.name)) : Promise.reject(new Error('ENOENT')),
     );
     mocks.reorganize.getFolderAssets.mockResolvedValue([]);
+    mocks.reorganize.getLastAlbumId.mockResolvedValue(void 0);
   });
 
   describe('getFolders', () => {
@@ -288,6 +289,27 @@ describe(ReorganizeService.name, () => {
         skipCount: 1,
         staying: [{ action: 'skip', reason: 'identical', count: 1 }],
       });
+    });
+
+    it('should offer the album the last reorganization into the target used', async () => {
+      mocks.reorganize.getFolderAssets.mockResolvedValue([row(`${TEAM}/a.jpg`)]);
+      mocks.reorganize.getLastAlbumId.mockResolvedValue('album-1');
+      mocks.access.album.checkOwnerAccess.mockResolvedValue(new Set(['album-1']));
+      mocks.album.getById.mockResolvedValue({ id: 'album-1', albumName: 'Team' } as any);
+
+      await expect(sut.preview(authStub.admin, dto())).resolves.toMatchObject({
+        suggestedAlbum: { id: 'album-1', albumName: 'Team' },
+      });
+      expect(mocks.reorganize.getLastAlbumId).toHaveBeenCalledWith(USER, TEAM);
+    });
+
+    it('should not offer an album the user can no longer add to', async () => {
+      mocks.reorganize.getFolderAssets.mockResolvedValue([row(`${TEAM}/a.jpg`)]);
+      mocks.reorganize.getLastAlbumId.mockResolvedValue('album-1');
+      mocks.access.album.checkOwnerAccess.mockResolvedValue(new Set());
+      mocks.access.album.checkSharedAlbumAccess.mockResolvedValue(new Set());
+
+      await expect(sut.preview(authStub.admin, dto())).resolves.toMatchObject({ suggestedAlbum: null });
     });
 
     it('should count the subfolders that end up empty', async () => {
