@@ -10,6 +10,7 @@ import { AccessRepository } from 'src/repositories/access.repository';
 import { AlbumRepository } from 'src/repositories/album.repository';
 import { AssetJobRepository } from 'src/repositories/asset-job.repository';
 import { AssetRepository } from 'src/repositories/asset.repository';
+import { ConfigRepository } from 'src/repositories/config.repository';
 import { CryptoRepository } from 'src/repositories/crypto.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
 import { JobRepository } from 'src/repositories/job.repository';
@@ -17,6 +18,7 @@ import { LibraryRepository } from 'src/repositories/library.repository';
 import { LoggingRepository } from 'src/repositories/logging.repository';
 import { ReorganizeRepository } from 'src/repositories/reorganize.repository';
 import { StorageRepository } from 'src/repositories/storage.repository';
+import { SystemMetadataRepository } from 'src/repositories/system-metadata.repository';
 import { DB } from 'src/schema';
 import { BaseService } from 'src/services/base.service';
 import { ReorganizeJobService } from 'src/services/reorganize-job.service';
@@ -35,11 +37,13 @@ const setup = async () => {
       AlbumRepository,
       AssetRepository,
       AssetJobRepository,
+      ConfigRepository,
       CryptoRepository,
       DatabaseRepository,
       LibraryRepository,
       ReorganizeRepository,
       StorageRepository,
+      SystemMetadataRepository,
     ],
     mock: [JobRepository, LoggingRepository],
   });
@@ -285,7 +289,7 @@ describe(ReorganizeJobService.name, () => {
       movedCount: 0,
       undoneCount: 2,
     });
-    await expect(sut.undo(auth, created.id)).rejects.toThrow('already undone');
+    await expect(sut.undo(auth, created.id)).rejects.toThrow('nothing to undo');
   });
 
   it('should leave a photo on undo when its old place is taken or it moved again', async () => {
@@ -526,7 +530,11 @@ describe(ReorganizeJobService.name, () => {
         .execute();
       await job.onBootstrap();
 
-      // undoing the interrupted run: a moved and goes back, b never moved and only loses its stray link
+      // the photo it was busy with is sorted out right away, before library scans run again:
+      // a is finished (its old name goes), b is taken back (its stray new name goes)
+      await expect(tree(team)).resolves.toEqual(['2026-03-15/a.jpg', 'b.jpg']);
+      await expect(getItems(created.id)).resolves.toMatchObject([{ status: 'moved' }, { status: 'pending' }]);
+
       await sut.undo(auth, created.id);
       await job.handleReorganize({ id: created.id });
 
@@ -536,6 +544,183 @@ describe(ReorganizeJobService.name, () => {
       const items = await getItems(created.id);
       expect(items.map((item) => item.status)).toEqual(['undone', 'pending']);
     });
+  });
+
+  it('should pause, not write the photos off, when the storage is gone before the first file is touched', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, getItems, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    await newPhoto(libraryId, `${team}/a.jpg`);
+    await newPhoto(libraryId, `${team}/b.jpg`);
+    const created = await sut.create(auth, dto(team));
+    const stat = vitest.spyOn(ctx.get(StorageRepository), 'stat').mockRejectedValue(error('ENOTCONN'));
+
+    await job.handleReorganize({ id: created.id });
+
+    await expect(sut.get(auth, created.id)).resolves.toMatchObject({
+      status: 'paused',
+      stayedCount: 0,
+      pendingCount: 2,
+    });
+    await expect(getItems(created.id)).resolves.toMatchObject([{ status: 'moving' }, { status: 'pending' }]);
+
+    stat.mockRestore();
+    await sut.resume(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['2026-03-15/a.jpg', '2026-03-15/b.jpg']);
+  });
+
+  it('should take a photo and its place again when the user continues after freeing the place', async () => {
+    const { sut, job, auth, root, newLibrary, newPhoto, getItems, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    await newPhoto(libraryId, `${team}/a.jpg`);
+    const created = await sut.create(auth, dto(team));
+    await mkdir(`${team}/2026-03-15`, { recursive: true });
+    await writeFile(`${team}/2026-03-15/a.jpg`, 'in the way');
+    await job.handleReorganize({ id: created.id });
+    await expect(getItems(created.id)).resolves.toMatchObject([{ status: 'stayed', reason: 'target-exists' }]);
+
+    await rm(`${team}/2026-03-15/a.jpg`);
+    await sut.resume(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['2026-03-15/a.jpg']);
+    await expect(getItems(created.id)).resolves.toMatchObject([{ status: 'moved', reason: null }]);
+  });
+
+  it('should move back, on a second undo, a photo whose old place was taken the first time', async () => {
+    const { sut, job, auth, root, newLibrary, newPhoto, getAsset, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    const a = await newPhoto(libraryId, `${team}/a.jpg`);
+    const created = await sut.create(auth, dto(team));
+    await job.handleReorganize({ id: created.id });
+    await writeFile(`${team}/a.jpg`, 'in the way');
+
+    await sut.undo(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+    await expect(sut.get(auth, created.id)).resolves.toMatchObject({ isUndo: true, undoSkippedCount: 1 });
+
+    await rm(`${team}/a.jpg`);
+    await sut.undo(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['a.jpg']);
+    await expect(getAsset(a)).resolves.toMatchObject({ originalPath: `${team}/a.jpg` });
+    await expect(sut.get(auth, created.id)).resolves.toMatchObject({ undoneCount: 1, undoSkippedCount: 0 });
+    await expect(sut.undo(auth, created.id)).rejects.toThrow('nothing to undo');
+  });
+
+  it('should take along, on undo, a sidecar that was written after the reorganization', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, getSidecar, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    const a = await newPhoto(libraryId, `${team}/in/a.jpg`);
+    const created = await sut.create(auth, dto(team));
+    await job.handleReorganize({ id: created.id });
+
+    // the user edits the photo's location: a sidecar appears next to the photo in its date folder
+    await writeFile(`${team}/2026-03-15/a.jpg.xmp`, 'new sidecar');
+    await ctx.newAssetFile({ assetId: a, type: AssetFileType.Sidecar, path: `${team}/2026-03-15/a.jpg.xmp` });
+
+    await sut.undo(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['in/a.jpg', 'in/a.jpg.xmp']);
+    await expect(readFile(`${team}/in/a.jpg.xmp`, 'utf8')).resolves.toBe('new sidecar');
+    await expect(getSidecar(a)).resolves.toEqual({ path: `${team}/in/a.jpg.xmp` });
+    expect(existsSync(`${team}/2026-03-15`)).toBe(false);
+  });
+
+  it('should keep the files in place when the database reports an error but did change', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, getAsset, getItems, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    const a = await newPhoto(libraryId, `${team}/a.jpg`);
+    const repository = ctx.get(ReorganizeRepository);
+    const applyMove = repository.applyMove.bind(repository);
+    vitest.spyOn(repository, 'applyMove').mockImplementationOnce(async (...args) => {
+      await applyMove(...args);
+      throw new Error('connection lost while committing');
+    });
+
+    const created = await sut.create(auth, dto(team));
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['2026-03-15/a.jpg']);
+    await expect(getAsset(a)).resolves.toMatchObject({ originalPath: `${team}/2026-03-15/a.jpg` });
+    await expect(getItems(created.id)).resolves.toMatchObject([{ status: 'moved' }]);
+  });
+
+  it('should not touch a file at the target that belongs to another photo when sorting out a failed one', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, getAsset, getItems, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    const a = await newPhoto(libraryId, `${team}/in/a.jpg`, { content: 'same bytes' });
+    const repository = ctx.get(ReorganizeRepository);
+    const applyMove = vitest.spyOn(repository, 'applyMove').mockRejectedValueOnce(new Error('duplicate key'));
+    const created = await sut.create(auth, dto(`${team}/in`, { targetPath: team }));
+    await job.handleReorganize({ id: created.id });
+    applyMove.mockRestore();
+    await expect(getItems(created.id)).resolves.toMatchObject([{ status: 'failed' }]);
+
+    // before the user retries, an identical copy lands at the target and is imported as its own photo
+    const other = await newPhoto(libraryId, `${team}/2026-03-15/a.jpg`, { content: 'same bytes' });
+
+    await sut.resume(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['2026-03-15/a.jpg', 'in/a.jpg']);
+    await expect(getAsset(other)).resolves.toMatchObject({ originalPath: `${team}/2026-03-15/a.jpg` });
+    await expect(getAsset(a)).resolves.toMatchObject({ originalPath: `${team}/in/a.jpg` });
+    await expect(getItems(created.id)).resolves.toMatchObject([{ status: 'stayed', reason: 'target-exists' }]);
+  });
+
+  it('should copy and rename on a file system without hard links', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, getAsset, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    const a = await newPhoto(libraryId, `${team}/a.jpg`, { sidecar: true });
+    vitest.spyOn(ctx.get(StorageRepository), 'link').mockRejectedValue(error('EPERM'));
+
+    const created = await sut.create(auth, dto(team));
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['2026-03-15/a.jpg', '2026-03-15/a.jpg.xmp']);
+    await expect(readFile(`${team}/2026-03-15/a.jpg`, 'utf8')).resolves.toBe(`content of ${team}/a.jpg`);
+    await expect(getAsset(a)).resolves.toMatchObject({ originalPath: `${team}/2026-03-15/a.jpg` });
+
+    await sut.undo(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    await expect(tree(team)).resolves.toEqual(['a.jpg', 'a.jpg.xmp']);
+  });
+
+  it('should remove the folders it emptied even when the run was cancelled half-way and continued', async () => {
+    const { sut, job, ctx, auth, root, newLibrary, newPhoto, dto } = await setup();
+    const libraryId = await newLibrary('photos');
+    const team = join(root, 'photos/team');
+    await newPhoto(libraryId, `${team}/camera/a.jpg`);
+    await newPhoto(libraryId, `${team}/phone/b.jpg`);
+    const created = await sut.create(auth, dto(team));
+    const repository = ctx.get(ReorganizeRepository);
+    const applyMove = repository.applyMove.bind(repository);
+    const spy = vitest.spyOn(repository, 'applyMove').mockImplementation(async (...args) => {
+      await applyMove(...args);
+      await sut.cancel(auth, created.id);
+    });
+    await job.handleReorganize({ id: created.id });
+    spy.mockRestore();
+    expect(existsSync(`${team}/camera`)).toBe(true);
+
+    await sut.resume(auth, created.id);
+    await job.handleReorganize({ id: created.id });
+
+    expect(existsSync(`${team}/camera`)).toBe(false);
+    expect(existsSync(`${team}/phone`)).toBe(false);
+    await expect(sut.get(auth, created.id)).resolves.toMatchObject({ removedFolderCount: 2 });
   });
 
   it('should only run one reorganization at a time', async () => {
@@ -549,9 +734,9 @@ describe(ReorganizeJobService.name, () => {
     await expect(sut.create(auth, dto(`${root}/photos/two`))).rejects.toThrow('Another reorganization');
     await expect(sut.delete(auth, first.id)).rejects.toThrow('still running');
 
-    await sut.cancel(auth, first.id);
-    await job.handleReorganize({ id: first.id });
-    await expect(sut.get(auth, first.id)).resolves.toMatchObject({ status: 'cancelled', pendingCount: 1 });
+    // a run that has not started is cancelled on the spot, and its job then does nothing
+    await expect(sut.cancel(auth, first.id)).resolves.toMatchObject({ status: 'cancelled', pendingCount: 1 });
+    await expect(job.handleReorganize({ id: first.id })).resolves.toBe(JobStatus.Skipped);
     await expect(sut.delete(auth, first.id)).resolves.toBeUndefined();
   });
 });

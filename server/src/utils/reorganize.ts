@@ -142,7 +142,7 @@ const withSuffix = (fileName: string, index: number): string => {
 };
 
 /** The sidecar's new name, keeping whichever way it was named after the photo. */
-const getSidecarName = (sidecarPath: string, fileName: string, newFileName: string): string => {
+export const getSidecarName = (sidecarPath: string, fileName: string, newFileName: string): string => {
   const sidecarName = basename(sidecarPath);
   const extension = extname(sidecarName);
   const stem = (name: string) => name.slice(0, name.length - extname(name).length);

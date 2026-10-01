@@ -176,16 +176,54 @@ export class ReorganizeRepository {
     await this.db.deleteFrom('reorganization').where('id', '=', asUuid(id)).execute();
   }
 
-  /** Marks the reorganizations that were running as cut short. Returns how many there were. */
+  /** Marks the reorganizations that were running as cut short, and returns them. */
   @GenerateSql()
-  async interruptRunning() {
-    const rows = await this.db
+  interruptRunning() {
+    return this.db
       .updateTable('reorganization')
       .set({ status: 'interrupted' satisfies ReorganizationStatus, cancelRequested: false })
       .where('status', '=', 'running' satisfies ReorganizationStatus)
-      .returning('id')
+      .returningAll()
       .execute();
-    return rows.length;
+  }
+
+  /**
+   * Gives the photos that stayed for a reason found while running (their place was taken, their file was missing)
+   * another go. Photos the plan itself left out have no destination and are not touched.
+   */
+  @GenerateSql({ params: [DummyValue.UUID, 'stayed', 'pending'] })
+  async retryStayed(id: string, from: ReorganizationItemStatus, to: ReorganizationItemStatus) {
+    await this.db
+      .updateTable('reorganization_item')
+      .set({ status: to, reason: null, error: null })
+      .where('reorganizationId', '=', asUuid(id))
+      .where('status', '=', from)
+      .where('toPath', 'is not', null)
+      .where('assetId', 'is not', null)
+      .execute();
+  }
+
+  /** Whether a path is the file or the sidecar of an asset other than the given one. */
+  @GenerateSql({ params: [DummyValue.STRING, DummyValue.UUID] })
+  async isUsedByAnother(path: string, assetId: string) {
+    const asset = await this.db
+      .selectFrom('asset')
+      .select('id')
+      .where('originalPath', '=', path)
+      .where('id', '!=', asUuid(assetId))
+      .limit(1)
+      .executeTakeFirst();
+    if (asset) {
+      return true;
+    }
+    const file = await this.db
+      .selectFrom('asset_file')
+      .select('id')
+      .where('path', '=', path)
+      .where('assetId', '!=', asUuid(assetId))
+      .limit(1)
+      .executeTakeFirst();
+    return !!file;
   }
 
   /** Where a photo is right now, to check it against what a reorganization expects. */
@@ -203,6 +241,15 @@ export class ReorganizeRepository {
         'asset.livePhotoVideoId',
         'video.isExternal as videoIsExternal',
       ])
+      .select((eb) =>
+        eb
+          .selectFrom('asset_file')
+          .select('asset_file.path')
+          .whereRef('asset_file.assetId', '=', 'asset.id')
+          .where('asset_file.type', '=', AssetFileType.Sidecar)
+          .limit(1)
+          .as('sidecarPath'),
+      )
       .where('asset.id', '=', asUuid(assetId))
       .executeTakeFirst();
   }

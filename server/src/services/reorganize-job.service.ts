@@ -6,10 +6,11 @@ import { DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName } from 'src/e
 import { ReorganizeMove } from 'src/repositories/reorganize.repository';
 import { BaseService } from 'src/services/base.service';
 import { JobOf } from 'src/types';
-import { ReorganizationItemStatus, ReorganizationStatus } from 'src/utils/reorganize';
+import { getSidecarName, ReorganizationItemStatus, ReorganizationStatus } from 'src/utils/reorganize';
 
 type Reorganization = NonNullable<Awaited<ReturnType<ReorganizeJobService['reorganizeRepository']['get']>>>;
 type Item = Awaited<ReturnType<ReorganizeJobService['reorganizeRepository']['getItems']>>[number];
+type AssetState = NonNullable<Awaited<ReturnType<ReorganizeJobService['reorganizeRepository']['getAssetState']>>>;
 
 /** One file changing place on disk. */
 interface FileMove {
@@ -20,21 +21,21 @@ interface FileMove {
 /** A photo with everything that goes with it, in the direction it is travelling. */
 interface Transfer {
   itemId: string;
-  assetId: string;
+  assetId: string | null;
   original: FileMove;
+  /** the sidecar as it was when the reorganization was planned */
   sidecar?: FileMove;
   video?: FileMove & { assetId: string };
   libraryId: string;
 }
 
 const BATCH_SIZE = 100;
+const ALL = 1_000_000;
 const LIBRARY_QUEUE_WAIT_MS = 5 * 60 * 1000;
 const LIBRARY_QUEUE_POLL_MS = 1000;
 
 /** Errors that mean the storage itself is gone, so trying the next photo is pointless. */
 const STORAGE_GONE = new Set(['ENOTCONN', 'EIO', 'EHOSTDOWN', 'EHOSTUNREACH', 'ESTALE', 'ETIMEDOUT', 'ENXIO']);
-/** Errors of `link` that mean the two paths are on different file systems, so the file must be copied. */
-const CROSS_DEVICE = new Set(['EXDEV', 'EPERM']);
 /** Errors of `link` that mean the file system has no hard links. */
 const NO_HARD_LINKS = new Set(['ENOSYS', 'EOPNOTSUPP', 'ENOTSUP', 'EMLINK']);
 
@@ -54,15 +55,25 @@ class StorageGone extends Error {}
 export class ReorganizeJobService extends BaseService {
   /**
    * A reorganization that was running when the server stopped does not pick up by itself: the user decides whether
-   * to continue or undo. The library queue it had paused is let go.
+   * to continue or undo. The photo it was busy with is brought back in line with the database first, so that the
+   * library scans it had been holding back do not find a file under two names.
    */
   @OnEvent({ name: 'AppBootstrap', workers: [ImmichWorker.Microservices] })
   async onBootstrap() {
-    const count = await this.reorganizeRepository.interruptRunning();
-    if (count > 0) {
-      this.logger.warn(`Marked ${count} reorganization(s) as interrupted by the restart`);
-      await this.jobRepository.resume(QueueName.Library);
+    const records = await this.reorganizeRepository.interruptRunning();
+    if (records.length === 0) {
+      return;
     }
+
+    this.logger.warn(`Marked ${records.length} reorganization(s) as interrupted by the restart`);
+    for (const record of records) {
+      try {
+        await this.reconcile(record, ['moving', 'undoing']);
+      } catch (error) {
+        this.logger.error(`Unable to sort out reorganization ${record.id} after the restart: ${error}`);
+      }
+    }
+    await this.jobRepository.resume(QueueName.Library);
   }
 
   @OnJob({ name: JobName.Reorganize, queue: QueueName.BackgroundTask })
@@ -77,23 +88,34 @@ export class ReorganizeJobService extends BaseService {
       const finish = (status: ReorganizationStatus, error: string | null = null) =>
         this.reorganizeRepository.update(id, { status, error, cancelRequested: false, finishedAt: new Date() });
 
+      // a watcher turns every file that loses its name into a job that deletes the asset at that path
+      const { library } = await this.getConfig({ withCache: false });
+      if (library.watch.enabled) {
+        await finish('paused', 'Library watching is on; turn it off to reorganize');
+        return JobStatus.Failed;
+      }
+
       const wasPaused = await this.jobRepository.isPaused(QueueName.Library);
       try {
-        // library scans and reorganizing must not see each other's half-done work; watch events queue up behind
-        // the pause and find a consistent database when they run
+        // library scans and reorganizing must not see each other's half-done work
         await this.jobRepository.pause(QueueName.Library);
         if (!(await this.waitForLibraryQueue())) {
           await finish('paused', 'A library scan is still running');
           return JobStatus.Failed;
         }
 
-        await this.reconcile(record);
+        await this.reconcile(
+          record,
+          record.isUndo ? ['moving', 'failed', 'undoing', 'undo-failed'] : ['moving', 'failed'],
+        );
         const status = await this.run(record);
         await finish(status.status, status.error);
         return JobStatus.Success;
       } catch (error) {
-        this.logger.error(`Reorganization ${id} stopped: ${error}`, (error as Error)?.stack);
-        await finish('paused', String(error));
+        if (!(error instanceof StorageGone)) {
+          this.logger.error(`Reorganization ${id} stopped: ${error}`, (error as Error)?.stack);
+        }
+        await finish('paused', error instanceof Error ? error.message : String(error));
         return JobStatus.Failed;
       } finally {
         if (!wasPaused) {
@@ -121,7 +143,9 @@ export class ReorganizeJobService extends BaseService {
     const done: ReorganizationItemStatus = isUndo ? 'undone' : 'moved';
     const failed: ReorganizationItemStatus = isUndo ? 'undo-failed' : 'failed';
     const stayed: ReorganizationItemStatus = isUndo ? 'undo-skipped' : 'stayed';
-    const emptied = new Set<string>();
+    // folders are recorded as they are created, so that an undo finds them whatever happens to the photo
+    const onFoldersCreated = (folders: string[]) =>
+      isUndo ? Promise.resolve() : this.reorganizeRepository.addFolders(id, 'createdFolders', folders);
 
     for (;;) {
       const items = await this.reorganizeRepository.getItems(id, {
@@ -141,13 +165,8 @@ export class ReorganizeJobService extends BaseService {
 
         await this.reorganizeRepository.updateItem(item.id, { status: busy, error: null });
         try {
-          const transfer = this.toTransfer(item, isUndo);
-          const created = await this.transfer(transfer);
+          await this.transfer(this.toTransfer(item, isUndo), onFoldersCreated);
           await this.reorganizeRepository.updateItem(item.id, { status: done });
-          if (!isUndo) {
-            await this.reorganizeRepository.addFolders(id, 'createdFolders', created);
-          }
-          emptied.add(dirname(transfer.original.from));
         } catch (error) {
           if (error instanceof StorageGone) {
             // the photo stays marked as busy; continuing sorts out how far it got
@@ -163,7 +182,7 @@ export class ReorganizeJobService extends BaseService {
       }
     }
 
-    await (isUndo ? this.removeCreatedFolders(record) : this.removeEmptiedFolders(record, emptied));
+    await (isUndo ? this.removeCreatedFolders(record) : this.removeEmptiedFolders(record));
 
     return { status: 'completed', error: null };
   }
@@ -172,7 +191,7 @@ export class ReorganizeJobService extends BaseService {
     const flip = (from: string, to: string): FileMove => (isUndo ? { from: to, to: from } : { from, to });
     return {
       itemId: item.id,
-      assetId: item.assetId!,
+      assetId: item.assetId,
       original: flip(item.fromPath, item.toPath!),
       sidecar: item.sidecarFromPath ? flip(item.sidecarFromPath, item.sidecarToPath!) : undefined,
       video: item.videoAssetId
@@ -182,20 +201,39 @@ export class ReorganizeJobService extends BaseService {
     };
   }
 
-  private filesOf(transfer: Transfer): FileMove[] {
-    return [transfer.original, transfer.sidecar, transfer.video].filter((file) => file !== undefined);
+  /**
+   * The sidecar of a photo as the database has it now, with where it belongs at the other end. A sidecar written
+   * after the reorganization was planned (by editing the photo's date or location) travels with its photo too.
+   */
+  private sidecarOf(transfer: Transfer, state: AssetState): FileMove | undefined {
+    const current = state.sidecarPath;
+    if (!current) {
+      return transfer.sidecar;
+    }
+
+    const counterpart = (here: string, there: string) =>
+      join(dirname(there), getSidecarName(current, basename(here), basename(there)));
+    if (state.originalPath === transfer.original.to) {
+      return transfer.sidecar?.to === current
+        ? transfer.sidecar
+        : { from: counterpart(transfer.original.to, transfer.original.from), to: current };
+    }
+    return transfer.sidecar?.from === current
+      ? transfer.sidecar
+      : { from: current, to: counterpart(transfer.original.from, transfer.original.to) };
+  }
+
+  private filesOf(transfer: Transfer, state: AssetState): FileMove[] {
+    return [transfer.original, this.sidecarOf(transfer, state), transfer.video].filter((file) => file !== undefined);
   }
 
   /**
    * Moves one photo with its sidecar and live video, and points the database at the new place. Every file gets its
    * new name before the database changes and loses its old name after, so that whatever goes wrong in between, the
-   * database points at a complete photo. Returns the folders it had to create.
+   * database points at a complete photo.
    */
-  private async transfer(transfer: Transfer): Promise<string[]> {
-    if (!transfer.assetId) {
-      throw new Stay('deleted');
-    }
-    const state = await this.reorganizeRepository.getAssetState(transfer.assetId);
+  private async transfer(transfer: Transfer, onFoldersCreated: (folders: string[]) => Promise<void>) {
+    const state = transfer.assetId ? await this.reorganizeRepository.getAssetState(transfer.assetId) : undefined;
     if (!state) {
       throw new Stay('deleted');
     }
@@ -208,21 +246,28 @@ export class ReorganizeJobService extends BaseService {
     if (state.deletedAt) {
       throw new Stay('trashed');
     }
+    // a separate video the photo was linked to after the plan was made is not accounted for
+    if (state.livePhotoVideoId && state.videoIsExternal && !transfer.video) {
+      throw new Stay('changed');
+    }
 
-    const files = this.filesOf(transfer);
-    const created: string[] = [];
+    const files = this.filesOf(transfer, state);
     const placed: Array<FileMove & { isRenamed: boolean }> = [];
-    const unplace = async () => {
-      for (const file of placed.toReversed()) {
-        await (file.isRenamed
-          ? this.storageRepository.rename(file.to, file.from)
-          : this.storageRepository.unlink(file.to));
+    const takeBack = async () => {
+      try {
+        for (const file of placed.toReversed()) {
+          await (file.isRenamed
+            ? this.storageRepository.rename(file.to, file.from)
+            : this.storageRepository.unlink(file.to));
+        }
+      } catch (error) {
+        this.logger.error(`Unable to take back ${transfer.original.to}: ${error}`);
       }
     };
 
     try {
       for (const file of files) {
-        if (!(await this.storageRepository.checkFileExists(file.from))) {
+        if (!(await this.exists(file.from))) {
           throw new Stay('missing');
         }
       }
@@ -230,30 +275,31 @@ export class ReorganizeJobService extends BaseService {
       for (const [index, file] of files.entries()) {
         const folder = await this.storageRepository.mkdir(dirname(file.to));
         if (folder) {
-          created.push(...this.foldersBetween(folder, dirname(file.to)));
+          await onFoldersCreated(this.foldersBetween(folder, dirname(file.to)));
         }
         const isRenamed = await this.place(file, `${transfer.itemId}-${index}`);
         placed.push({ ...file, isRenamed });
       }
     } catch (error) {
-      await unplace().catch((unplaceError) =>
-        this.logger.error(`Unable to take back ${transfer.original.to}: ${unplaceError}`),
-      );
+      await takeBack();
       throw this.classify(error);
     }
 
     try {
       await this.reorganizeRepository.applyMove(
-        this.toMove(transfer),
+        this.toMove(transfer, state),
+        // a video extracted from the photo's own file has nothing to move, but follows its photo to another library
         state.livePhotoVideoId && !transfer.video && state.libraryId !== transfer.libraryId
           ? state.livePhotoVideoId
           : undefined,
       );
     } catch (error) {
-      await unplace().catch((unplaceError) =>
-        this.logger.error(`Unable to take back ${transfer.original.to}: ${unplaceError}`),
-      );
-      throw error;
+      // an error does not always mean nothing changed: only take the files back if the database still says so
+      const after = await this.reorganizeRepository.getAssetState(state.id).catch(() => null);
+      if (after?.originalPath !== transfer.original.to) {
+        await takeBack();
+        throw error;
+      }
     }
 
     try {
@@ -266,11 +312,9 @@ export class ReorganizeJobService extends BaseService {
       // the photo is in its new place; its old file is still there and a retry removes it
       throw this.classify(new Error(`Moved, but the old file could not be removed: ${error}`, { cause: error }));
     }
-
-    return created;
   }
 
-  private toMove(transfer: Transfer): ReorganizeMove {
+  private toMove(transfer: Transfer, state: AssetState): ReorganizeMove {
     const asset = (assetId: string, file: FileMove) => ({
       assetId,
       fromPath: file.from,
@@ -279,10 +323,11 @@ export class ReorganizeJobService extends BaseService {
       fileName: basename(file.from) === basename(file.to) ? undefined : basename(file.to),
       libraryId: transfer.libraryId,
     });
+    const sidecar = this.sidecarOf(transfer, state);
 
     return {
-      original: asset(transfer.assetId, transfer.original),
-      sidecar: transfer.sidecar && { fromPath: transfer.sidecar.from, toPath: transfer.sidecar.to },
+      original: asset(state.id, transfer.original),
+      sidecar: sidecar && { fromPath: sidecar.from, toPath: sidecar.to },
       video: transfer.video && asset(transfer.video.assetId, transfer.video),
     };
   }
@@ -300,7 +345,9 @@ export class ReorganizeJobService extends BaseService {
       if (code === 'EEXIST') {
         throw new Stay('target-exists');
       }
-      if (CROSS_DEVICE.has(code!)) {
+      // EPERM is what sshfs reports between two file systems of the server, and also what a file system without
+      // hard links reports; copying works for both
+      if (code === 'EXDEV' || code === 'EPERM') {
         await this.copy(file, tag);
         return false;
       }
@@ -314,7 +361,7 @@ export class ReorganizeJobService extends BaseService {
 
   /** A rename replaces what is at the target, so look first. Only used where hard links are not available. */
   private async renameCarefully(from: string, to: string) {
-    if (await this.storageRepository.checkFileExists(to)) {
+    if (await this.exists(to)) {
       throw new Stay('target-exists');
     }
     await this.storageRepository.rename(from, to);
@@ -325,7 +372,7 @@ export class ReorganizeJobService extends BaseService {
    * against the source, and only then given its real name. The source is left for the caller to remove.
    */
   private async copy(file: FileMove, tag: string) {
-    const temporary = join(dirname(file.to), `.immich-reorganize-${tag}.tmp`);
+    const temporary = this.temporaryOf(file, tag);
     try {
       await this.remove(temporary);
       await this.storageRepository.copyFileExclusive(file.from, temporary);
@@ -348,23 +395,43 @@ export class ReorganizeJobService extends BaseService {
       try {
         await this.storageRepository.link(temporary, file.to);
       } catch (error) {
-        if (codeOf(error) === 'EEXIST') {
+        const code = codeOf(error);
+        if (code === 'EEXIST') {
           throw new Stay('target-exists');
         }
-        if (!NO_HARD_LINKS.has(codeOf(error)!)) {
+        if (code !== 'EPERM' && !NO_HARD_LINKS.has(code!)) {
           throw error;
         }
         await this.renameCarefully(temporary, file.to);
-        return;
       }
     } finally {
       await this.remove(temporary).catch(() => {});
     }
   }
 
+  private temporaryOf(file: FileMove, tag: string) {
+    return join(dirname(file.to), `.immich-reorganize-${tag}.tmp`);
+  }
+
+  /**
+   * Whether a file is there. A share that dropped is not the same as a missing file: treating it as one would
+   * write off every remaining photo instead of pausing.
+   */
+  private async exists(path: string): Promise<boolean> {
+    try {
+      await this.storageRepository.stat(path);
+      return true;
+    } catch (error) {
+      if (codeOf(error) === 'ENOENT' || codeOf(error) === 'ENOTDIR') {
+        return false;
+      }
+      throw this.classify(error);
+    }
+  }
+
   /** Removes a file that may not be there. */
   private async remove(path: string) {
-    if (await this.storageRepository.checkFileExists(path)) {
+    if (await this.exists(path)) {
       await this.storageRepository.unlink(path);
     }
   }
@@ -387,22 +454,16 @@ export class ReorganizeJobService extends BaseService {
   }
 
   /**
-   * Sorts out the photos a previous run left half-done or failed, so that this run can simply try them again:
-   * finishes what the database already points at, and takes back what it does not.
+   * Sorts out the photos a previous run left half-done or failed, so that a run can simply try them again:
+   * finishes what the database already points at, and takes back what it does not. An undo also looks at what a
+   * cut-short run left behind, so that it knows which photos did move.
    */
-  private async reconcile(record: Reorganization) {
-    const { id, isUndo } = record;
-    // an undo also looks at what a cut-short run left behind, so that it knows which photos did move
-    const statuses: ReorganizationItemStatus[] = isUndo
-      ? ['moving', 'failed', 'undoing', 'undo-failed']
-      : ['moving', 'failed'];
-
-    const items = await this.reorganizeRepository.getItems(id, { statuses, limit: 1_000_000 });
+  private async reconcile(record: Reorganization, statuses: ReorganizationItemStatus[]) {
+    const items = await this.reorganizeRepository.getItems(record.id, { statuses, limit: ALL });
     for (const item of items) {
       const wasUndoing = item.status === 'undoing' || item.status === 'undo-failed';
-      const transfer = this.toTransfer(item, wasUndoing);
       try {
-        const arrived = await this.settle(transfer);
+        const arrived = await this.settle(this.toTransfer(item, wasUndoing));
         const status: ReorganizationItemStatus = wasUndoing
           ? arrived
             ? 'undone'
@@ -423,13 +484,19 @@ export class ReorganizeJobService extends BaseService {
           });
           continue;
         }
-        this.logger.warn(`Unable to sort out ${item.fromPath} of reorganization ${id}: ${error}`);
+        this.logger.warn(`Unable to sort out ${item.fromPath} of reorganization ${record.id}: ${error}`);
+        await this.reorganizeRepository.updateItem(item.id, {
+          status: wasUndoing ? 'undo-failed' : 'failed',
+          error: String(error),
+        });
       }
     }
   }
 
   /**
    * Brings the files of one photo in line with the database. Returns whether the photo is at its destination.
+   * It only ever removes a file whose content it can still find under the photo's other name, and never touches
+   * a path that belongs to another asset.
    */
   private async settle(transfer: Transfer): Promise<boolean> {
     const state = transfer.assetId ? await this.reorganizeRepository.getAssetState(transfer.assetId) : undefined;
@@ -437,11 +504,15 @@ export class ReorganizeJobService extends BaseService {
       throw new Stay('deleted');
     }
 
-    const files = this.filesOf(transfer);
+    const files = this.filesOf(transfer, state);
+    const isOurs = async (path: string) => !(await this.reorganizeRepository.isUsedByAnother(path, state.id));
+
     if (state.originalPath === transfer.original.to) {
+      // the database points at the new place: an old name still around is a leftover
       for (const file of files) {
-        if (await this.storageRepository.checkFileExists(file.to)) {
-          await this.remove(file.from);
+        const [hasOld, hasNew] = await Promise.all([this.exists(file.from), this.exists(file.to)]);
+        if (hasOld && hasNew && (await isOurs(file.from)) && (await this.hasSameContent(file.from, file.to))) {
+          await this.storageRepository.unlink(file.from);
         }
       }
       return true;
@@ -452,12 +523,9 @@ export class ReorganizeJobService extends BaseService {
     }
 
     for (const [index, file] of files.entries()) {
-      await this.remove(join(dirname(file.to), `.immich-reorganize-${transfer.itemId}-${index}.tmp`));
-      const [hasOld, hasNew] = await Promise.all([
-        this.storageRepository.checkFileExists(file.from),
-        this.storageRepository.checkFileExists(file.to),
-      ]);
-      if (!hasNew) {
+      await this.remove(this.temporaryOf(file, `${transfer.itemId}-${index}`));
+      const [hasOld, hasNew] = await Promise.all([this.exists(file.from), this.exists(file.to)]);
+      if (!hasNew || !(await isOurs(file.to))) {
         continue;
       }
       if (!hasOld) {
@@ -466,7 +534,7 @@ export class ReorganizeJobService extends BaseService {
         await this.storageRepository.rename(file.to, file.from);
         continue;
       }
-      // both names exist: the new one is ours only if it is the same file, otherwise it was always someone else's
+      // both names exist: the new one is ours only if it is the same file
       if (await this.hasSameContent(file.from, file.to)) {
         await this.storageRepository.unlink(file.to);
       }
@@ -489,17 +557,22 @@ export class ReorganizeJobService extends BaseService {
     return hash.equals(otherHash);
   }
 
-  /** Removes the subfolders of a source folder that the reorganization emptied, and their emptied parents. */
-  private async removeEmptiedFolders(record: Reorganization, emptied: Set<string>) {
+  /**
+   * Removes the subfolders of a source folder that the reorganization emptied, and their emptied parents. It goes
+   * by the photos that moved, in this run or an earlier one, and only removes folders that are really empty.
+   */
+  private async removeEmptiedFolders(record: Reorganization) {
     const root = record.sourcePath;
     if (!root) {
       return;
     }
 
-    const removed: string[] = [];
+    const moved = await this.reorganizeRepository.getItems(record.id, { statuses: ['moved'], limit: ALL });
     const isInside = (folder: string) => folder.startsWith(root + '/');
+    const emptied = [...new Set(moved.map((item) => dirname(item.fromPath)))].filter((folder) => isInside(folder));
+    const removed: string[] = [];
     // deepest first, so that a parent is tried after its children are gone
-    for (const start of [...emptied].filter((folder) => isInside(folder)).toSorted((a, b) => b.length - a.length)) {
+    for (const start of emptied.toSorted((a, b) => b.length - a.length)) {
       for (let folder = start; isInside(folder); folder = dirname(folder)) {
         try {
           await this.storageRepository.rmdir(folder);
@@ -515,7 +588,8 @@ export class ReorganizeJobService extends BaseService {
 
   /** After an undo: removes the date folders the reorganization created, where they are empty again. */
   private async removeCreatedFolders(record: Reorganization) {
-    for (const folder of record.createdFolders.toSorted((a, b) => b.length - a.length)) {
+    const current = await this.reorganizeRepository.get(record.id);
+    for (const folder of (current?.createdFolders ?? []).toSorted((a, b) => b.length - a.length)) {
       await this.storageRepository.rmdir(folder).catch(() => {});
     }
   }

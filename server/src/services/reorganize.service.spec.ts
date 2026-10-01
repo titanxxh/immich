@@ -116,6 +116,17 @@ describe(ReorganizeService.name, () => {
       );
     });
 
+    it('should refuse a date folder the library scan would exclude because of its label', async () => {
+      mocks.library.getAll.mockResolvedValue([
+        { ...library('library-1', ROOT), exclusionPatterns: ['**/*private*/**'] },
+      ]);
+      mocks.reorganize.getFolderAssets.mockResolvedValue([row(`${TEAM}/a.jpg`)]);
+
+      await expect(sut.preview(authStub.admin, dto({ labels: { '2026-03-15': 'private' } }))).rejects.toThrow(
+        'is excluded',
+      );
+    });
+
     it('should refuse a label that cannot be a folder name', async () => {
       await expect(sut.preview(authStub.admin, dto({ labels: { '2026-03-15': 'a/b' } }))).rejects.toBeInstanceOf(
         BadRequestException,
@@ -356,6 +367,13 @@ describe(ReorganizeService.name, () => {
       mocks.reorganize.getActive.mockResolvedValue({ id: 'other' } as any);
 
       await expect(sut.create(authStub.admin, dto())).rejects.toThrow('Another reorganization');
+      expect(mocks.reorganize.create).not.toHaveBeenCalled();
+    });
+
+    it('should refuse while the library watcher is on', async () => {
+      mocks.systemMetadata.get.mockResolvedValue({ library: { watch: { enabled: true } } });
+
+      await expect(sut.create(authStub.admin, dto())).rejects.toThrow('library watching');
       expect(mocks.reorganize.create).not.toHaveBeenCalled();
     });
 

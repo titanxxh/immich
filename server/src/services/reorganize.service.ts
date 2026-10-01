@@ -270,6 +270,11 @@ export class ReorganizeService extends BaseService {
         ),
       ),
     ];
+    const excludedFolder = folders.find((folder) => this.isExcluded(targetLibrary, folder));
+    if (excludedFolder) {
+      throw new BadRequestException(`${excludedFolder} is excluded from its library`);
+    }
+
     const occupied = new Set<string>();
     const existingFolders = new Set<string>();
     await mapLimited(folders, async (folder) => {
@@ -309,7 +314,7 @@ export class ReorganizeService extends BaseService {
 
   /** Starts a reorganization: stores where every photo goes, then moves them in the background. */
   async create(auth: AuthDto, dto: ReorganizeDto): Promise<ReorganizationResponseDto> {
-    await this.requireIdle();
+    await this.requireReady();
     const plan = await this.plan(auth, dto);
     const moving = plan.items.filter((item) => item.action === 'move');
     if (moving.length === 0) {
@@ -425,31 +430,47 @@ export class ReorganizeService extends BaseService {
     }));
   }
 
-  /** Stops a reorganization after the photo it is busy with. What already moved stays where it is. */
+  /**
+   * Stops a reorganization after the photo it is busy with. What already moved stays where it is. A run that has
+   * not started yet (or whose job got lost) is cancelled on the spot.
+   */
   async cancel(auth: AuthDto, id: string): Promise<ReorganizationResponseDto> {
     const record = await this.requireRecord(auth, id);
     if (record.status !== 'queued' && record.status !== 'running') {
       throw new BadRequestException('The reorganization is not running');
     }
-    await this.reorganizeRepository.update(id, { cancelRequested: true });
+    if (!(await this.reorganizeRepository.transition(id, 'queued', 'cancelled'))) {
+      await this.reorganizeRepository.update(id, { cancelRequested: true });
+    }
     return this.get(auth, id);
   }
 
-  /** Picks up a reorganization (or its undo) that stopped early, and retries the photos that failed. */
+  /**
+   * Picks up a reorganization (or its undo) that stopped early. Photos that failed are tried again, and so are the
+   * ones that stayed for a reason found while running, such as a place that was taken.
+   */
   async resume(auth: AuthDto, id: string): Promise<ReorganizationResponseDto> {
     const record = await this.requireRecord(auth, id);
-    await this.requireIdle();
+    await this.requireReady();
+    await (record.isUndo
+      ? this.reorganizeRepository.retryStayed(id, 'undo-skipped', 'moved')
+      : this.reorganizeRepository.retryStayed(id, 'stayed', 'pending'));
     await this.reorganizeRepository.update(id, { status: 'queued', cancelRequested: false, error: null });
     await this.jobRepository.queue({ name: JobName.Reorganize, data: { id: record.id } });
     return this.get(auth, id);
   }
 
-  /** Moves the photos of a reorganization back to where they were, as far as that is still possible. */
+  /**
+   * Moves the photos of a reorganization back to where they were, as far as that is still possible. Undoing again
+   * retries the photos an earlier undo had to leave.
+   */
   async undo(auth: AuthDto, id: string): Promise<ReorganizationResponseDto> {
     const record = await this.requireRecord(auth, id);
-    await this.requireIdle();
-    if (record.isUndo && record.status === 'completed') {
-      throw new BadRequestException('The reorganization was already undone');
+    await this.requireReady();
+    await this.reorganizeRepository.retryStayed(id, 'undo-skipped', 'moved');
+    const { movedCount, failedCount } = await this.get(auth, id);
+    if (movedCount + failedCount === 0) {
+      throw new BadRequestException('There is nothing to undo');
     }
     await this.reorganizeRepository.update(id, { status: 'queued', isUndo: true, cancelRequested: false, error: null });
     await this.jobRepository.queue({ name: JobName.Reorganize, data: { id: record.id } });
@@ -473,10 +494,17 @@ export class ReorganizeService extends BaseService {
     return record;
   }
 
-  /** Only one reorganization runs at a time, across all users. */
-  private async requireIdle() {
+  /**
+   * Only one reorganization runs at a time, across all users, and none while the library watcher is on: the
+   * watcher answers every file that loses its name by deleting the asset at that path.
+   */
+  private async requireReady() {
     if (await this.reorganizeRepository.getActive()) {
       throw new BadRequestException('Another reorganization is still running');
+    }
+    const { library } = await this.getConfig({ withCache: false });
+    if (library.watch.enabled) {
+      throw new BadRequestException('Turn off library watching before reorganizing');
     }
   }
 
