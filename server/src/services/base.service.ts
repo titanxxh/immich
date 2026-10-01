@@ -44,6 +44,7 @@ import { PartnerRepository } from 'src/repositories/partner.repository';
 import { PersonRepository } from 'src/repositories/person.repository';
 import { PluginRepository } from 'src/repositories/plugin.repository';
 import { ProcessRepository } from 'src/repositories/process.repository';
+import { ReorganizeRepository } from 'src/repositories/reorganize.repository';
 import { SearchRepository } from 'src/repositories/search.repository';
 import { ServerInfoRepository } from 'src/repositories/server-info.repository';
 import { SessionRepository } from 'src/repositories/session.repository';
@@ -109,6 +110,7 @@ export const BASE_SERVICE_DEPENDENCIES = [
   PersonRepository,
   PluginRepository,
   ProcessRepository,
+  ReorganizeRepository,
   SearchRepository,
   ServerInfoRepository,
   SessionRepository,
@@ -175,6 +177,7 @@ export class BaseService {
     protected personRepository: PersonRepository,
     protected pluginRepository: PluginRepository,
     protected processRepository: ProcessRepository,
+    protected reorganizeRepository: ReorganizeRepository,
     protected searchRepository: SearchRepository,
     protected serverInfoRepository: ServerInfoRepository,
     protected sessionRepository: SessionRepository,
@@ -250,6 +253,7 @@ export class BaseService {
       ctx.personRepository,
       ctx.pluginRepository,
       ctx.processRepository,
+      ctx.reorganizeRepository,
       ctx.searchRepository,
       ctx.serverInfoRepository,
       ctx.sessionRepository,

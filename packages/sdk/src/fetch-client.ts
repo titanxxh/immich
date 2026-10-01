@@ -2344,6 +2344,146 @@ export type QueueJobResponseDto = {
     /** Job creation timestamp */
     timestamp: number;
 };
+export type ReorganizeFoldersResponseDto = {
+    /** Full paths of the folders inside */
+    folders: string[];
+    /** Library the folder is in */
+    libraryId: string | null;
+    /** Its parent, when that can be listed too */
+    parent: string | null;
+    /** The listed folder, null for the list of import paths */
+    path: string | null;
+};
+export type ReorganizeDto = {
+    /** Move photos whose name is taken under a new name */
+    autoRename?: boolean;
+    /** Source libraries to leave out, for an album */
+    excludedLibraryIds?: string[];
+    /** Whether a folder source includes its subfolders */
+    includeSubfolders?: boolean;
+    /** Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder */
+    labels?: {
+        [key: string]: string;
+    };
+    preset: ReorganizePreset;
+    /** Album to reorganize, for an album source */
+    sourceAlbumId?: string;
+    /** Folder to reorganize, for a folder source */
+    sourcePath?: string;
+    sourceType: ReorganizeSourceType;
+    /** Folder the date folders are created in */
+    targetPath: string;
+};
+export type ReorganizeFolderDto = {
+    /** Day of the folder (YYYY-MM-DD), null for a month folder */
+    day: string | null;
+    /** Labels of the folders of this day that already exist */
+    existingLabels: string[];
+    /** Whether the folder already exists */
+    exists: boolean;
+    /** Folder, relative to the target */
+    folder: string;
+    /** Photos already in the folder */
+    inPlaceCount: number;
+    /** Label in the folder name */
+    label: string;
+    /** Photos moving into the folder */
+    moveCount: number;
+    /** Photos among them that get a new name */
+    renameCount: number;
+};
+export type ReorganizeLibraryDto = {
+    /** Photos of the source in this library */
+    count: number;
+    /** Library ID */
+    id: string;
+    /** Whether its photos are left out */
+    isExcluded: boolean;
+    /** Whether the target folder is in this library */
+    isTarget: boolean;
+    /** Library name */
+    name: string;
+};
+export type ReorganizeStayingDto = {
+    action: ReorganizeAction;
+    count: number;
+    reason: ReorganizeReason;
+};
+export type ReorganizePreviewResponseDto = {
+    /** Photos that stay because their name is taken */
+    conflictCount: number;
+    /** Subfolders of a source folder that end up empty and are removed */
+    emptyFolderCount: number;
+    /** Date folders after the reorganization, oldest first */
+    folders: ReorganizeFolderDto[];
+    /** Photos already in their folder */
+    inPlaceCount: number;
+    /** Libraries the photos of the source are in */
+    libraries: ReorganizeLibraryDto[];
+    /** Photos that move */
+    moveCount: number;
+    /** Date folders to create */
+    newFolderCount: number;
+    /** Files of a source folder that are not photos of the library and stay */
+    otherFileCount: number;
+    /** Photos among them that get a new name */
+    renameCount: number;
+    /** Sidecar files that move along */
+    sidecarCount: number;
+    /** Photos that are left out */
+    skipCount: number;
+    /** Photos that stay, by reason */
+    staying: ReorganizeStayingDto[];
+    /** Library the target folder belongs to */
+    targetLibraryId: string;
+    /** Photos of the source */
+    total: number;
+};
+export type ReorganizeItemsDto = {
+    action?: ReorganizeAction;
+    /** Move photos whose name is taken under a new name */
+    autoRename?: boolean;
+    /** Source libraries to leave out, for an album */
+    excludedLibraryIds?: string[];
+    /** Only photos going to (or already in) this date folder, relative to the target */
+    folder?: string;
+    /** Whether a folder source includes its subfolders */
+    includeSubfolders?: boolean;
+    /** Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder */
+    labels?: {
+        [key: string]: string;
+    };
+    /** Number of photos to return */
+    limit?: number;
+    preset: ReorganizePreset;
+    reason?: ReorganizeReason;
+    /** Album to reorganize, for an album source */
+    sourceAlbumId?: string;
+    /** Folder to reorganize, for a folder source */
+    sourcePath?: string;
+    sourceType: ReorganizeSourceType;
+    /** Folder the date folders are created in */
+    targetPath: string;
+};
+export type ReorganizeItemDto = {
+    action: ReorganizeAction;
+    /** Photo ID */
+    assetId: string;
+    /** Where the photo is */
+    fromPath: string;
+    /** Whether a sidecar moves along */
+    hasSidecar: boolean;
+    /** Whether it gets a new name */
+    isRenamed: boolean;
+    reason: (ReorganizeReason) | null;
+    /** Where it goes, null when it stays */
+    toPath: string | null;
+};
+export type ReorganizeItemsResponseDto = {
+    items: ReorganizeItemDto[];
+    /** Number of matching photos */
+    total: number;
+};
 export type SearchExploreItem = {
     data: AssetResponseDto;
     /** Explore value */
@@ -6762,6 +6902,51 @@ export function getQueueJobs({ name, status }: {
     }));
 }
 /**
+ * List folders to reorganize
+ */
+export function getReorganizeFolders({ path }: {
+    path?: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizeFoldersResponseDto;
+    }>(`/reorganizations/folders${QS.query(QS.explode({
+        path
+    }))}`, {
+        ...opts
+    }));
+}
+/**
+ * Preview a reorganization
+ */
+export function previewReorganization({ reorganizeDto }: {
+    reorganizeDto: ReorganizeDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizePreviewResponseDto;
+    }>("/reorganizations/preview", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: reorganizeDto
+    })));
+}
+/**
+ * List the photos of a reorganization preview
+ */
+export function previewReorganizationItems({ reorganizeItemsDto }: {
+    reorganizeItemsDto: ReorganizeItemsDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizeItemsResponseDto;
+    }>("/reorganizations/preview/items", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: reorganizeItemsDto
+    })));
+}
+/**
  * Retrieve assets by city
  */
 export function getAssetsByCity(opts?: Oazapfts.RequestOpts) {
@@ -8835,6 +9020,34 @@ export enum JobName {
     IntegrityChecksumFilesRefresh = "IntegrityChecksumFilesRefresh",
     IntegrityDeleteReportType = "IntegrityDeleteReportType",
     IntegrityDeleteReports = "IntegrityDeleteReports"
+}
+export enum ReorganizePreset {
+    YearMonth = "year-month",
+    Day = "day",
+    YearDay = "year-day"
+}
+export enum ReorganizeSourceType {
+    Folder = "folder",
+    Album = "album"
+}
+export enum ReorganizeAction {
+    Move = "move",
+    InPlace = "in-place",
+    Conflict = "conflict",
+    Skip = "skip"
+}
+export enum ReorganizeReason {
+    Internal = "internal",
+    NotOwner = "not-owner",
+    Offline = "offline",
+    Trashed = "trashed",
+    UnreliableDate = "unreliable-date",
+    LibraryExcluded = "library-excluded",
+    OtherOwnerLibrary = "other-owner-library",
+    Identical = "identical",
+    SharedSidecar = "shared-sidecar",
+    TargetExists = "target-exists",
+    SameTarget = "same-target"
 }
 export enum SearchOrderField {
     FileCreatedAt = "fileCreatedAt",
