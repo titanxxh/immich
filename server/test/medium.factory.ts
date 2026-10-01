@@ -52,6 +52,7 @@ import { OcrRepository } from 'src/repositories/ocr.repository';
 import { PartnerRepository } from 'src/repositories/partner.repository';
 import { PersonRepository } from 'src/repositories/person.repository';
 import { PluginRepository } from 'src/repositories/plugin.repository';
+import { ReorganizeRepository } from 'src/repositories/reorganize.repository';
 import { SearchRepository } from 'src/repositories/search.repository';
 import { SessionRepository } from 'src/repositories/session.repository';
 import { SharedLinkAssetRepository } from 'src/repositories/shared-link-asset.repository';
@@ -499,6 +500,7 @@ const newRealRepository = <T extends BaseServiceDeps[number]>(key: T, db: Kysely
     case SyncCheckpointRepository:
     case SystemMetadataRepository:
     case FootprintRepository:
+    case ReorganizeRepository:
     case TripRepository:
     case UserRepository:
     case VersionHistoryRepository:
@@ -581,6 +583,7 @@ const newMockRepository = <T>(key: ClassConstructor<T>) => {
     case VersionHistoryRepository:
     case TagRepository:
     case FootprintRepository:
+    case ReorganizeRepository:
     case TripRepository:
     case WorkflowRepository: {
       return automock(key);

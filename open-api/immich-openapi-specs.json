@@ -11623,6 +11623,159 @@
         "x-immich-state": "Alpha"
       }
     },
+    "/reorganizations/folders": {
+      "get": {
+        "description": "List the folders inside a folder of one of the external libraries of the current user, or their import paths.",
+        "operationId": "getReorganizeFolders",
+        "parameters": [
+          {
+            "name": "path",
+            "required": false,
+            "in": "query",
+            "description": "Folder to list; left out, the import paths of the libraries are listed",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizeFoldersResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "List folders to reorganize",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "folder.read"
+      }
+    },
+    "/reorganizations/preview": {
+      "post": {
+        "description": "Work out where the photos of a folder or album would go when moved into date folders, without moving anything.",
+        "operationId": "previewReorganization",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorganizeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizePreviewResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Preview a reorganization",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      }
+    },
+    "/reorganizations/preview/items": {
+      "post": {
+        "description": "List where each photo would go, for one date folder or for the photos that stay for one reason.",
+        "operationId": "previewReorganizationItems",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorganizeItemsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizeItemsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "List the photos of a reorganization preview",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      }
+    },
     "/search/cities": {
       "get": {
         "description": "Retrieve a list of assets with each asset belonging to a different city. This endpoint is used on the places pages to show a single thumbnail for each city the user has assets in.",
@@ -27932,6 +28085,505 @@
           "prerelease"
         ],
         "type": "string"
+      },
+      "ReorganizeAction": {
+        "description": "What happens to a photo",
+        "enum": [
+          "move",
+          "in-place",
+          "conflict",
+          "skip"
+        ],
+        "type": "string"
+      },
+      "ReorganizeDto": {
+        "properties": {
+          "autoRename": {
+            "default": false,
+            "description": "Move photos whose name is taken under a new name",
+            "type": "boolean"
+          },
+          "excludedLibraryIds": {
+            "default": [],
+            "description": "Source libraries to leave out, for an album",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "includeSubfolders": {
+            "default": true,
+            "description": "Whether a folder source includes its subfolders",
+            "type": "boolean"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "description": "Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder",
+            "type": "object"
+          },
+          "preset": {
+            "$ref": "#/components/schemas/ReorganizePreset"
+          },
+          "sourceAlbumId": {
+            "description": "Album to reorganize, for an album source",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "sourcePath": {
+            "description": "Folder to reorganize, for a folder source",
+            "minLength": 1,
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/ReorganizeSourceType"
+          },
+          "targetPath": {
+            "description": "Folder the date folders are created in",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset",
+          "sourceType",
+          "targetPath"
+        ],
+        "type": "object"
+      },
+      "ReorganizeFolderDto": {
+        "properties": {
+          "day": {
+            "description": "Day of the folder (YYYY-MM-DD), null for a month folder",
+            "nullable": true,
+            "type": "string"
+          },
+          "existingLabels": {
+            "description": "Labels of the folders of this day that already exist",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "exists": {
+            "description": "Whether the folder already exists",
+            "type": "boolean"
+          },
+          "folder": {
+            "description": "Folder, relative to the target",
+            "type": "string"
+          },
+          "inPlaceCount": {
+            "description": "Photos already in the folder",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "label": {
+            "description": "Label in the folder name",
+            "type": "string"
+          },
+          "moveCount": {
+            "description": "Photos moving into the folder",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "renameCount": {
+            "description": "Photos among them that get a new name",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "day",
+          "existingLabels",
+          "exists",
+          "folder",
+          "inPlaceCount",
+          "label",
+          "moveCount",
+          "renameCount"
+        ],
+        "type": "object"
+      },
+      "ReorganizeFoldersResponseDto": {
+        "properties": {
+          "folders": {
+            "description": "Full paths of the folders inside",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "libraryId": {
+            "description": "Library the folder is in",
+            "nullable": true,
+            "type": "string"
+          },
+          "parent": {
+            "description": "Its parent, when that can be listed too",
+            "nullable": true,
+            "type": "string"
+          },
+          "path": {
+            "description": "The listed folder, null for the list of import paths",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "folders",
+          "libraryId",
+          "parent",
+          "path"
+        ],
+        "type": "object"
+      },
+      "ReorganizeItemDto": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ReorganizeAction"
+          },
+          "assetId": {
+            "description": "Photo ID",
+            "type": "string"
+          },
+          "fromPath": {
+            "description": "Where the photo is",
+            "type": "string"
+          },
+          "hasSidecar": {
+            "description": "Whether a sidecar moves along",
+            "type": "boolean"
+          },
+          "isRenamed": {
+            "description": "Whether it gets a new name",
+            "type": "boolean"
+          },
+          "reason": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReorganizeReason"
+              }
+            ],
+            "nullable": true
+          },
+          "toPath": {
+            "description": "Where it goes, null when it stays",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "assetId",
+          "fromPath",
+          "hasSidecar",
+          "isRenamed",
+          "reason",
+          "toPath"
+        ],
+        "type": "object"
+      },
+      "ReorganizeItemsDto": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ReorganizeAction"
+          },
+          "autoRename": {
+            "default": false,
+            "description": "Move photos whose name is taken under a new name",
+            "type": "boolean"
+          },
+          "excludedLibraryIds": {
+            "default": [],
+            "description": "Source libraries to leave out, for an album",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "folder": {
+            "description": "Only photos going to (or already in) this date folder, relative to the target",
+            "type": "string"
+          },
+          "includeSubfolders": {
+            "default": true,
+            "description": "Whether a folder source includes its subfolders",
+            "type": "boolean"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "description": "Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder",
+            "type": "object"
+          },
+          "limit": {
+            "default": 200,
+            "description": "Number of photos to return",
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "preset": {
+            "$ref": "#/components/schemas/ReorganizePreset"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReorganizeReason"
+          },
+          "sourceAlbumId": {
+            "description": "Album to reorganize, for an album source",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "sourcePath": {
+            "description": "Folder to reorganize, for a folder source",
+            "minLength": 1,
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/ReorganizeSourceType"
+          },
+          "targetPath": {
+            "description": "Folder the date folders are created in",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset",
+          "sourceType",
+          "targetPath"
+        ],
+        "type": "object"
+      },
+      "ReorganizeItemsResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReorganizeItemDto"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Number of matching photos",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object"
+      },
+      "ReorganizeLibraryDto": {
+        "properties": {
+          "count": {
+            "description": "Photos of the source in this library",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Library ID",
+            "type": "string"
+          },
+          "isExcluded": {
+            "description": "Whether its photos are left out",
+            "type": "boolean"
+          },
+          "isTarget": {
+            "description": "Whether the target folder is in this library",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Library name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "id",
+          "isExcluded",
+          "isTarget",
+          "name"
+        ],
+        "type": "object"
+      },
+      "ReorganizePreset": {
+        "description": "Folder structure: `2026/09`, `2026-09-27` or `2026/2026-09-27`",
+        "enum": [
+          "year-month",
+          "day",
+          "year-day"
+        ],
+        "type": "string"
+      },
+      "ReorganizePreviewResponseDto": {
+        "properties": {
+          "conflictCount": {
+            "description": "Photos that stay because their name is taken",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "emptyFolderCount": {
+            "description": "Subfolders of a source folder that end up empty and are removed",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "folders": {
+            "description": "Date folders after the reorganization, oldest first",
+            "items": {
+              "$ref": "#/components/schemas/ReorganizeFolderDto"
+            },
+            "type": "array"
+          },
+          "inPlaceCount": {
+            "description": "Photos already in their folder",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "libraries": {
+            "description": "Libraries the photos of the source are in",
+            "items": {
+              "$ref": "#/components/schemas/ReorganizeLibraryDto"
+            },
+            "type": "array"
+          },
+          "moveCount": {
+            "description": "Photos that move",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "newFolderCount": {
+            "description": "Date folders to create",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "otherFileCount": {
+            "description": "Files of a source folder that are not photos of the library and stay",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "renameCount": {
+            "description": "Photos among them that get a new name",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "sidecarCount": {
+            "description": "Sidecar files that move along",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "skipCount": {
+            "description": "Photos that are left out",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "staying": {
+            "description": "Photos that stay, by reason",
+            "items": {
+              "$ref": "#/components/schemas/ReorganizeStayingDto"
+            },
+            "type": "array"
+          },
+          "targetLibraryId": {
+            "description": "Library the target folder belongs to",
+            "type": "string"
+          },
+          "total": {
+            "description": "Photos of the source",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "conflictCount",
+          "emptyFolderCount",
+          "folders",
+          "inPlaceCount",
+          "libraries",
+          "moveCount",
+          "newFolderCount",
+          "otherFileCount",
+          "renameCount",
+          "sidecarCount",
+          "skipCount",
+          "staying",
+          "targetLibraryId",
+          "total"
+        ],
+        "type": "object"
+      },
+      "ReorganizeReason": {
+        "description": "Why a photo stays where it is, or why it was renamed",
+        "enum": [
+          "internal",
+          "not-owner",
+          "offline",
+          "trashed",
+          "unreliable-date",
+          "library-excluded",
+          "other-owner-library",
+          "identical",
+          "shared-sidecar",
+          "target-exists",
+          "same-target"
+        ],
+        "type": "string"
+      },
+      "ReorganizeSourceType": {
+        "description": "What is reorganized: a folder of an external library, or an album",
+        "enum": [
+          "folder",
+          "album"
+        ],
+        "type": "string"
+      },
+      "ReorganizeStayingDto": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ReorganizeAction"
+          },
+          "count": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReorganizeReason"
+          }
+        },
+        "required": [
+          "action",
+          "count",
+          "reason"
+        ],
+        "type": "object"
       },
       "ReverseGeocodingStateResponseDto": {
         "properties": {

@@ -41,10 +41,18 @@ A map of every _visited region_, with _first visits_, a replayable timeline, a y
 - **Boundary data** is built by `misc/footprint-regions/extract.py` (see its README and NOTICE) and kept on the build machine only, never committed or published. The server image takes it with `docker build --build-context footprints=<folder> ...`.
 - **Code**: `server/src/utils/footprint.ts`, `footprint.service.ts`, `footprint.controller.ts` (`/footprints`), `footprint.repository.ts`; web `routes/(user)/footprints`.
 
+## Reorganizing
+
+Moves the photos of a folder of an external library, or of an album, into date folders, keeping each photo the same asset (a _reorganization_). So far only the preview exists; nothing is moved yet.
+
+- **Preview**: where every photo would go for a target folder and one of three presets (`2026/09`, `2026-09-27`, `2026/2026-09-27`), with an optional label per day (`2026-09-27 match`); a day that already has a folder in the target joins it. Photos stay where they are, with the reason, when their name is taken (unless auto rename is on), when their date fell back on the file times (see _date source_), or when they are offline, trashed, uploaded or not the user's.
+- The target must be inside an import path of one of the user's own libraries and not excluded by it, so that the next library scan finds the photos where they were put.
+- **Code**: `server/src/utils/reorganize.ts` (the plan), `reorganize.service.ts`, `reorganize.controller.ts` (`/reorganizations`), `reorganize.repository.ts`.
+
 ## Smaller fixes
 
 - **Faces before birth**: setting a person's birth date releases their machine-learning faces on photos taken before it and re-queues them for facial recognition, so look-alike siblings separate. Manually tagged faces stay. The birth-date check uses the photo's local date.
-- **Date source**: metadata extraction records on `asset_job_status.dateFromExif` whether a photo's capture date comes from its metadata (or sidecar) or fell back on the file times. `MetadataService.backfillDateSources` fills it in on demand for photos extracted earlier, reading only the date tags.
+- **Date source**: metadata extraction records on `asset_job_status.dateFromExif` whether a photo's capture date comes from its metadata (or sidecar) or fell back on the file times. `MetadataService.backfillDateSources` fills it in on demand for photos extracted earlier, reading only the date tags; the reorganization preview calls it.
 - **Cross-border reverse geocoding**: a nearest place in a different country than the country polygon containing the point is discarded in favour of the country result.
 
 ## Fork tooling
