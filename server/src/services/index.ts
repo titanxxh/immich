@@ -32,6 +32,7 @@ import { PartnerService } from 'src/services/partner.service';
 import { PersonService } from 'src/services/person.service';
 import { PluginService } from 'src/services/plugin.service';
 import { QueueService } from 'src/services/queue.service';
+import { ReorganizeJobService } from 'src/services/reorganize-job.service';
 import { ReorganizeService } from 'src/services/reorganize.service';
 import { SearchService } from 'src/services/search.service';
 import { ServerService } from 'src/services/server.service';
@@ -90,6 +91,7 @@ export const services = [
   ClusterGroupService,
   PartnerService,
   PersonService,
+  ReorganizeJobService,
   ReorganizeService,
   PluginService,
   QueueService,

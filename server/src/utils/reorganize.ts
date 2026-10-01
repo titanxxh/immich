@@ -15,6 +15,16 @@ export type ReorganizeSkipReason =
 
 export type ReorganizeConflict = 'target-exists' | 'same-target';
 
+/**
+ * How far a reorganization got. `queued` is asked for but not started; `interrupted` was cut short by a restart and
+ * `paused` by the storage going away, and neither continues on its own.
+ */
+export type ReorganizationStatus = 'queued' | 'running' | 'completed' | 'cancelled' | 'interrupted' | 'paused';
+
+/** How far one photo got. `stayed` photos were never going to move; the `undo` ones are about moving back. */
+export type ReorganizationItemStatus =
+  'pending' | 'moving' | 'moved' | 'failed' | 'stayed' | 'undoing' | 'undone' | 'undo-failed' | 'undo-skipped';
+
 /** What the plan says about one photo. A photo that moves under a new name has `renamed` set. */
 export type ReorganizeAction = 'move' | 'in-place' | 'conflict' | 'skip';
 
@@ -132,7 +142,7 @@ const withSuffix = (fileName: string, index: number): string => {
 };
 
 /** The sidecar's new name, keeping whichever way it was named after the photo. */
-const getSidecarName = (sidecarPath: string, fileName: string, newFileName: string): string => {
+export const getSidecarName = (sidecarPath: string, fileName: string, newFileName: string): string => {
   const sidecarName = basename(sidecarPath);
   const extension = extname(sidecarName);
   const stem = (name: string) => name.slice(0, name.length - extname(name).length);

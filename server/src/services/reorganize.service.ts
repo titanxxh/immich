@@ -1,8 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { constants } from 'node:fs';
 import { dirname, join, normalize, relative } from 'node:path';
 import picomatch from 'picomatch';
 import { AuthDto } from 'src/dtos/auth.dto';
 import {
+  ReorganizationItemDto,
+  ReorganizationItemsQueryDto,
+  ReorganizationResponseDto,
   ReorganizeDto,
   ReorganizeFolderQueryDto,
   ReorganizeFoldersResponseDto,
@@ -11,7 +15,7 @@ import {
   ReorganizePreviewResponseDto,
   ReorganizeReason,
 } from 'src/dtos/reorganize.dto';
-import { Permission } from 'src/enum';
+import { JobName, Permission } from 'src/enum';
 import { BaseService } from 'src/services/base.service';
 import { MetadataService } from 'src/services/metadata.service';
 import {
@@ -22,6 +26,8 @@ import {
   normalizeLabel,
   parseDayFolder,
   planReorganization,
+  ReorganizationItemStatus,
+  ReorganizationStatus,
   ReorganizeAsset,
   ReorganizeItem,
 } from 'src/utils/reorganize';
@@ -264,6 +270,11 @@ export class ReorganizeService extends BaseService {
         ),
       ),
     ];
+    const excludedFolder = folders.find((folder) => this.isExcluded(targetLibrary, folder));
+    if (excludedFolder) {
+      throw new BadRequestException(`${excludedFolder} is excluded from its library`);
+    }
+
     const occupied = new Set<string>();
     const existingFolders = new Set<string>();
     await mapLimited(folders, async (folder) => {
@@ -299,6 +310,222 @@ export class ReorganizeService extends BaseService {
     }
 
     return { targetPath, targetLibrary, sourcePath, libraries, assets, items, labels, existingLabels, existingFolders };
+  }
+
+  /** Starts a reorganization: stores where every photo goes, then moves them in the background. */
+  async create(auth: AuthDto, dto: ReorganizeDto): Promise<ReorganizationResponseDto> {
+    await this.requireReady();
+    const plan = await this.plan(auth, dto);
+    const moving = plan.items.filter((item) => item.action === 'move');
+    if (moving.length === 0) {
+      throw new BadRequestException('There is nothing to move');
+    }
+    await this.requireWritable(plan, moving);
+
+    let sourceName = plan.sourcePath;
+    if (dto.sourceType === 'album') {
+      const album = await this.albumRepository.getById(dto.sourceAlbumId!, { withAssets: false });
+      sourceName = album?.albumName;
+    }
+
+    const record = await this.reorganizeRepository.create(
+      {
+        ownerId: auth.user.id,
+        sourceType: dto.sourceType,
+        sourcePath: plan.sourcePath ?? null,
+        sourceAlbumId: dto.sourceType === 'album' ? dto.sourceAlbumId : null,
+        sourceName: sourceName ?? '',
+        targetPath: plan.targetPath,
+        preset: dto.preset,
+        autoRename: dto.autoRename,
+        status: 'queued' satisfies ReorganizationStatus,
+        inPlaceCount: plan.items.filter((item) => item.action === 'in-place').length,
+      },
+      plan.items
+        .filter((item) => item.action !== 'in-place')
+        .map((item) => {
+          const isMoving = item.action === 'move';
+          return {
+            assetId: item.assetId,
+            status: (isMoving ? 'pending' : 'stayed') satisfies ReorganizationItemStatus,
+            reason: reasonOf(item),
+            fromPath: item.original.from,
+            toPath: isMoving ? item.original.to : null,
+            fromLibraryId: item.fromLibraryId,
+            toLibraryId: isMoving ? plan.targetLibrary.id : null,
+            sidecarFromPath: isMoving ? (item.sidecar?.from ?? null) : null,
+            sidecarToPath: isMoving ? (item.sidecar?.to ?? null) : null,
+            videoAssetId: isMoving ? (item.liveVideo?.assetId ?? null) : null,
+            videoFromPath: isMoving ? (item.liveVideo?.from ?? null) : null,
+            videoToPath: isMoving ? (item.liveVideo?.to ?? null) : null,
+          };
+        }),
+    );
+    await this.jobRepository.queue({ name: JobName.Reorganize, data: { id: record.id } });
+
+    return this.get(auth, record.id);
+  }
+
+  async getAll(auth: AuthDto): Promise<ReorganizationResponseDto[]> {
+    const records = await this.reorganizeRepository.getAll(auth.user.id);
+    const counts = await this.reorganizeRepository.getItemCounts(records.map((record) => record.id));
+
+    return records.map((record) => {
+      const count = (...statuses: ReorganizationItemStatus[]) =>
+        counts
+          .filter(
+            (row) => row.reorganizationId === record.id && statuses.includes(row.status as ReorganizationItemStatus),
+          )
+          .reduce((sum, row) => sum + Number(row.count), 0);
+
+      return {
+        id: record.id,
+        createdAt: new Date(record.createdAt),
+        finishedAt: record.finishedAt ? new Date(record.finishedAt) : null,
+        sourceType: record.sourceType as ReorganizeDto['sourceType'],
+        sourceName: record.sourceName,
+        targetPath: record.targetPath,
+        preset: record.preset as ReorganizeDto['preset'],
+        autoRename: record.autoRename,
+        status: record.status as ReorganizationStatus,
+        isUndo: record.isUndo,
+        error: record.error,
+        pendingCount: count('pending', 'moving'),
+        movedCount: count('moved', 'undoing'),
+        failedCount: count('failed', 'undo-failed'),
+        stayedCount: count('stayed'),
+        undoneCount: count('undone'),
+        undoSkippedCount: count('undo-skipped'),
+        inPlaceCount: record.inPlaceCount,
+        removedFolderCount: record.removedFolders.length,
+      };
+    });
+  }
+
+  async get(auth: AuthDto, id: string): Promise<ReorganizationResponseDto> {
+    const records = await this.getAll(auth);
+    const record = records.find((record) => record.id === id);
+    if (!record) {
+      throw new BadRequestException('Reorganization not found');
+    }
+    return record;
+  }
+
+  async getItems(auth: AuthDto, id: string, dto: ReorganizationItemsQueryDto): Promise<ReorganizationItemDto[]> {
+    await this.requireRecord(auth, id);
+    const items = await this.reorganizeRepository.getItems(id, {
+      statuses: dto.status ? [dto.status] : undefined,
+      limit: dto.limit,
+    });
+
+    return items.map((item) => ({
+      id: item.id,
+      assetId: item.assetId,
+      status: item.status as ReorganizationItemStatus,
+      reason: item.reason,
+      error: item.error,
+      fromPath: item.fromPath,
+      toPath: item.toPath,
+      hasSidecar: !!item.sidecarFromPath,
+    }));
+  }
+
+  /**
+   * Stops a reorganization after the photo it is busy with. What already moved stays where it is. A run that has
+   * not started yet (or whose job got lost) is cancelled on the spot.
+   */
+  async cancel(auth: AuthDto, id: string): Promise<ReorganizationResponseDto> {
+    const record = await this.requireRecord(auth, id);
+    if (record.status !== 'queued' && record.status !== 'running') {
+      throw new BadRequestException('The reorganization is not running');
+    }
+    if (!(await this.reorganizeRepository.transition(id, 'queued', 'cancelled'))) {
+      await this.reorganizeRepository.update(id, { cancelRequested: true });
+    }
+    return this.get(auth, id);
+  }
+
+  /**
+   * Picks up a reorganization (or its undo) that stopped early. Photos that failed are tried again, and so are the
+   * ones that stayed for a reason found while running, such as a place that was taken.
+   */
+  async resume(auth: AuthDto, id: string): Promise<ReorganizationResponseDto> {
+    const record = await this.requireRecord(auth, id);
+    await this.requireReady();
+    await (record.isUndo
+      ? this.reorganizeRepository.retryStayed(id, 'undo-skipped', 'moved')
+      : this.reorganizeRepository.retryStayed(id, 'stayed', 'pending'));
+    await this.reorganizeRepository.update(id, { status: 'queued', cancelRequested: false, error: null });
+    await this.jobRepository.queue({ name: JobName.Reorganize, data: { id: record.id } });
+    return this.get(auth, id);
+  }
+
+  /**
+   * Moves the photos of a reorganization back to where they were, as far as that is still possible. Undoing again
+   * retries the photos an earlier undo had to leave.
+   */
+  async undo(auth: AuthDto, id: string): Promise<ReorganizationResponseDto> {
+    const record = await this.requireRecord(auth, id);
+    await this.requireReady();
+    await this.reorganizeRepository.retryStayed(id, 'undo-skipped', 'moved');
+    const { movedCount, failedCount } = await this.get(auth, id);
+    if (movedCount + failedCount === 0) {
+      throw new BadRequestException('There is nothing to undo');
+    }
+    await this.reorganizeRepository.update(id, { status: 'queued', isUndo: true, cancelRequested: false, error: null });
+    await this.jobRepository.queue({ name: JobName.Reorganize, data: { id: record.id } });
+    return this.get(auth, id);
+  }
+
+  /** Forgets a reorganization. The photos stay where they are, and it can no longer be undone. */
+  async delete(auth: AuthDto, id: string): Promise<void> {
+    const record = await this.requireRecord(auth, id);
+    if (record.status === 'queued' || record.status === 'running') {
+      throw new BadRequestException('The reorganization is still running');
+    }
+    await this.reorganizeRepository.delete(id);
+  }
+
+  private async requireRecord(auth: AuthDto, id: string) {
+    const record = await this.reorganizeRepository.get(id);
+    if (!record || record.ownerId !== auth.user.id) {
+      throw new BadRequestException('Reorganization not found');
+    }
+    return record;
+  }
+
+  /**
+   * Only one reorganization runs at a time, across all users, and none while the library watcher is on: the
+   * watcher answers every file that loses its name by deleting the asset at that path.
+   */
+  private async requireReady() {
+    if (await this.reorganizeRepository.getActive()) {
+      throw new BadRequestException('Another reorganization is still running');
+    }
+    const { library } = await this.getConfig({ withCache: false });
+    if (library.watch.enabled) {
+      throw new BadRequestException('Turn off library watching before reorganizing');
+    }
+  }
+
+  /** Makes sure files can be created in the target and removed from where the photos are now. */
+  private async requireWritable(plan: ReorganizePlan, moving: ReorganizeItem[]) {
+    let target = plan.targetPath;
+    while (
+      !(await this.storageRepository.checkFileExists(target)) &&
+      this.findImportPath(plan.targetLibrary, dirname(target))
+    ) {
+      target = dirname(target);
+    }
+
+    const folders = [...new Set([target, ...moving.map((item) => dirname(item.original.from))])];
+    const writable = await mapLimited(folders, (folder) =>
+      this.storageRepository.checkFileExists(folder, constants.W_OK),
+    );
+    const index = writable.indexOf(false);
+    if (index !== -1) {
+      throw new BadRequestException(`${folders[index]} is not writable`);
+    }
   }
 
   private async getLibraries(auth: AuthDto): Promise<Library[]> {
