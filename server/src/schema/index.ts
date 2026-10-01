@@ -73,6 +73,8 @@ import { PersonTable } from 'src/schema/tables/person.table';
 import { PluginMethodTable } from 'src/schema/tables/plugin-method.table';
 import { PluginTable } from 'src/schema/tables/plugin.table';
 import { RegionTable } from 'src/schema/tables/region.table';
+import { ReorganizationItemTable } from 'src/schema/tables/reorganization-item.table';
+import { ReorganizationTable } from 'src/schema/tables/reorganization.table';
 import { SessionTable } from 'src/schema/tables/session.table';
 import { SharedLinkAssetTable } from 'src/schema/tables/shared-link-asset.table';
 import { SharedLinkTable } from 'src/schema/tables/shared-link.table';
@@ -153,6 +155,8 @@ export class ImmichDatabase {
     SessionSyncCheckpointTable,
     SystemMetadataTable,
     TagTable,
+    ReorganizationTable,
+    ReorganizationItemTable,
     TripTable,
     RegionTable,
     AssetRegionTable,
@@ -285,6 +289,8 @@ export interface DB {
   tag_asset: TagAssetTable;
   tag_closure: TagClosureTable;
 
+  reorganization: ReorganizationTable;
+  reorganization_item: ReorganizationItemTable;
   trip: TripTable;
 
   region: RegionTable;

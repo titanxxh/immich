@@ -345,6 +345,93 @@ describe(ReorganizeService.name, () => {
     });
   });
 
+  describe('create', () => {
+    beforeEach(() => {
+      mocks.reorganize.getActive.mockResolvedValue(void 0);
+      mocks.reorganize.getFolderAssets.mockResolvedValue([row(`${TEAM}/a.jpg`)]);
+      mocks.storage.checkFileExists.mockResolvedValue(true);
+    });
+
+    it('should refuse while another reorganization is running', async () => {
+      mocks.reorganize.getActive.mockResolvedValue({ id: 'other' } as any);
+
+      await expect(sut.create(authStub.admin, dto())).rejects.toThrow('Another reorganization');
+      expect(mocks.reorganize.create).not.toHaveBeenCalled();
+    });
+
+    it('should refuse when nothing would move', async () => {
+      mocks.reorganize.getFolderAssets.mockResolvedValue([row(`${TEAM}/2026-03-15/a.jpg`)]);
+
+      await expect(sut.create(authStub.admin, dto())).rejects.toThrow('nothing to move');
+      expect(mocks.reorganize.create).not.toHaveBeenCalled();
+    });
+
+    it('should refuse when a folder it has to change is not writable', async () => {
+      mocks.storage.checkFileExists.mockImplementation((_path, mode) => Promise.resolve(mode === undefined));
+
+      await expect(sut.create(authStub.admin, dto())).rejects.toThrow(`${TEAM} is not writable`);
+      expect(mocks.reorganize.create).not.toHaveBeenCalled();
+    });
+
+    it('should store the plan and queue the run', async () => {
+      mocks.reorganize.getFolderAssets.mockResolvedValue([
+        row(`${TEAM}/a.jpg`, '2026-03-15', { sidecarPath: `${TEAM}/a.jpg.xmp` }),
+        row(`${TEAM}/2026-03-15/b.jpg`),
+        row(`${TEAM}/c.jpg`, '2026-03-15', { dateFromExif: false }),
+      ]);
+      mocks.reorganize.create.mockResolvedValue({ id: 'reorganization-1' } as any);
+      mocks.reorganize.getAll.mockResolvedValue([
+        {
+          id: 'reorganization-1',
+          createdAt: new Date(),
+          finishedAt: null,
+          sourceType: 'folder',
+          sourceName: TEAM,
+          targetPath: TEAM,
+          preset: 'day',
+          autoRename: false,
+          status: 'queued',
+          isUndo: false,
+          error: null,
+          inPlaceCount: 1,
+          removedFolders: [],
+        } as any,
+      ]);
+      mocks.reorganize.getItemCounts.mockResolvedValue([
+        { reorganizationId: 'reorganization-1', status: 'pending', reason: null, count: 1 },
+        { reorganizationId: 'reorganization-1', status: 'stayed', reason: 'unreliable-date', count: 1 },
+      ]);
+
+      const result = await sut.create(authStub.admin, dto());
+
+      expect(mocks.reorganize.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ownerId: USER,
+          sourceType: 'folder',
+          sourcePath: TEAM,
+          sourceName: TEAM,
+          targetPath: TEAM,
+          status: 'queued',
+          inPlaceCount: 1,
+        }),
+        [
+          expect.objectContaining({
+            status: 'pending',
+            reason: null,
+            fromPath: `${TEAM}/a.jpg`,
+            toPath: `${TEAM}/2026-03-15/a.jpg`,
+            toLibraryId: 'library-1',
+            sidecarFromPath: `${TEAM}/a.jpg.xmp`,
+            sidecarToPath: `${TEAM}/2026-03-15/a.jpg.xmp`,
+          }),
+          expect.objectContaining({ status: 'stayed', reason: 'unreliable-date', toPath: null, sidecarToPath: null }),
+        ],
+      );
+      expect(mocks.job.queue).toHaveBeenCalledWith({ name: 'Reorganize', data: { id: 'reorganization-1' } });
+      expect(result).toMatchObject({ status: 'queued', pendingCount: 1, stayedCount: 1, inPlaceCount: 1 });
+    });
+  });
+
   describe('previewItems', () => {
     beforeEach(() => {
       mocks.reorganize.getFolderAssets.mockResolvedValue([

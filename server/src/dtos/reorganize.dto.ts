@@ -1,4 +1,5 @@
 import { createZodDto } from 'nestjs-zod';
+import { isoDatetimeToDate } from 'src/validation';
 import z from 'zod';
 
 const ReorganizePresetSchema = z
@@ -144,6 +145,62 @@ const ReorganizeFoldersResponseSchema = z
   })
   .meta({ id: 'ReorganizeFoldersResponseDto' });
 
+const ReorganizationStatusSchema = z
+  .enum(['queued', 'running', 'completed', 'cancelled', 'interrupted', 'paused'])
+  .describe(
+    'How far a reorganization got: interrupted by a restart and paused by the storage going away both wait for the user',
+  )
+  .meta({ id: 'ReorganizationStatus' });
+
+const ReorganizationItemStatusSchema = z
+  .enum(['pending', 'moving', 'moved', 'failed', 'stayed', 'undoing', 'undone', 'undo-failed', 'undo-skipped'])
+  .describe('How far one photo of a reorganization got')
+  .meta({ id: 'ReorganizationItemStatus' });
+
+const ReorganizationSchema = z
+  .object({
+    id: z.string().describe('Reorganization ID'),
+    createdAt: isoDatetimeToDate.describe('When it was started'),
+    finishedAt: isoDatetimeToDate.nullable().describe('When it last stopped running'),
+    sourceType: ReorganizeSourceTypeSchema,
+    sourceName: z.string().describe('The source folder, or the name of the source album'),
+    targetPath: z.string().describe('Folder the date folders were created in'),
+    preset: ReorganizePresetSchema,
+    autoRename: z.boolean().describe('Whether photos whose name was taken moved under a new name'),
+    status: ReorganizationStatusSchema,
+    isUndo: z.boolean().describe('Whether the status is about undoing it rather than carrying it out'),
+    error: z.string().nullable().describe('Why the whole run stopped'),
+    pendingCount: z.int().describe('Photos not moved yet'),
+    movedCount: z.int().describe('Photos in their date folder'),
+    failedCount: z.int().describe('Photos that could not be moved, or moved back'),
+    stayedCount: z.int().describe('Photos that were left where they were'),
+    undoneCount: z.int().describe('Photos moved back by an undo'),
+    undoSkippedCount: z.int().describe('Photos an undo left in place because they or their old place had changed'),
+    inPlaceCount: z.int().describe('Photos that were already in their folder'),
+    removedFolderCount: z.int().describe('Source subfolders removed because they ended up empty'),
+  })
+  .meta({ id: 'ReorganizationResponseDto' });
+
+const ReorganizationItemSchema = z
+  .object({
+    id: z.string().describe('Item ID'),
+    assetId: z.string().nullable().describe('Photo ID, null once the photo is deleted'),
+    status: ReorganizationItemStatusSchema,
+    reason: z.string().nullable().describe('Why the photo stayed, or why it was renamed'),
+    error: z.string().nullable().describe('What went wrong'),
+    fromPath: z.string().describe('Where the photo was'),
+    toPath: z.string().nullable().describe('Where it went, null for a photo that stayed'),
+    hasSidecar: z.boolean().describe('Whether a sidecar moved along'),
+  })
+  .meta({ id: 'ReorganizationItemDto' });
+
+const ReorganizationItemsQuerySchema = z
+  .object({
+    status: ReorganizationItemStatusSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(1000).default(200).describe('Number of photos to return'),
+  })
+  .meta({ id: 'ReorganizationItemsQueryDto' });
+
 export type ReorganizeReason = z.infer<typeof ReorganizeReasonSchema>;
 
 export class ReorganizeDto extends createZodDto(ReorganizeSchema) {}
@@ -152,3 +209,6 @@ export class ReorganizePreviewResponseDto extends createZodDto(ReorganizePreview
 export class ReorganizeItemsResponseDto extends createZodDto(ReorganizeItemsResponseSchema) {}
 export class ReorganizeFolderQueryDto extends createZodDto(ReorganizeFolderQuerySchema) {}
 export class ReorganizeFoldersResponseDto extends createZodDto(ReorganizeFoldersResponseSchema) {}
+export class ReorganizationResponseDto extends createZodDto(ReorganizationSchema) {}
+export class ReorganizationItemDto extends createZodDto(ReorganizationItemSchema) {}
+export class ReorganizationItemsQueryDto extends createZodDto(ReorganizationItemsQuerySchema) {}

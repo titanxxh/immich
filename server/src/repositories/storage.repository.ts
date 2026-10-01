@@ -92,6 +92,36 @@ export class StorageRepository {
     return fs.rename(source, target);
   }
 
+  /** Gives a file a second name. Unlike a rename it never replaces a file: it fails with EEXIST when the name is taken. */
+  link(source: string, target: string) {
+    return fs.link(source, target);
+  }
+
+  /** Copies a file to a name that must not exist yet. */
+  copyFileExclusive(source: string, target: string) {
+    return fs.copyFile(source, target, constants.COPYFILE_EXCL);
+  }
+
+  /** Makes sure what was written to a file has reached the disk it lives on. */
+  async sync(filepath: string) {
+    const handle = await fs.open(filepath, 'r');
+    try {
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+  }
+
+  /** Creates a folder and the missing ones above it. Returns the topmost folder it had to create, if any. */
+  mkdir(folder: string) {
+    return fs.mkdir(folder, { recursive: true });
+  }
+
+  /** Removes a folder, which must be empty. */
+  rmdir(folder: string) {
+    return fs.rmdir(folder);
+  }
+
   utimes(filepath: string, atime: Date, mtime: Date) {
     return fs.utimes(filepath, atime, mtime);
   }

@@ -43,11 +43,16 @@ A map of every _visited region_, with _first visits_, a replayable timeline, a y
 
 ## Reorganizing
 
-Moves the photos of a folder of an external library, or of an album, into date folders, keeping each photo the same asset (a _reorganization_). So far only the preview exists; nothing is moved yet.
+Moves the photos of a folder of an external library, or of an album, into date folders, keeping each photo the same asset (a _reorganization_). Moving the files by hand would make the next library scan import them as new photos and lose their albums, faces and edits.
 
 - **Preview**: where every photo would go for a target folder and one of three presets (`2026/09`, `2026-09-27`, `2026/2026-09-27`), with an optional label per day (`2026-09-27 match`); a day that already has a folder in the target joins it. Photos stay where they are, with the reason, when their name is taken (unless auto rename is on), when their date fell back on the file times (see _date source_), or when they are offline, trashed, uploaded or not the user's.
-- The target must be inside an import path of one of the user's own libraries and not excluded by it, so that the next library scan finds the photos where they were put.
-- **Code**: `server/src/utils/reorganize.ts` (the plan), `reorganize.service.ts`, `reorganize.controller.ts` (`/reorganizations`), `reorganize.repository.ts`.
+- The target must be inside an import path of one of the user's own libraries and not excluded by it, so that the next library scan finds the photos where they were put. Photos from another library of the same user join the library of the target.
+- **Running**: one reorganization at a time, as the `Reorganize` background job. It pauses the library queue while it runs, so that scans and watch events only ever see a consistent database. A photo, its sidecar and the video of a live photo move together or not at all.
+- **Never overwrites**: a file gets its new name with a hard link, which fails when the name is taken (a rename would silently replace the file on sshfs). Between two file systems the file is copied to a hidden temporary file, compared with the original by size and hash, given its real name, and only then is the original removed.
+- **Stopping**: a photo that fails is recorded and the run goes on; when the storage goes away the run pauses. It can be cancelled, and a run cut short by a restart is marked interrupted. None of these continue on their own: the user continues or undoes them.
+- **Undo**: any past reorganization can be undone as a whole. A photo goes back only if it is still where the reorganization put it and its old place is free. The _reorganization record_ (tables `reorganization`, `reorganization_item`) is kept until the user deletes it.
+- **Deployment**: the external library folders must be mounted writable in the server container (upstream suggests read-only).
+- **Code**: `server/src/utils/reorganize.ts` (the plan), `reorganize.service.ts` (preview and API), `reorganize-job.service.ts` (moving files), `reorganize.controller.ts` (`/reorganizations`), `reorganize.repository.ts`.
 
 ## Smaller fixes
 

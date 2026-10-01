@@ -11623,6 +11623,99 @@
         "x-immich-state": "Alpha"
       }
     },
+    "/reorganizations": {
+      "get": {
+        "description": "List the reorganizations of the current user, newest first, with how far each got.",
+        "operationId": "getReorganizations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReorganizationResponseDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "List reorganizations",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      },
+      "post": {
+        "description": "Move the photos of a folder or album into date folders in the background, keeping each photo the same asset.",
+        "operationId": "createReorganization",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorganizeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Start a reorganization",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.update"
+      }
+    },
     "/reorganizations/folders": {
       "get": {
         "description": "List the folders inside a folder of one of the external libraries of the current user, or their import paths.",
@@ -11774,6 +11867,332 @@
           }
         ],
         "x-immich-permission": "asset.read"
+      }
+    },
+    "/reorganizations/{id}": {
+      "delete": {
+        "description": "Forget a reorganization. The photos stay where they are and it can no longer be undone.",
+        "operationId": "deleteReorganization",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Delete a reorganization record",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.update"
+      },
+      "get": {
+        "description": "Get how far a reorganization got.",
+        "operationId": "getReorganization",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get a reorganization",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      }
+    },
+    "/reorganizations/{id}/cancel": {
+      "post": {
+        "description": "Stop a running reorganization after the photo it is busy with. Photos already moved stay moved.",
+        "operationId": "cancelReorganization",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Cancel a reorganization",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.update"
+      }
+    },
+    "/reorganizations/{id}/items": {
+      "get": {
+        "description": "List where each photo of a reorganization was and went, optionally only the ones in one state.",
+        "operationId": "getReorganizationItems",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of photos to return",
+            "schema": {
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReorganizationItemStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReorganizationItemDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "List the photos of a reorganization",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.read"
+      }
+    },
+    "/reorganizations/{id}/resume": {
+      "post": {
+        "description": "Continue a reorganization, or its undo, that stopped early, and retry the photos that failed.",
+        "operationId": "resumeReorganization",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Continue a reorganization",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.update"
+      }
+    },
+    "/reorganizations/{id}/undo": {
+      "post": {
+        "description": "Move the photos of a reorganization back to where they were. A photo stays when it was moved again or deleted since, or when its old place is taken.",
+        "operationId": "undoReorganization",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReorganizationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Undo a reorganization",
+        "tags": [
+          "Assets"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.2.4",
+            "state": "Added"
+          }
+        ],
+        "x-immich-permission": "asset.update"
       }
     },
     "/search/cities": {
@@ -23867,6 +24286,7 @@
           "MemoryGenerate",
           "TripDetection",
           "FootprintAssign",
+          "Reorganize",
           "NotificationsCleanup",
           "NotifyUserSignup",
           "NotifyAlbumInvite",
@@ -28083,6 +28503,206 @@
           "patch",
           "prepatch",
           "prerelease"
+        ],
+        "type": "string"
+      },
+      "ReorganizationItemDto": {
+        "properties": {
+          "assetId": {
+            "description": "Photo ID, null once the photo is deleted",
+            "nullable": true,
+            "type": "string"
+          },
+          "error": {
+            "description": "What went wrong",
+            "nullable": true,
+            "type": "string"
+          },
+          "fromPath": {
+            "description": "Where the photo was",
+            "type": "string"
+          },
+          "hasSidecar": {
+            "description": "Whether a sidecar moved along",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Item ID",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why the photo stayed, or why it was renamed",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReorganizationItemStatus"
+          },
+          "toPath": {
+            "description": "Where it went, null for a photo that stayed",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "error",
+          "fromPath",
+          "hasSidecar",
+          "id",
+          "reason",
+          "status",
+          "toPath"
+        ],
+        "type": "object"
+      },
+      "ReorganizationItemStatus": {
+        "description": "How far one photo of a reorganization got",
+        "enum": [
+          "pending",
+          "moving",
+          "moved",
+          "failed",
+          "stayed",
+          "undoing",
+          "undone",
+          "undo-failed",
+          "undo-skipped"
+        ],
+        "type": "string"
+      },
+      "ReorganizationResponseDto": {
+        "properties": {
+          "autoRename": {
+            "description": "Whether photos whose name was taken moved under a new name",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "description": "When it was started",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "error": {
+            "description": "Why the whole run stopped",
+            "nullable": true,
+            "type": "string"
+          },
+          "failedCount": {
+            "description": "Photos that could not be moved, or moved back",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "finishedAt": {
+            "description": "When it last stopped running",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Reorganization ID",
+            "type": "string"
+          },
+          "inPlaceCount": {
+            "description": "Photos that were already in their folder",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "isUndo": {
+            "description": "Whether the status is about undoing it rather than carrying it out",
+            "type": "boolean"
+          },
+          "movedCount": {
+            "description": "Photos in their date folder",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "pendingCount": {
+            "description": "Photos not moved yet",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "preset": {
+            "$ref": "#/components/schemas/ReorganizePreset"
+          },
+          "removedFolderCount": {
+            "description": "Source subfolders removed because they ended up empty",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "sourceName": {
+            "description": "The source folder, or the name of the source album",
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/ReorganizeSourceType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReorganizationStatus"
+          },
+          "stayedCount": {
+            "description": "Photos that were left where they were",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "targetPath": {
+            "description": "Folder the date folders were created in",
+            "type": "string"
+          },
+          "undoSkippedCount": {
+            "description": "Photos an undo left in place because they or their old place had changed",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "undoneCount": {
+            "description": "Photos moved back by an undo",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "autoRename",
+          "createdAt",
+          "error",
+          "failedCount",
+          "finishedAt",
+          "id",
+          "inPlaceCount",
+          "isUndo",
+          "movedCount",
+          "pendingCount",
+          "preset",
+          "removedFolderCount",
+          "sourceName",
+          "sourceType",
+          "status",
+          "stayedCount",
+          "targetPath",
+          "undoSkippedCount",
+          "undoneCount"
+        ],
+        "type": "object"
+      },
+      "ReorganizationStatus": {
+        "description": "How far a reorganization got: interrupted by a restart and paused by the storage going away both wait for the user",
+        "enum": [
+          "queued",
+          "running",
+          "completed",
+          "cancelled",
+          "interrupted",
+          "paused"
         ],
         "type": "string"
       },

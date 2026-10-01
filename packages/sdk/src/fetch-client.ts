@@ -2344,15 +2344,42 @@ export type QueueJobResponseDto = {
     /** Job creation timestamp */
     timestamp: number;
 };
-export type ReorganizeFoldersResponseDto = {
-    /** Full paths of the folders inside */
-    folders: string[];
-    /** Library the folder is in */
-    libraryId: string | null;
-    /** Its parent, when that can be listed too */
-    parent: string | null;
-    /** The listed folder, null for the list of import paths */
-    path: string | null;
+export type ReorganizationResponseDto = {
+    /** Whether photos whose name was taken moved under a new name */
+    autoRename: boolean;
+    /** When it was started */
+    createdAt: string;
+    /** Why the whole run stopped */
+    error: string | null;
+    /** Photos that could not be moved, or moved back */
+    failedCount: number;
+    /** When it last stopped running */
+    finishedAt: string | null;
+    /** Reorganization ID */
+    id: string;
+    /** Photos that were already in their folder */
+    inPlaceCount: number;
+    /** Whether the status is about undoing it rather than carrying it out */
+    isUndo: boolean;
+    /** Photos in their date folder */
+    movedCount: number;
+    /** Photos not moved yet */
+    pendingCount: number;
+    preset: ReorganizePreset;
+    /** Source subfolders removed because they ended up empty */
+    removedFolderCount: number;
+    /** The source folder, or the name of the source album */
+    sourceName: string;
+    sourceType: ReorganizeSourceType;
+    status: ReorganizationStatus;
+    /** Photos that were left where they were */
+    stayedCount: number;
+    /** Folder the date folders were created in */
+    targetPath: string;
+    /** Photos an undo left in place because they or their old place had changed */
+    undoSkippedCount: number;
+    /** Photos moved back by an undo */
+    undoneCount: number;
 };
 export type ReorganizeDto = {
     /** Move photos whose name is taken under a new name */
@@ -2373,6 +2400,16 @@ export type ReorganizeDto = {
     sourceType: ReorganizeSourceType;
     /** Folder the date folders are created in */
     targetPath: string;
+};
+export type ReorganizeFoldersResponseDto = {
+    /** Full paths of the folders inside */
+    folders: string[];
+    /** Library the folder is in */
+    libraryId: string | null;
+    /** Its parent, when that can be listed too */
+    parent: string | null;
+    /** The listed folder, null for the list of import paths */
+    path: string | null;
 };
 export type ReorganizeFolderDto = {
     /** Day of the folder (YYYY-MM-DD), null for a month folder */
@@ -2483,6 +2520,23 @@ export type ReorganizeItemsResponseDto = {
     items: ReorganizeItemDto[];
     /** Number of matching photos */
     total: number;
+};
+export type ReorganizationItemDto = {
+    /** Photo ID, null once the photo is deleted */
+    assetId: string | null;
+    /** What went wrong */
+    error: string | null;
+    /** Where the photo was */
+    fromPath: string;
+    /** Whether a sidecar moved along */
+    hasSidecar: boolean;
+    /** Item ID */
+    id: string;
+    /** Why the photo stayed, or why it was renamed */
+    reason: string | null;
+    status: ReorganizationItemStatus;
+    /** Where it went, null for a photo that stayed */
+    toPath: string | null;
 };
 export type SearchExploreItem = {
     data: AssetResponseDto;
@@ -6902,6 +6956,32 @@ export function getQueueJobs({ name, status }: {
     }));
 }
 /**
+ * List reorganizations
+ */
+export function getReorganizations(opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizationResponseDto[];
+    }>("/reorganizations", {
+        ...opts
+    }));
+}
+/**
+ * Start a reorganization
+ */
+export function createReorganization({ reorganizeDto }: {
+    reorganizeDto: ReorganizeDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 201;
+        data: ReorganizationResponseDto;
+    }>("/reorganizations", oazapfts.json({
+        ...opts,
+        method: "POST",
+        body: reorganizeDto
+    })));
+}
+/**
  * List folders to reorganize
  */
 export function getReorganizeFolders({ path }: {
@@ -6945,6 +7025,90 @@ export function previewReorganizationItems({ reorganizeItemsDto }: {
         method: "POST",
         body: reorganizeItemsDto
     })));
+}
+/**
+ * Delete a reorganization record
+ */
+export function deleteReorganization({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/reorganizations/${encodeURIComponent(id)}`, {
+        ...opts,
+        method: "DELETE"
+    }));
+}
+/**
+ * Get a reorganization
+ */
+export function getReorganization({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizationResponseDto;
+    }>(`/reorganizations/${encodeURIComponent(id)}`, {
+        ...opts
+    }));
+}
+/**
+ * Cancel a reorganization
+ */
+export function cancelReorganization({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizationResponseDto;
+    }>(`/reorganizations/${encodeURIComponent(id)}/cancel`, {
+        ...opts,
+        method: "POST"
+    }));
+}
+/**
+ * List the photos of a reorganization
+ */
+export function getReorganizationItems({ id, limit, status }: {
+    id: string;
+    limit?: number;
+    status?: ReorganizationItemStatus;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizationItemDto[];
+    }>(`/reorganizations/${encodeURIComponent(id)}/items${QS.query(QS.explode({
+        limit,
+        status
+    }))}`, {
+        ...opts
+    }));
+}
+/**
+ * Continue a reorganization
+ */
+export function resumeReorganization({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizationResponseDto;
+    }>(`/reorganizations/${encodeURIComponent(id)}/resume`, {
+        ...opts,
+        method: "POST"
+    }));
+}
+/**
+ * Undo a reorganization
+ */
+export function undoReorganization({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: ReorganizationResponseDto;
+    }>(`/reorganizations/${encodeURIComponent(id)}/undo`, {
+        ...opts,
+        method: "POST"
+    }));
 }
 /**
  * Retrieve assets by city
@@ -8986,6 +9150,7 @@ export enum JobName {
     MemoryGenerate = "MemoryGenerate",
     TripDetection = "TripDetection",
     FootprintAssign = "FootprintAssign",
+    Reorganize = "Reorganize",
     NotificationsCleanup = "NotificationsCleanup",
     NotifyUserSignup = "NotifyUserSignup",
     NotifyAlbumInvite = "NotifyAlbumInvite",
@@ -9030,6 +9195,14 @@ export enum ReorganizeSourceType {
     Folder = "folder",
     Album = "album"
 }
+export enum ReorganizationStatus {
+    Queued = "queued",
+    Running = "running",
+    Completed = "completed",
+    Cancelled = "cancelled",
+    Interrupted = "interrupted",
+    Paused = "paused"
+}
 export enum ReorganizeAction {
     Move = "move",
     InPlace = "in-place",
@@ -9048,6 +9221,17 @@ export enum ReorganizeReason {
     SharedSidecar = "shared-sidecar",
     TargetExists = "target-exists",
     SameTarget = "same-target"
+}
+export enum ReorganizationItemStatus {
+    Pending = "pending",
+    Moving = "moving",
+    Moved = "moved",
+    Failed = "failed",
+    Stayed = "stayed",
+    Undoing = "undoing",
+    Undone = "undone",
+    UndoFailed = "undo-failed",
+    UndoSkipped = "undo-skipped"
 }
 export enum SearchOrderField {
     FileCreatedAt = "fileCreatedAt",

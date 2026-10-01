@@ -891,6 +891,8 @@ export enum JobName {
 
   FootprintAssign = 'FootprintAssign',
 
+  Reorganize = 'Reorganize',
+
   NotificationsCleanup = 'NotificationsCleanup',
 
   NotifyUserSignup = 'NotifyUserSignup',
@@ -1007,6 +1009,7 @@ export enum DatabaseLock {
   TripDetection = 900,
   FootprintImport = 910,
   FootprintAssign = 911,
+  Reorganize = 920,
 }
 
 export enum MaintenanceAction {

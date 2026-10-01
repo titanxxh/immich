@@ -407,6 +407,9 @@ export type JobItem =
   // Footprints
   | { name: JobName.FootprintAssign; data?: IBaseJob }
 
+  // Reorganizing
+  | { name: JobName.Reorganize; data: IEntityJob }
+
   // Filesystem
   | { name: JobName.FileDelete; data: IDeleteFilesJob }
 

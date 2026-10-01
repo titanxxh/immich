@@ -86,3 +86,101 @@ where
   and "album_asset"."albumId" = $3::uuid
 order by
   "asset"."originalPath"
+
+-- ReorganizeRepository.get
+select
+  *
+from
+  "reorganization"
+where
+  "id" = $1::uuid
+
+-- ReorganizeRepository.getAll
+select
+  *
+from
+  "reorganization"
+where
+  "ownerId" = $1::uuid
+order by
+  "createdAt" desc
+
+-- ReorganizeRepository.getActive
+select
+  *
+from
+  "reorganization"
+where
+  "status" in ($1, $2)
+
+-- ReorganizeRepository.getItemCounts
+select
+  "reorganizationId",
+  "status",
+  "reason",
+  count(*) as "count"
+from
+  "reorganization_item"
+where
+  "reorganizationId" in ($1)
+group by
+  "reorganizationId",
+  "status",
+  "reason"
+
+-- ReorganizeRepository.getItems
+select
+  *
+from
+  "reorganization_item"
+where
+  "reorganizationId" = $1::uuid
+  and "status" in ($2)
+order by
+  "position" asc
+limit
+  $3
+
+-- ReorganizeRepository.transition
+update "reorganization"
+set
+  "status" = $1
+where
+  "id" = $2::uuid
+  and "status" = $3
+returning
+  *
+
+-- ReorganizeRepository.updateItemStatuses
+update "reorganization_item"
+set
+  "status" = $1,
+  "error" = $2
+where
+  "reorganizationId" = $3::uuid
+  and "status" in ($4)
+
+-- ReorganizeRepository.interruptRunning
+update "reorganization"
+set
+  "status" = $1,
+  "cancelRequested" = $2
+where
+  "status" = $3
+returning
+  "id"
+
+-- ReorganizeRepository.getAssetState
+select
+  "asset"."id",
+  "asset"."originalPath",
+  "asset"."libraryId",
+  "asset"."isOffline",
+  "asset"."deletedAt",
+  "asset"."livePhotoVideoId",
+  "video"."isExternal" as "videoIsExternal"
+from
+  "asset"
+  left join "asset" as "video" on "video"."id" = "asset"."livePhotoVideoId"
+where
+  "asset"."id" = $1::uuid
