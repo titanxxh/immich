@@ -61,6 +61,7 @@ Moves the photos of a folder of an external library, or of an album, into date f
 
 - **Faces before birth**: setting a person's birth date releases their machine-learning faces on photos taken before it and re-queues them for facial recognition, so look-alike siblings separate. Manually tagged faces stay. The birth-date check uses the photo's local date.
 - **Date source**: metadata extraction records on `asset_job_status.dateFromExif` whether a photo's capture date comes from its metadata (or sidecar) or fell back on the file times. `MetadataService.backfillDateSources` fills it in on demand for photos extracted earlier, reading only the date tags; the reorganization preview calls it.
+- **Keyframes beyond an integer**: metadata extraction skips a video's keyframe row (used for real-time HLS) when a value does not fit the integer columns, instead of failing the whole extraction. Surveillance cameras keep a running clock, so their timestamps start beyond 2^31 at a 90 kHz time base; before, such a video got no metadata at all, and editing its date silently did nothing.
 - **Cross-border reverse geocoding**: a nearest place in a different country than the country polygon containing the point is discarded in favour of the country result.
 
 ## Fork tooling

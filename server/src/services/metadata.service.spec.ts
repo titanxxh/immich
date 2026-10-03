@@ -814,6 +814,34 @@ describe(MetadataService.name, () => {
       );
     });
 
+    it('should omit the keyframe row but keep the metadata when a keyframe value does not fit in an integer', async () => {
+      // surveillance cameras keep a running clock, so their PTS start far beyond 2^31 at a 90 kHz time base
+      const asset = AssetFactory.create({ type: AssetType.Video });
+      mocks.assetJob.getForMetadataExtraction.mockResolvedValue(getForMetadataExtraction(asset));
+      mocks.media.probe.mockResolvedValue(videoInfoStub.videoStreamHDR10);
+      mocks.media.probePackets.mockResolvedValue({
+        totalDuration: 26_276_640,
+        packetCount: 7299,
+        outputFrames: 7299,
+        keyframePts: [2_756_813_310, 2_757_353_310],
+        keyframeAccDuration: [3600, 543_600],
+        keyframeOwnDuration: [3600, 3600],
+      });
+      mockReadTags({});
+
+      await sut.handleMetadataExtraction({ id: asset.id });
+
+      expect(mocks.asset.upsertExif).toHaveBeenCalledWith(
+        expect.objectContaining({
+          exif: expect.objectContaining({ assetId: asset.id }),
+          video: expect.objectContaining({ timeBase: 600 }),
+        }),
+      );
+      expect(mocks.asset.upsertExif).toHaveBeenCalledWith(
+        expect.not.objectContaining({ keyframes: expect.anything() }),
+      );
+    });
+
     it('should prefer ffprobe frameRate over exiftool VideoFrameRate', async () => {
       const asset = AssetFactory.create({ type: AssetType.Video });
       mocks.assetJob.getForMetadataExtraction.mockResolvedValue(getForMetadataExtraction(asset));

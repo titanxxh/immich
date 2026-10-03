@@ -29,7 +29,7 @@ import { ImmichTags } from 'src/repositories/metadata.repository';
 import { AssetExifTable } from 'src/schema/tables/asset-exif.table';
 import { AssetFaceTable } from 'src/schema/tables/asset-face.table';
 import { BaseService } from 'src/services/base.service';
-import { JobOf } from 'src/types';
+import { JobOf, VideoPacketInfo } from 'src/types';
 import { getAssetFiles } from 'src/utils/asset.util';
 import { isAssetChecksumConstraint } from 'src/utils/database';
 import { mergeTimeZone } from 'src/utils/date';
@@ -343,7 +343,7 @@ export class MetadataService extends BaseService {
         : undefined;
 
     const keyframeData =
-      packets && packets.keyframePts.length > 0
+      packets && packets.keyframePts.length > 0 && this.keyframesFitColumns(asset, packets)
         ? {
             assetId: asset.id,
             totalDuration: packets.totalDuration,
@@ -1131,6 +1131,23 @@ export class MetadataService extends BaseService {
     // eslint-disable-next-line unicorn/prefer-number-coercion
     const seconds = typeof duration === 'number' ? duration : Number.parseFloat(duration as string);
     return Number.isFinite(seconds) ? Math.round(Duration.fromObject({ seconds }).toMillis()) : null;
+  }
+
+  /** Whether the keyframe values fit the integer columns; a camera with a running clock has PTS beyond 2^31. */
+  private keyframesFitColumns(asset: { id: string; originalPath: string }, packets: VideoPacketInfo) {
+    const values = [
+      packets.totalDuration,
+      packets.packetCount,
+      packets.outputFrames,
+      ...packets.keyframePts,
+      ...packets.keyframeAccDuration,
+      ...packets.keyframeOwnDuration,
+    ];
+    if (values.every((value) => validate(value) !== null)) {
+      return true;
+    }
+    this.logger.warn(`Skipping keyframes that do not fit in an integer for asset ${asset.id}: ${asset.originalPath}`);
+    return false;
   }
 
   private async getVideoTags(originalPath: string) {
