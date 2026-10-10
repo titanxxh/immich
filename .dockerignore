@@ -27,6 +27,7 @@ e2e/
 
 fastlane/
 machine-learning/
+machine-learning-gemma/
 misc/
 !misc/footprint-regions/NOTICE
 mobile/

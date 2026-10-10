@@ -1,0 +1,48 @@
+[project]
+name = "immich-gemma"
+version = "0.1.0"
+description = "EmbeddingGemma 2 behind the Immich machine learning protocol"
+requires-python = ">=3.12,<4.0"
+readme = "README.md"
+dependencies = [
+    "fastapi>=0.95.2,<1.0",
+    "numpy>=2.4.0,<3.0",
+    "orjson>=3.9.5",
+    "pillow>=12.2,<13",
+    "python-multipart>=0.0.6,<1.0",
+    "sentence-transformers>=6.1,<7",
+    "torch>=2.14,<3",
+    "torchvision>=0.29,<1",
+    "transformers>=5.19,<6",
+    "uvicorn[standard]>=0.22.0,<1.0",
+]
+
+[dependency-groups]
+test = ["httpx2>=2.13,<3", "pytest>=7.3.1"]
+lint = ["ruff>=0.0.272"]
+dev = [{ include-group = "test" }, { include-group = "lint" }]
+
+[tool.uv]
+compile-bytecode = true
+package = false
+# the CUDA wheels below only exist for Linux
+environments = ["sys_platform == 'linux'"]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130" }
+torchvision = { index = "pytorch-cu130" }
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["test_main.py"]
