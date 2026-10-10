@@ -55,6 +55,7 @@ class SearchManager {
       ocr: searchQuery.ocr,
       queryType,
       queryAssetId: 'queryAssetId' in searchQuery ? searchQuery.queryAssetId : undefined,
+      searchModel: 'searchModel' in searchQuery ? searchQuery.searchModel : undefined,
       personIds: new SvelteSet('personIds' in searchQuery ? searchQuery.personIds : []),
       tagIds:
         'tagIds' in searchQuery
@@ -100,10 +101,14 @@ class SearchManager {
     }
 
     const query = this.filter.query || undefined;
+    const smartQuery = this.filter.queryType === 'smart' ? query : undefined;
+    const queryAssetId = this.filter.queryAssetId || undefined;
 
     return {
-      query: this.filter.queryType === 'smart' ? query : undefined,
-      queryAssetId: this.filter.queryAssetId || undefined,
+      query: smartQuery,
+      queryAssetId,
+      // a new search keeps the model of the previous one
+      searchModel: smartQuery || queryAssetId ? this.filter.searchModel : undefined,
       ocr: this.filter.queryType === 'ocr' ? query : undefined,
       originalFileName: this.filter.queryType === 'metadata' ? query : undefined,
       description: this.filter.queryType === 'description' ? query : undefined,

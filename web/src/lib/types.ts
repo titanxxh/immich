@@ -1,4 +1,4 @@
-import type { QueueResponseDto } from '@immich/sdk';
+import type { QueueResponseDto, SearchModel } from '@immich/sdk';
 import type { ActionItem } from '@immich/ui';
 import type { DateTime } from 'luxon';
 import type { SvelteSet } from 'svelte/reactivity';
@@ -69,6 +69,8 @@ export type SearchFilter = {
   tagIds: SvelteSet<string> | null;
   location: SearchLocationFilter;
   queryAssetId?: string;
+  /** the model a smart search uses, the default one when not set */
+  searchModel?: SearchModel;
   camera: SearchCameraFilter;
   date: SearchDateFilter;
   display: SearchDisplayFilters;
