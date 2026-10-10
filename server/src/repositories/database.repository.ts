@@ -51,6 +51,7 @@ export async function getVectorExtension(runner: Kysely<DB>): Promise<VectorExte
 export const probes: Record<VectorIndex, number> = {
   [VectorIndex.Clip]: 1,
   [VectorIndex.Face]: 1,
+  [VectorIndex.Gemma]: 1,
 };
 
 @Injectable()
@@ -140,10 +141,15 @@ export class DatabaseRepository {
     await Promise.all([
       this.db.schema.dropIndex(VectorIndex.Clip).ifExists().execute(),
       this.db.schema.dropIndex(VectorIndex.Face).ifExists().execute(),
+      this.db.schema.dropIndex(VectorIndex.Gemma).ifExists().execute(),
     ]);
 
     await sql`ALTER EXTENSION ${sql.raw(extension)} UPDATE TO ${sql.lit(targetVersion)}`.execute(this.db);
-    await Promise.all([this.reindexVectors(VectorIndex.Clip), this.reindexVectors(VectorIndex.Face)]);
+    await Promise.all([
+      this.reindexVectors(VectorIndex.Clip),
+      this.reindexVectors(VectorIndex.Face),
+      this.reindexVectors(VectorIndex.Gemma),
+    ]);
   }
 
   async prewarm(index: VectorIndex): Promise<void> {

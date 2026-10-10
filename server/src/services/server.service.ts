@@ -92,6 +92,7 @@ export class ServerService extends BaseService {
 
     return {
       smartSearch: isSmartSearchEnabled(machineLearning),
+      smartSearchGemma: isSmartSearchEnabled(machineLearning) && this.machineLearningRepository.isGemmaEnabled(),
       facialRecognition: isFacialRecognitionEnabled(machineLearning),
       duplicateDetection: isDuplicateDetectionEnabled(machineLearning),
       map: map.enabled,

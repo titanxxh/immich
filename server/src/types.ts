@@ -391,6 +391,7 @@ export type JobItem =
   // Smart Search
   | { name: JobName.SmartSearchQueueAll; data: IBaseJob }
   | { name: JobName.SmartSearch; data: IEntityJob }
+  | { name: JobName.SmartSearchGemma; data: IEntityJob }
   | { name: JobName.AssetEmptyTrash; data?: IBaseJob }
 
   // Duplicate Detection

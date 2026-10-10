@@ -78,6 +78,7 @@ import { ReorganizationTable } from 'src/schema/tables/reorganization.table';
 import { SessionTable } from 'src/schema/tables/session.table';
 import { SharedLinkAssetTable } from 'src/schema/tables/shared-link-asset.table';
 import { SharedLinkTable } from 'src/schema/tables/shared-link.table';
+import { SmartSearchGemmaTable } from 'src/schema/tables/smart-search-gemma.table';
 import { SmartSearchTable } from 'src/schema/tables/smart-search.table';
 import { StackAuditTable } from 'src/schema/tables/stack-audit.table';
 import { StackTable } from 'src/schema/tables/stack.table';
@@ -150,6 +151,7 @@ export class ImmichDatabase {
     SharedLinkAssetTable,
     SharedLinkTable,
     SmartSearchTable,
+    SmartSearchGemmaTable,
     StackTable,
     StackAuditTable,
     SessionSyncCheckpointTable,
@@ -279,6 +281,7 @@ export interface DB {
   shared_link_asset: SharedLinkAssetTable;
 
   smart_search: SmartSearchTable;
+  smart_search_gemma: SmartSearchGemmaTable;
 
   stack: StackTable;
   stack_audit: StackAuditTable;

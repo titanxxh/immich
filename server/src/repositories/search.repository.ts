@@ -5,7 +5,7 @@ import { columns } from 'src/database';
 import { DummyValue, GenerateSql } from 'src/decorators';
 import { MapAsset } from 'src/dtos/asset-response.dto';
 import { SearchFilter, SearchOrder } from 'src/dtos/search.dto';
-import { AssetStatus, AssetType, AssetVisibility, VectorIndex } from 'src/enum';
+import { AssetStatus, AssetType, AssetVisibility, SearchModel, VectorIndex } from 'src/enum';
 import { probes } from 'src/repositories/database.repository';
 import { DB } from 'src/schema';
 import { AssetExifTable } from 'src/schema/tables/asset-exif.table';
@@ -92,8 +92,20 @@ export interface SearchExifOptions {
 
 export interface SearchEmbeddingOptions {
   embedding: string;
+  /** the model `embedding` comes from, hence the table of embeddings to compare it with */
+  searchModel?: SearchModel;
   userIds: string[];
 }
+
+const EMBEDDINGS = {
+  [SearchModel.Default]: { table: 'smart_search', join: 'smart_search', index: VectorIndex.Clip },
+  [SearchModel.Gemma]: {
+    table: 'smart_search_gemma',
+    // it has the columns of `smart_search` and is joined under that name, so that the searches are written once
+    join: 'smart_search_gemma as smart_search' as 'smart_search',
+    index: VectorIndex.Gemma,
+  },
+} as const;
 
 export interface SearchOcrOptions {
   ocr?: string;
@@ -319,11 +331,12 @@ export class SearchRepository {
       throw new Error(`Invalid value for 'size': ${pagination.size}`);
     }
 
+    const { join, index } = EMBEDDINGS[options.searchModel ?? SearchModel.Default];
     return this.db.transaction().execute(async (trx) => {
-      await sql`set local vchordrq.probes = ${sql.lit(probes[VectorIndex.Clip])}`.execute(trx);
+      await sql`set local vchordrq.probes = ${sql.lit(probes[index])}`.execute(trx);
       const items = await searchAssetBuilderLegacy(trx, options)
         .select(columns.searchAsset)
-        .innerJoin('smart_search', 'asset.id', 'smart_search.assetId')
+        .innerJoin(join, 'asset.id', 'smart_search.assetId')
         .orderBy(sql`smart_search.embedding <=> ${options.embedding}`)
         .orderBy('asset.id', 'asc')
         .limit(pagination.size + 1)
@@ -336,8 +349,12 @@ export class SearchRepository {
   @GenerateSql({
     params: [DummyValue.UUID],
   })
-  async getEmbedding(assetId: string) {
-    return this.db.selectFrom('smart_search').selectAll().where('assetId', '=', assetId).executeTakeFirst();
+  async getEmbedding(assetId: string, searchModel = SearchModel.Default) {
+    return this.db
+      .selectFrom(EMBEDDINGS[searchModel].table)
+      .selectAll()
+      .where('assetId', '=', assetId)
+      .executeTakeFirst();
   }
 
   @GenerateSql({
@@ -474,9 +491,9 @@ export class SearchRepository {
       .execute();
   }
 
-  async upsert(assetId: string, embedding: string): Promise<void> {
+  async upsert(assetId: string, embedding: string, searchModel = SearchModel.Default): Promise<void> {
     await this.db
-      .insertInto('smart_search')
+      .insertInto(EMBEDDINGS[searchModel].table)
       .values({ assetId, embedding })
       .onConflict((oc) => oc.column('assetId').doUpdateSet((eb) => ({ embedding: eb.ref('excluded.embedding') })))
       .execute();
@@ -565,14 +582,15 @@ export class SearchRepository {
   @GenerateSql(...searchSmartV3Examples)
   searchSmartV3(
     pagination: PaginationOptions,
-    options: Omit<AssetSearchBuilderV3Options, 'order'> & { embedding: string },
+    options: Omit<AssetSearchBuilderV3Options, 'order'> & { embedding: string; searchModel?: SearchModel },
     scope: AssetSearchScope,
   ) {
+    const { join, index } = EMBEDDINGS[options.searchModel ?? SearchModel.Default];
     return this.db.transaction().execute(async (trx) => {
-      await sql`set local vchordrq.probes = ${sql.lit(probes[VectorIndex.Clip])}`.execute(trx);
+      await sql`set local vchordrq.probes = ${sql.lit(probes[index])}`.execute(trx);
       const items = await searchAssetBuilder(trx, options, scope)
         .select(columns.searchAsset)
-        .innerJoin('smart_search', 'asset.id', 'smart_search.assetId')
+        .innerJoin(join, 'asset.id', 'smart_search.assetId')
         .orderBy(sql`smart_search.embedding <=> ${options.embedding}`)
         .orderBy('asset.id', 'asc')
         .limit(pagination.take + 1)

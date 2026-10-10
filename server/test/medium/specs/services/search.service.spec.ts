@@ -1,6 +1,6 @@
 import { Kysely } from 'kysely';
 import { SearchSuggestionType } from 'src/dtos/search.dto';
-import { AlbumUserRole, AssetOrder, AssetVisibility, SearchOrderField } from 'src/enum';
+import { AlbumUserRole, AssetOrder, AssetVisibility, SearchModel, SearchOrderField } from 'src/enum';
 import { AccessRepository } from 'src/repositories/access.repository';
 import { AssetRepository } from 'src/repositories/asset.repository';
 import { DatabaseRepository } from 'src/repositories/database.repository';
@@ -16,7 +16,8 @@ import { getKyselyDB } from 'test/utils';
 
 let defaultDatabase: Kysely<DB>;
 
-const unitVector = (index: number) => JSON.stringify(Array.from({ length: 512 }, (_, i) => (i === index ? 1 : 0)));
+const unitVector = (index: number, length = 512) =>
+  JSON.stringify(Array.from({ length }, (_, i) => (i === index ? 1 : 0)));
 
 const setup = (db?: Kysely<DB>) => {
   return newMediumService(SearchService, {
@@ -447,6 +448,41 @@ describe(SearchService.name, () => {
       const secondPage = await searchRepository.searchSmartV3({ take: 2, skip: 2 }, options, scope);
       expect(secondPage.items.length).toBe(1);
       expect(secondPage.hasNextPage).toBe(false);
+    });
+
+    it('should compare with the Gemma embeddings when asked for the Gemma model', async () => {
+      const { ctx } = setup();
+      const { user } = await ctx.newUser();
+      const searchRepository = ctx.get(SearchRepository);
+
+      // the models disagree: the first asset is the nearest one for CLIP, the second one for Gemma
+      const { asset: first } = await ctx.newAsset({ ownerId: user.id });
+      const { asset: second } = await ctx.newAsset({ ownerId: user.id });
+      const { asset: clipOnly } = await ctx.newAsset({ ownerId: user.id });
+      await searchRepository.upsert(first.id, unitVector(0));
+      await searchRepository.upsert(second.id, unitVector(1));
+      await searchRepository.upsert(clipOnly.id, unitVector(2));
+      await searchRepository.upsert(first.id, unitVector(1, 768), SearchModel.Gemma);
+      await searchRepository.upsert(second.id, unitVector(2, 768), SearchModel.Gemma);
+      await searchRepository.upsert(second.id, unitVector(0, 768), SearchModel.Gemma);
+
+      const scope = { userIds: [user.id], lockedOwnerId: user.id };
+      const clip = await searchRepository.searchSmartV3({ take: 5 }, { filter: {}, embedding: unitVector(0) }, scope);
+      expect(clip.items).toHaveLength(3);
+      expect(clip.items[0].id).toBe(first.id);
+
+      const gemmaOptions = { embedding: unitVector(0, 768), searchModel: SearchModel.Gemma };
+      const gemma = await searchRepository.searchSmartV3({ take: 5 }, { filter: {}, ...gemmaOptions }, scope);
+      expect(gemma.items.map(({ id }) => id)).toEqual([second.id, first.id]);
+
+      const legacy = await searchRepository.searchSmart({ page: 1, size: 5 }, { ...gemmaOptions, userIds: [user.id] });
+      expect(legacy.items.map(({ id }) => id)).toEqual([second.id, first.id]);
+
+      await expect(searchRepository.getEmbedding(second.id, SearchModel.Gemma)).resolves.toEqual({
+        assetId: second.id,
+        embedding: unitVector(0, 768),
+      });
+      await expect(searchRepository.getEmbedding(clipOnly.id, SearchModel.Gemma)).resolves.toBeUndefined();
     });
   });
 });

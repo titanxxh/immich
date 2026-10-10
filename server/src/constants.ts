@@ -39,7 +39,11 @@ export const VECTOR_EXTENSIONS = [DatabaseExtension.VectorChord, DatabaseExtensi
 export const VECTOR_INDEX_TABLES = {
   [VectorIndex.Clip]: 'smart_search',
   [VectorIndex.Face]: 'face_search',
+  [VectorIndex.Gemma]: 'smart_search_gemma',
 } as const;
+
+/** The model of the Gemma service (`machine-learning-gemma`), an alternative to the CLIP model for smart search. */
+export const GEMMA_MODEL = { name: 'embeddinggemma-2', dimSize: 768 } as const;
 
 export const VECTORCHORD_LIST_SLACK_FACTOR = 1.2;
 

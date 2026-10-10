@@ -24304,6 +24304,7 @@
           "SidecarWrite",
           "SmartSearchQueueAll",
           "SmartSearch",
+          "SmartSearchGemma",
           "StorageTemplateMigration",
           "StorageTemplateMigrationSingle",
           "TagCleanup",
@@ -29682,6 +29683,14 @@
         },
         "type": "object"
       },
+      "SearchModel": {
+        "description": "Model whose embeddings a smart search compares",
+        "enum": [
+          "default",
+          "gemma"
+        ],
+        "type": "string"
+      },
       "SearchOrder": {
         "properties": {
           "direction": {
@@ -30006,6 +30015,10 @@
             "description": "Whether smart search is enabled",
             "type": "boolean"
           },
+          "smartSearchGemma": {
+            "description": "Whether smart search can use the Gemma model",
+            "type": "boolean"
+          },
           "trash": {
             "description": "Whether trash feature is enabled",
             "type": "boolean"
@@ -30027,6 +30040,7 @@
           "search",
           "sidecar",
           "smartSearch",
+          "smartSearchGemma",
           "trash"
         ],
         "type": "object"
@@ -31109,6 +31123,9 @@
               }
             ],
             "x-immich-state": "Deprecated"
+          },
+          "searchModel": {
+            "$ref": "#/components/schemas/SearchModel"
           },
           "size": {
             "default": 100,
