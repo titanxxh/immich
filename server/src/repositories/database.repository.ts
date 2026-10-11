@@ -508,7 +508,9 @@ export class DatabaseRepository {
     return new Migrator({
       db: this.db,
       migrationLockTableName: 'kysely_migrations_lock',
-      allowUnorderedMigrations: this.configRepository.isDev(),
+      // the fork's migrations and upstream's are written side by side, so a release of upstream brings migrations
+      // older than some that already ran here; each is still run once, in the order of their names
+      allowUnorderedMigrations: true,
       migrationTableName: 'kysely_migrations',
       provider: new FileMigrationProvider({
         fs: { readdir },
