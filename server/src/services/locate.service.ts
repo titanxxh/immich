@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { AuthDto } from 'src/dtos/auth.dto';
+import { AuthDto } from 'src/dtos/auth.dto.js';
 import {
   LocateAssetIdsDto,
   LocateGroupsResponseDto,
   LocateSuggestionResponseDto,
   LocateSuspectsResponseDto,
-} from 'src/dtos/locate.dto';
-import { Permission } from 'src/enum';
-import { BaseService } from 'src/services/base.service';
-import { findDensestPoint, getDirectory, groupUnlocated, LOCATE_SUGGESTION_WINDOW_DAYS } from 'src/utils/locate';
+} from 'src/dtos/locate.dto.js';
+import { Permission } from 'src/enum.js';
+import { BaseService } from 'src/services/base.service.js';
+import { LOCATE_SUGGESTION_WINDOW_DAYS, findDensestPoint, getDirectory, groupUnlocated } from 'src/utils/locate.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 

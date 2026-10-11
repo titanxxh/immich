@@ -1,14 +1,14 @@
 import { Kysely } from 'kysely';
-import { AccessRepository } from 'src/repositories/access.repository';
-import { AssetRepository } from 'src/repositories/asset.repository';
-import { LocateRepository } from 'src/repositories/locate.repository';
-import { LoggingRepository } from 'src/repositories/logging.repository';
-import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY } from 'src/repositories/trip.repository';
-import { DB } from 'src/schema';
-import { LocateService } from 'src/services/locate.service';
-import { newMediumService } from 'test/medium.factory';
-import { factory } from 'test/small.factory';
-import { getKyselyDB } from 'test/utils';
+import { AccessRepository } from 'src/repositories/access.repository.js';
+import { AssetRepository } from 'src/repositories/asset.repository.js';
+import { LocateRepository } from 'src/repositories/locate.repository.js';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY } from 'src/repositories/trip.repository.js';
+import { DB } from 'src/schema/index.js';
+import { LocateService } from 'src/services/locate.service.js';
+import { newMediumService } from 'test/medium.factory.js';
+import { factory } from 'test/small.factory.js';
+import { getKyselyDB } from 'test/utils.js';
 
 let defaultDatabase: Kysely<DB>;
 
@@ -58,14 +58,12 @@ describe(LocateService.name, () => {
     it('should group camera photos without a location, largest group first', async () => {
       const { sut, ctx } = setup();
       const { user } = await ctx.newUser();
-      const small = [];
-      for (const minute of ['00', '10', '20']) {
-        small.push(await newPhoto(ctx, user.id, `2025-05-01T09:${minute}:00`));
-      }
-      const large = [];
-      for (const minute of ['00', '10', '20', '30']) {
-        large.push(await newPhoto(ctx, user.id, `2025-06-01T09:${minute}:00`));
-      }
+      const small = await Array.fromAsync(['00', '10', '20'], (minute) =>
+        newPhoto(ctx, user.id, `2025-05-01T09:${minute}:00`),
+      );
+      const large = await Array.fromAsync(['00', '10', '20', '30'], (minute) =>
+        newPhoto(ctx, user.id, `2025-06-01T09:${minute}:00`),
+      );
       const scattered = await newPhoto(ctx, user.id, '2025-07-01T09:00:00');
       // not offered: located, not from a camera, or someone else's
       await newPhoto(ctx, user.id, '2025-05-01T09:05:00', { location: { latitude: 31, longitude: 121 } });
@@ -83,10 +81,9 @@ describe(LocateService.name, () => {
       const { sut, ctx } = setup();
       const { user } = await ctx.newUser();
       const auth = factory.auth({ user });
-      const ids = [];
-      for (const minute of ['00', '10', '20']) {
-        ids.push(await newPhoto(ctx, user.id, `2025-05-01T09:${minute}:00`));
-      }
+      const ids = await Array.fromAsync(['00', '10', '20'], (minute) =>
+        newPhoto(ctx, user.id, `2025-05-01T09:${minute}:00`),
+      );
 
       await sut.ignore(auth, { assetIds: [ids[0]] });
 

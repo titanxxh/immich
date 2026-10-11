@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { basename, dirname, join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import { OnEvent, OnJob } from 'src/decorators';
-import { DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName } from 'src/enum';
-import { ReorganizeMove } from 'src/repositories/reorganize.repository';
-import { BaseService } from 'src/services/base.service';
-import { JobOf } from 'src/types';
-import { getSidecarName, ReorganizationItemStatus, ReorganizationStatus } from 'src/utils/reorganize';
+import type { JobOf } from 'src/types.js';
+import { OnEvent, OnJob } from 'src/decorators.js';
+import { DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName } from 'src/enum.js';
+import { ReorganizeMove } from 'src/repositories/reorganize.repository.js';
+import { BaseService } from 'src/services/base.service.js';
+import { ReorganizationItemStatus, ReorganizationStatus, getSidecarName } from 'src/utils/reorganize.js';
 
 type Reorganization = NonNullable<Awaited<ReturnType<ReorganizeJobService['reorganizeRepository']['get']>>>;
 type Item = Awaited<ReturnType<ReorganizeJobService['reorganizeRepository']['getItems']>>[number];

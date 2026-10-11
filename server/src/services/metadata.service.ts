@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ContainerDirectoryItem, ExifDateTime, Tags } from 'exiftool-vendored';
 import { Insertable } from 'kysely';
-import { isUndefined, omitBy, pick } from 'lodash-es';
+import { chunk, isUndefined, omitBy, pick } from 'lodash-es';
 import { DateTime, Duration } from 'luxon';
 import { Stats } from 'node:fs';
 import { constants } from 'node:fs/promises';
@@ -547,7 +547,7 @@ export class MetadataService extends BaseService {
     }
 
     const assets = await this.assetJobRepository.getForDateSource(assetIds);
-    for (const batch of _.chunk(assets, 8)) {
+    for (const batch of chunk(assets, 8)) {
       const statuses = await Promise.all(
         batch.map(async (asset) => {
           const { sidecarFile } = getAssetFiles(asset.files);

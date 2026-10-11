@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { constants } from 'node:fs';
 import { dirname, join, normalize, relative } from 'node:path';
 import picomatch from 'picomatch';
-import { AuthDto } from 'src/dtos/auth.dto';
+import { AuthDto } from 'src/dtos/auth.dto.js';
 import {
   ReorganizationItemDto,
   ReorganizationItemsQueryDto,
@@ -14,11 +14,15 @@ import {
   ReorganizeItemsResponseDto,
   ReorganizePreviewResponseDto,
   ReorganizeReason,
-} from 'src/dtos/reorganize.dto';
-import { JobName, Permission } from 'src/enum';
-import { BaseService } from 'src/services/base.service';
-import { MetadataService } from 'src/services/metadata.service';
+} from 'src/dtos/reorganize.dto.js';
+import { JobName, Permission } from 'src/enum.js';
+import { BaseService } from 'src/services/base.service.js';
+import { MetadataService } from 'src/services/metadata.service.js';
 import {
+  ReorganizationItemStatus,
+  ReorganizationStatus,
+  ReorganizeAsset,
+  ReorganizeItem,
   getContentChecks,
   getDateFolder,
   getDayFolderParent,
@@ -26,11 +30,7 @@ import {
   normalizeLabel,
   parseDayFolder,
   planReorganization,
-  ReorganizationItemStatus,
-  ReorganizationStatus,
-  ReorganizeAsset,
-  ReorganizeItem,
-} from 'src/utils/reorganize';
+} from 'src/utils/reorganize.js';
 
 const IO_CONCURRENCY = 8;
 
@@ -282,11 +282,13 @@ export class ReorganizeService extends BaseService {
     const existingFolders = new Set<string>();
     await mapLimited(folders, async (folder) => {
       const names = await this.storageRepository.readdir(folder).catch(() => null);
-      if (names) {
-        existingFolders.add(folder);
-        for (const name of names) {
-          occupied.add(join(folder, name));
-        }
+      if (!names) {
+        return;
+      }
+
+      existingFolders.add(folder);
+      for (const name of names) {
+        occupied.add(join(folder, name));
       }
     });
 

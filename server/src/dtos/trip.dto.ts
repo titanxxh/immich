@@ -1,8 +1,8 @@
 import { createZodDto } from 'nestjs-zod';
-import { TripHomeSchema } from 'src/dtos/user-preferences.dto';
-import { TripSourceSchema } from 'src/enum';
-import { isoDatetimeToDate } from 'src/validation';
 import z from 'zod';
+import { TripHomeSchema } from 'src/dtos/user-preferences.dto.js';
+import { TripSourceSchema } from 'src/enum.js';
+import { isoDatetimeToDate } from 'src/validation.js';
 
 const TripPreviewSchema = z
   .object({

@@ -1,4 +1,8 @@
+import { describe, expect, it } from 'vitest';
 import {
+  TripAsset,
+  TripHome,
+  TripOptions,
   buildDays,
   buildLegs,
   buildStops,
@@ -12,13 +16,9 @@ import {
   planTrips,
   splitIntoRuns,
   stripAdmin2Suffix,
-  TripAsset,
-  TripHome,
-  TripOptions,
   wereTogether,
   widenToAlbum,
-} from 'src/utils/trip';
-import { describe, expect, it } from 'vitest';
+} from 'src/utils/trip.js';
 
 const home: TripHome = { name: 'Home', latitude: 30, longitude: 120, radiusKm: 50 };
 // ~110km north of home

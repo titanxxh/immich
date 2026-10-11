@@ -1,16 +1,16 @@
 import { Kysely } from 'kysely';
-import { AssetFileType, AssetType } from 'src/enum';
-import { AccessRepository } from 'src/repositories/access.repository';
-import { AssetRepository } from 'src/repositories/asset.repository';
-import { DuplicateRepository } from 'src/repositories/duplicate.repository';
-import { LoggingRepository } from 'src/repositories/logging.repository';
-import { MediaRepository } from 'src/repositories/media.repository';
-import { DB } from 'src/schema';
-import { BurstService } from 'src/services/burst.service';
-import { SHARPNESS_VERSION } from 'src/utils/burst';
-import { newMediumService } from 'test/medium.factory';
-import { factory } from 'test/small.factory';
-import { getKyselyDB } from 'test/utils';
+import { AssetFileType, AssetType } from 'src/enum.js';
+import { AccessRepository } from 'src/repositories/access.repository.js';
+import { AssetRepository } from 'src/repositories/asset.repository.js';
+import { DuplicateRepository } from 'src/repositories/duplicate.repository.js';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { MediaRepository } from 'src/repositories/media.repository.js';
+import { DB } from 'src/schema/index.js';
+import { BurstService } from 'src/services/burst.service.js';
+import { SHARPNESS_VERSION } from 'src/utils/burst.js';
+import { newMediumService } from 'test/medium.factory.js';
+import { factory } from 'test/small.factory.js';
+import { getKyselyDB } from 'test/utils.js';
 
 let defaultDatabase: Kysely<DB>;
 

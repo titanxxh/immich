@@ -1,6 +1,7 @@
-import { Column, ForeignKeyColumn, Generated, PrimaryGeneratedColumn, Table } from '@immich/sql-tools';
-import { AssetTable } from 'src/schema/tables/asset.table';
-import { ReorganizationTable } from 'src/schema/tables/reorganization.table';
+import { Column, ForeignKeyColumn, PrimaryGeneratedColumn, Table } from '@immich/sql-tools';
+import type { Generated } from '@immich/sql-tools';
+import { AssetTable } from 'src/schema/tables/asset.table.js';
+import { ReorganizationTable } from 'src/schema/tables/reorganization.table.js';
 
 /** One photo of a reorganization: where it was, where it went (or why it stayed) and how far that got. */
 @Table('reorganization_item')

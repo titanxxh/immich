@@ -1,8 +1,8 @@
-import { LocateController } from 'src/controllers/locate.controller';
-import { LocateService } from 'src/services/locate.service';
 import request from 'supertest';
-import { factory } from 'test/small.factory';
-import { ControllerContext, controllerSetup, mockBaseService } from 'test/utils';
+import { LocateController } from 'src/controllers/locate.controller.js';
+import { LocateService } from 'src/services/locate.service.js';
+import { factory } from 'test/small.factory.js';
+import { ControllerContext, controllerSetup, mockBaseService } from 'test/utils.js';
 
 describe(LocateController.name, () => {
   let ctx: ControllerContext;

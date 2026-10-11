@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { AuthDto } from 'src/dtos/auth.dto';
-import { BurstSearchDto, BurstsResponseDto } from 'src/dtos/burst.dto';
-import { BaseService } from 'src/services/base.service';
-import { getRecommendedAssetId, SHARPNESS_VERSION } from 'src/utils/burst';
+import { AuthDto } from 'src/dtos/auth.dto.js';
+import { BurstSearchDto, BurstsResponseDto } from 'src/dtos/burst.dto.js';
+import { BaseService } from 'src/services/base.service.js';
+import { SHARPNESS_VERSION, getRecommendedAssetId } from 'src/utils/burst.js';
 
 const SHARPNESS_CONCURRENCY = 4;
 

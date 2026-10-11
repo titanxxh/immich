@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { alpha3ToAlpha2 } from 'i18n-iso-countries';
+import countries from 'i18n-iso-countries';
 import { Expression, Insertable, Kysely, NotNull, SqlBool, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
 import { createReadStream, existsSync } from 'node:fs';
@@ -184,7 +184,9 @@ export class MapRepository {
         .executeTakeFirst(),
     ]);
 
-    const boundaryCountryCode = ne_response ? alpha3ToAlpha2(ne_response.admin_a3) : undefined;
+    // the package is CommonJS, whose functions ES modules only reach through the default export
+    // eslint-disable-next-line import-x/no-named-as-default-member
+    const boundaryCountryCode = ne_response ? countries.alpha3ToAlpha2(ne_response.admin_a3) : undefined;
 
     if (response) {
       const { countryCode, name: city, admin1Name } = response;

@@ -1,16 +1,16 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Endpoint, HistoryBuilder } from 'src/decorators';
-import { AuthDto } from 'src/dtos/auth.dto';
+import type { AuthDto } from 'src/dtos/auth.dto.js';
+import { Endpoint, HistoryBuilder } from 'src/decorators.js';
 import {
   LocateAssetIdsDto,
   LocateGroupsResponseDto,
   LocateSuggestionResponseDto,
   LocateSuspectsResponseDto,
-} from 'src/dtos/locate.dto';
-import { ApiTag, Permission } from 'src/enum';
-import { Auth, Authenticated } from 'src/middleware/auth.guard';
-import { LocateService } from 'src/services/locate.service';
+} from 'src/dtos/locate.dto.js';
+import { ApiTag, Permission } from 'src/enum.js';
+import { Auth, Authenticated } from 'src/middleware/auth.guard.js';
+import { LocateService } from 'src/services/locate.service.js';
 
 @ApiTags(ApiTag.Assets)
 @Controller('locate')

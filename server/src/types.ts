@@ -1,5 +1,6 @@
 import { ShallowDehydrateObject } from 'kysely';
 import { Mocked } from 'vitest';
+import type { TripHome } from 'src/utils/trip.js';
 import { VECTOR_EXTENSIONS } from 'src/constants.js';
 import { AssetFile } from 'src/database.js';
 import { UploadFieldName } from 'src/dtos/asset-media.dto.js';
@@ -32,7 +33,6 @@ import {
   TranscodeTarget,
   UserMetadataKey,
 } from 'src/enum.js';
-import type { TripHome } from 'src/utils/trip.js';
 
 export type DeepPartial<T> = T extends Date
   ? T

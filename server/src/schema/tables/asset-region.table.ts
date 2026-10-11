@@ -1,5 +1,5 @@
 import { Column, ForeignKeyColumn, Table } from '@immich/sql-tools';
-import { AssetTable } from 'src/schema/tables/asset.table';
+import { AssetTable } from 'src/schema/tables/asset.table.js';
 
 /** The country, province and region a located photo was taken in. */
 @Table('asset_region')

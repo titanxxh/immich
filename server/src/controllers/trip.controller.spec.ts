@@ -1,8 +1,8 @@
-import { TripController } from 'src/controllers/trip.controller';
-import { TripService } from 'src/services/trip.service';
 import request from 'supertest';
-import { factory } from 'test/small.factory';
-import { ControllerContext, controllerSetup, mockBaseService } from 'test/utils';
+import { TripController } from 'src/controllers/trip.controller.js';
+import { TripService } from 'src/services/trip.service.js';
+import { factory } from 'test/small.factory.js';
+import { ControllerContext, controllerSetup, mockBaseService } from 'test/utils.js';
 
 describe(TripController.name, () => {
   let ctx: ControllerContext;

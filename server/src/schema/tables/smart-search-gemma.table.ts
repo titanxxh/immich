@@ -1,5 +1,5 @@
 import { Column, ForeignKeyColumn, Index, Table } from '@immich/sql-tools';
-import { AssetTable } from 'src/schema/tables/asset.table';
+import { AssetTable } from 'src/schema/tables/asset.table.js';
 
 /** Embeddings of the Gemma model, kept next to the CLIP ones of `smart_search` so that searches can use either. */
 @Table({ name: 'smart_search_gemma' })

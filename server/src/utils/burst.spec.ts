@@ -1,5 +1,5 @@
-import { getLaplacianVariance, getRecommendedAssetId } from 'src/utils/burst';
 import { describe, expect, it } from 'vitest';
+import { getLaplacianVariance, getRecommendedAssetId } from 'src/utils/burst.js';
 
 const image = (width: number, height: number, pixel: (x: number, y: number) => number) => {
   const data = new Uint8Array(width * height);

@@ -1,11 +1,11 @@
 import { Kysely } from 'kysely';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { LoggingRepository } from 'src/repositories/logging.repository';
-import { MapRepository } from 'src/repositories/map.repository';
-import { DB } from 'src/schema/index';
-import { BaseService } from 'src/services/base.service';
-import { newMediumService } from 'test/medium.factory';
-import { getKyselyDB } from 'test/utils';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { MapRepository } from 'src/repositories/map.repository.js';
+import { DB } from 'src/schema/index.js';
+import { BaseService } from 'src/services/base.service.js';
+import { newMediumService } from 'test/medium.factory.js';
+import { getKyselyDB } from 'test/utils.js';
 
 let database: Kysely<DB>;
 

@@ -1,17 +1,17 @@
 import { Kysely } from 'kysely';
-import { AssetFileType, AssetVisibility } from 'src/enum';
-import { AccessRepository } from 'src/repositories/access.repository';
-import { AssetJobRepository } from 'src/repositories/asset-job.repository';
-import { AssetRepository } from 'src/repositories/asset.repository';
-import { LibraryRepository } from 'src/repositories/library.repository';
-import { LoggingRepository } from 'src/repositories/logging.repository';
-import { ReorganizeRepository } from 'src/repositories/reorganize.repository';
-import { StorageRepository } from 'src/repositories/storage.repository';
-import { DB } from 'src/schema';
-import { ReorganizeService } from 'src/services/reorganize.service';
-import { newMediumService } from 'test/medium.factory';
-import { factory } from 'test/small.factory';
-import { getKyselyDB } from 'test/utils';
+import { AssetFileType, AssetVisibility } from 'src/enum.js';
+import { AccessRepository } from 'src/repositories/access.repository.js';
+import { AssetJobRepository } from 'src/repositories/asset-job.repository.js';
+import { AssetRepository } from 'src/repositories/asset.repository.js';
+import { LibraryRepository } from 'src/repositories/library.repository.js';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { ReorganizeRepository } from 'src/repositories/reorganize.repository.js';
+import { StorageRepository } from 'src/repositories/storage.repository.js';
+import { DB } from 'src/schema/index.js';
+import { ReorganizeService } from 'src/services/reorganize.service.js';
+import { newMediumService } from 'test/medium.factory.js';
+import { factory } from 'test/small.factory.js';
+import { getKyselyDB } from 'test/utils.js';
 
 let defaultDatabase: Kysely<DB>;
 

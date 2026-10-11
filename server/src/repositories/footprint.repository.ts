@@ -4,12 +4,12 @@ import { InjectKysely } from 'nestjs-kysely';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { gunzip } from 'node:zlib';
-import { DummyValue, GenerateSql } from 'src/decorators';
-import { AssetVisibility } from 'src/enum';
-import { DB } from 'src/schema';
-import { AssetRegionTable } from 'src/schema/tables/asset-region.table';
-import { RegionTable } from 'src/schema/tables/region.table';
-import { asUuid } from 'src/utils/database';
+import { DummyValue, GenerateSql } from 'src/decorators.js';
+import { AssetVisibility } from 'src/enum.js';
+import { DB } from 'src/schema/index.js';
+import { AssetRegionTable } from 'src/schema/tables/asset-region.table.js';
+import { RegionTable } from 'src/schema/tables/region.table.js';
+import { asUuid } from 'src/utils/database.js';
 
 const inRegion = (eb: ExpressionBuilder<DB, 'asset_region'>, id: string) =>
   eb.or([

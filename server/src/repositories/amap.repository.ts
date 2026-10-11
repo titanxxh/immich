@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { LoggingRepository } from 'src/repositories/logging.repository';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
 
 const BASE_URL = 'https://restapi.amap.com/v5/place';
 const TIMEOUT_MS = 5000;

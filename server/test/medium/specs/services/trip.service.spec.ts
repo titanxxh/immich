@@ -1,18 +1,18 @@
 import { Kysely } from 'kysely';
-import { AssetOrder, TripSource, UserMetadataKey } from 'src/enum';
-import { AccessRepository } from 'src/repositories/access.repository';
-import { AlbumRepository } from 'src/repositories/album.repository';
-import { AssetRepository } from 'src/repositories/asset.repository';
-import { DatabaseRepository } from 'src/repositories/database.repository';
-import { LoggingRepository } from 'src/repositories/logging.repository';
-import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY, TripRepository } from 'src/repositories/trip.repository';
-import { UserRepository } from 'src/repositories/user.repository';
-import { DB } from 'src/schema';
-import { TripService } from 'src/services/trip.service';
-import { TripHome } from 'src/utils/trip';
-import { newMediumService } from 'test/medium.factory';
-import { factory } from 'test/small.factory';
-import { getKyselyDB } from 'test/utils';
+import { AssetOrder, TripSource, UserMetadataKey } from 'src/enum.js';
+import { AccessRepository } from 'src/repositories/access.repository.js';
+import { AlbumRepository } from 'src/repositories/album.repository.js';
+import { AssetRepository } from 'src/repositories/asset.repository.js';
+import { DatabaseRepository } from 'src/repositories/database.repository.js';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY, TripRepository } from 'src/repositories/trip.repository.js';
+import { UserRepository } from 'src/repositories/user.repository.js';
+import { DB } from 'src/schema/index.js';
+import { TripService } from 'src/services/trip.service.js';
+import { TripHome } from 'src/utils/trip.js';
+import { newMediumService } from 'test/medium.factory.js';
+import { factory } from 'test/small.factory.js';
+import { getKyselyDB } from 'test/utils.js';
 
 let defaultDatabase: Kysely<DB>;
 

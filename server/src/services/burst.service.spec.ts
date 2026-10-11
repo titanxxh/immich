@@ -1,8 +1,8 @@
-import { BurstService } from 'src/services/burst.service';
-import { SHARPNESS_VERSION } from 'src/utils/burst';
-import { authStub } from 'test/fixtures/auth.stub';
-import { newTestService, ServiceMocks } from 'test/utils';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { BurstService } from 'src/services/burst.service.js';
+import { SHARPNESS_VERSION } from 'src/utils/burst.js';
+import { authStub } from 'test/fixtures/auth.stub.js';
+import { ServiceMocks, newTestService } from 'test/utils.js';
 
 const photo = (id: string, sharpness: number | null, sharpnessVersion: number | null, previewPath: string | null) => ({
   id,
@@ -88,7 +88,10 @@ describe(BurstService.name, () => {
     it('should store the lowest score when a preview cannot be read', async () => {
       mocks.duplicateRepository.getBurstCount.mockResolvedValue(1);
       mocks.duplicateRepository.getBursts.mockResolvedValue([
-        { duplicateId: 'burst-1', assets: [photo('a', null, null, '/a.jpeg'), photo('b', 5, SHARPNESS_VERSION, '/b.jpeg')] },
+        {
+          duplicateId: 'burst-1',
+          assets: [photo('a', null, null, '/a.jpeg'), photo('b', 5, SHARPNESS_VERSION, '/b.jpeg')],
+        },
       ] as any);
       mocks.media.getSharpness.mockRejectedValue(new Error('broken'));
 

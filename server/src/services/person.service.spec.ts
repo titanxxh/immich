@@ -314,8 +314,31 @@ describe(PersonService.name, () => {
       const ids = [{ personGroupId: person.personGroupId, ownerId: auth.user.id }];
 
       mocks.person.update.mockResolvedValue(person);
+      mocks.access.person.checkAccess.mockResolvedValue(new Set(ids));
+
+      await expect(
+        sut.update(auth, person.personGroupId, { name: 'Person 1', isFavorite: true, userId: auth.user.id }),
+      ).resolves.toEqual(expect.objectContaining({ id: person.personGroupId, name: 'Person 1' }));
+
+      expect(mocks.person.update).toHaveBeenCalledWith({
+        ownerId: auth.user.id,
+        personGroupId: person.personGroupId,
+        name: 'Person 1',
+        isFavorite: true,
+      });
+      expect(mocks.person.updateForWritableOwners).not.toHaveBeenCalled();
+      expect(mocks.access.person.checkAccess).toHaveBeenCalledWith(auth.user.id, new Set(ids), PERSON_WRITE_ROLES);
+    });
+
+    it("should update a person's date of birth for every user with write access", async () => {
+      const auth = AuthFactory.create();
+      const person = PersonFactory.create({ ownerId: auth.user.id, birthDate: new Date('1976-06-30') });
+
+      mocks.access.person.checkAccess.mockResolvedValue(
+        new Set([{ personGroupId: person.personGroupId, ownerId: auth.user.id }]),
+      );
+      mocks.person.update.mockResolvedValue(person);
       mocks.person.unassignFacesTakenBefore.mockResolvedValue([]);
-      mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
 
       await expect(sut.update(auth, person.personGroupId, { birthDate: '1976-06-30' })).resolves.toEqual({
         id: person.personGroupId,
@@ -340,7 +363,24 @@ describe(PersonService.name, () => {
         personGroupId: person.personGroupId,
         birthDate: '1976-06-30',
       });
+      expect(mocks.job.queue).not.toHaveBeenCalled();
+      expect(mocks.job.queueAll).not.toHaveBeenCalled();
+    });
+
+    it('should release the faces taken before the date of birth, on the photos of the owner', async () => {
+      const auth = AuthFactory.create();
+      const person = PersonFactory.create({ ownerId: auth.user.id, birthDate: new Date('1976-06-30') });
+
+      mocks.person.update.mockResolvedValue(person);
+      mocks.person.unassignFacesTakenBefore.mockResolvedValue([]);
+      mocks.access.person.checkAccess.mockResolvedValue(
+        new Set([{ personGroupId: person.personGroupId, ownerId: auth.user.id }]),
+      );
+
+      await sut.update(auth, person.personGroupId, { birthDate: '1976-06-30' });
+
       expect(mocks.person.unassignFacesTakenBefore).toHaveBeenCalledWith({
+        ownerId: auth.user.id,
         personGroupId: person.personGroupId,
         takenBefore: new Date('1976-06-30'),
       });
@@ -350,16 +390,19 @@ describe(PersonService.name, () => {
 
     it('should queue facial recognition for faces taken before the date of birth', async () => {
       const auth = AuthFactory.create();
-      const person = PersonFactory.create({ birthDate: new Date('2025-06-18') });
+      const person = PersonFactory.create({ ownerId: auth.user.id, birthDate: new Date('2025-06-18') });
 
       mocks.person.getByGroupId.mockResolvedValue(person);
       mocks.person.update.mockResolvedValue(person);
       mocks.person.unassignFacesTakenBefore.mockResolvedValue(['face-1', 'face-2']);
-      mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
+      mocks.access.person.checkAccess.mockResolvedValue(
+        new Set([{ personGroupId: person.personGroupId, ownerId: auth.user.id }]),
+      );
 
       await sut.update(auth, person.personGroupId, { birthDate: '2025-06-18' });
 
       expect(mocks.person.unassignFacesTakenBefore).toHaveBeenCalledWith({
+        ownerId: auth.user.id,
         personGroupId: person.personGroupId,
         takenBefore: new Date('2025-06-18'),
       });
@@ -372,14 +415,20 @@ describe(PersonService.name, () => {
 
     it('should pick a new feature photo when the current one was taken before the date of birth', async () => {
       const auth = AuthFactory.create();
-      const person = PersonFactory.create({ birthDate: new Date('2025-06-18'), faceAssetId: 'face-1' });
+      const person = PersonFactory.create({
+        ownerId: auth.user.id,
+        birthDate: new Date('2025-06-18'),
+        faceAssetId: 'face-1',
+      });
       const newFace = AssetFaceFactory.create();
 
       mocks.person.getByGroupId.mockResolvedValue(person);
       mocks.person.update.mockResolvedValue(person);
       mocks.person.unassignFacesTakenBefore.mockResolvedValue(['face-1']);
       mocks.person.getRandomFace.mockResolvedValue(newFace);
-      mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
+      mocks.access.person.checkAccess.mockResolvedValue(
+        new Set([{ personGroupId: person.personGroupId, ownerId: auth.user.id }]),
+      );
 
       await sut.update(auth, person.personGroupId, { birthDate: '2025-06-18' });
 
@@ -399,11 +448,13 @@ describe(PersonService.name, () => {
 
     it('should not unassign faces when the date of birth is not updated', async () => {
       const auth = AuthFactory.create();
-      const person = PersonFactory.create({ name: 'Person 1' });
+      const person = PersonFactory.create({ ownerId: auth.user.id, name: 'Person 1' });
 
       mocks.person.getByGroupId.mockResolvedValue(person);
       mocks.person.update.mockResolvedValue(person);
-      mocks.access.person.checkOwnerAccess.mockResolvedValue(new Set([person.personGroupId]));
+      mocks.access.person.checkAccess.mockResolvedValue(
+        new Set([{ personGroupId: person.personGroupId, ownerId: auth.user.id }]),
+      );
 
       await sut.update(auth, person.personGroupId, { name: 'Person 1' });
 
