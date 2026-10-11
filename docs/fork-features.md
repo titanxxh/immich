@@ -1,6 +1,6 @@
 # Fork features
 
-What this fork (titanxxh/immich, branch `release/v3.2`) adds on top of upstream Immich. The base is the upstream tag `v3.2.4`; see the diff with `git diff v3.2.4..fork/release/v3.2`.
+What this fork (titanxxh/immich, branch `release/v3.3`) adds on top of upstream Immich. The base is the upstream tag `v3.3.1`; see the diff with `git diff v3.3.1..fork/release/v3.3`.
 
 Terms in _italics_ are defined in the root `CONTEXT.md`.
 
@@ -74,6 +74,15 @@ Smart search can compare with the embeddings of a second _search model_, Embeddi
 - **Date source**: metadata extraction records on `asset_job_status.dateFromExif` whether a photo's capture date comes from its metadata (or sidecar) or fell back on the file times. `MetadataService.backfillDateSources` fills it in on demand for photos extracted earlier, reading only the date tags; the reorganization preview calls it.
 - **Keyframes beyond an integer**: metadata extraction skips a video's keyframe row (used for real-time HLS) when a value does not fit the integer columns, instead of failing the whole extraction. Surveillance cameras keep a running clock, so their timestamps start beyond 2^31 at a 90 kHz time base; before, such a video got no metadata at all, and editing its date silently did nothing.
 - **Cross-border reverse geocoding**: a nearest place in a different country than the country polygon containing the point is discarded in favour of the country result.
+
+## Following upstream
+
+A release of upstream is merged in, not rebased onto, so that the fork's commits keep their ids.
+
+- **Migrations out of order**: the fork's migrations and upstream's are written side by side, so a release of upstream brings migrations whose names sort before some that already ran here. `DatabaseRepository.createMigrator` allows that (`allowUnorderedMigrations`); upstream only does in development, and its server would refuse to start.
+- **No way back without a backup**: a server refuses to start on a database with a migration it does not know, so an older image needs the database of before the upgrade.
+- **`i18n-iso-countries`** stays a dependency of the server although upstream dropped it: trips name countries in Chinese with it, and reverse geocoding checks borders with it.
+- **Faces before birth** only releases faces on the photos of the person's owner, since upstream's person sharing gives each user a birth date of their own for a shared person.
 
 ## Fork tooling
 

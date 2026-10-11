@@ -8,7 +8,7 @@ This clone has two remotes: `origin` is upstream `immich-app/immich`, `fork` is 
 
 - Pass `--repo titanxxh/immich` to every `gh issue` and `gh pr` command, and use `repos/titanxxh/immich/...` paths with `gh api`.
 - Never create, comment on, label or close issues or PRs on `immich-app/immich`.
-- PRs that implement an issue branch from `fork/release/v3.2` and target `release/v3.2`.
+- PRs that implement an issue branch from `fork/release/v3.3` and target `release/v3.3`, the default branch.
 
 ## Conventions
 
