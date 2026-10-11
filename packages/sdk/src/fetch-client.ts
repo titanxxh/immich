@@ -1,6 +1,6 @@
 /**
  * Immich
- * 3.2.4
+ * 3.3.1
  * DO NOT MODIFY - This file has been generated using oazapfts.
  * See https://www.npmjs.com/package/oazapfts
  */
@@ -277,8 +277,6 @@ export type AdminConfigNightlyTasksDto = {
     clusterNewFaces: boolean;
     /** Database cleanup */
     databaseCleanup: boolean;
-    /** Detect trips and create their albums */
-    detectTrips: boolean;
     /** Generate memories */
     generateMemories: boolean;
     /** Missing thumbnails */
@@ -675,10 +673,6 @@ export type FoldersResponse = {
     /** Whether folders appear in web sidebar */
     sidebarWeb: boolean;
 };
-export type FootprintsResponse = {
-    /** Regions left off the footprint map because their photos were placed there by mistake */
-    hiddenRegionIds: string[];
-};
 export type MemoriesResponse = {
     /** Memory duration in seconds */
     duration: number;
@@ -694,6 +688,7 @@ export type PeopleResponse = {
     minimumFaces?: number;
     /** Whether people appear in web sidebar */
     sidebarWeb: boolean;
+    updateStrategy: PersonUpdateStrategy;
 };
 export type PurchaseResponse = {
     /** Date until which to hide buy button */
@@ -721,37 +716,12 @@ export type TagsResponse = {
     /** Whether tags appear in web sidebar */
     sidebarWeb: boolean;
 };
-export type TripHome = {
-    /** First day this home applies to (YYYY-MM-DD, inclusive) */
-    "from"?: string | null;
-    /** Home latitude */
-    latitude: number;
-    /** Home longitude */
-    longitude: number;
-    /** Home name */
-    name: string;
-    /** Photos within this distance (km) are taken at home */
-    radiusKm: number;
-    /** Last day this home applies to (YYYY-MM-DD, inclusive) */
-    to?: string | null;
-};
-export type TripsResponse = {
-    /** Whether trips are detected and turned into albums */
-    enabled: boolean;
-    /** Places that are home; being away from all of them is a trip */
-    homes: TripHome[];
-    /** Whether trips within a single day get an album */
-    includeDayTrips: boolean;
-    /** Minimum number of located photos for a trip */
-    minAssets: number;
-};
 export type UserPreferencesResponseDto = {
     albums: AlbumsResponse;
     cast: CastResponse;
     download: DownloadResponse;
     emailNotifications: EmailNotificationsResponse;
     folders: FoldersResponse;
-    footprints: FootprintsResponse;
     memories: MemoriesResponse;
     people: PeopleResponse;
     purchase: PurchaseResponse;
@@ -759,7 +729,6 @@ export type UserPreferencesResponseDto = {
     recentlyAdded: RecentlyAddedResponse;
     sharedLinks: SharedLinksResponse;
     tags: TagsResponse;
-    trips: TripsResponse;
 };
 export type AlbumsUpdate = {
     defaultAssetOrder?: AssetOrder;
@@ -791,10 +760,6 @@ export type FoldersUpdate = {
     /** Whether folders appear in web sidebar */
     sidebarWeb?: boolean;
 };
-export type FootprintsUpdate = {
-    /** Regions left off the footprint map because their photos were placed there by mistake */
-    hiddenRegionIds?: string[];
-};
 export type MemoriesUpdate = {
     /** Memory duration in seconds */
     duration?: number;
@@ -810,6 +775,7 @@ export type PeopleUpdate = {
     minimumFaces?: number;
     /** Whether people appear in web sidebar */
     sidebarWeb?: boolean;
+    updateStrategy?: PersonUpdateStrategy;
 };
 export type PurchaseUpdate = {
     /** Date until which to hide buy button */
@@ -837,16 +803,6 @@ export type TagsUpdate = {
     /** Whether tags appear in web sidebar */
     sidebarWeb?: boolean;
 };
-export type TripsUpdate = {
-    /** Whether trips are detected and turned into albums */
-    enabled?: boolean;
-    /** Places that are home; being away from all of them is a trip */
-    homes?: TripHome[];
-    /** Whether trips within a single day get an album */
-    includeDayTrips?: boolean;
-    /** Minimum number of located photos for a trip */
-    minAssets?: number;
-};
 export type UserPreferencesUpdateDto = {
     albums?: AlbumsUpdate;
     avatar?: AvatarUpdate;
@@ -854,7 +810,6 @@ export type UserPreferencesUpdateDto = {
     download?: DownloadUpdate;
     emailNotifications?: EmailNotificationsUpdate;
     folders?: FoldersUpdate;
-    footprints?: FootprintsUpdate;
     memories?: MemoriesUpdate;
     people?: PeopleUpdate;
     purchase?: PurchaseUpdate;
@@ -862,7 +817,6 @@ export type UserPreferencesUpdateDto = {
     recentlyAdded?: RecentlyAddedUpdate;
     sharedLinks?: SharedLinksUpdate;
     tags?: TagsUpdate;
-    trips?: TripsUpdate;
 };
 export type SessionResponseDto = {
     /** App version */
@@ -1264,6 +1218,27 @@ export type ExifResponseDto = {
     /** Time zone */
     timeZone?: string | null;
 };
+export type PersonOtherResponseDto = {
+    birthDate: string | null;
+    name: string;
+    role: PersonUserRole;
+    sharedById: string;
+};
+export type PeopleUserResponseDto = {
+    avatarColor: UserAvatarColor;
+    /** User email */
+    email: string;
+    /** User ID */
+    id: string;
+    /** User name */
+    name: string;
+    /** Profile change date */
+    profileChangedAt: string;
+    /** Profile image path */
+    profileImagePath: string;
+    /** Access role */
+    role: PersonUserRole;
+};
 export type PersonResponseDto = {
     /** Person date of birth */
     birthDate: string | null;
@@ -1277,6 +1252,11 @@ export type PersonResponseDto = {
     isHidden: boolean;
     /** Person name */
     name: string;
+    otherPeople: PersonOtherResponseDto[];
+    /** Users that gave the current user access to this person */
+    sharedBy: PeopleUserResponseDto[];
+    /** Users the current user gave access to this person */
+    sharedWith: PeopleUserResponseDto[];
     /** Thumbnail path */
     thumbnailPath: string;
     /** Last update date */
@@ -1547,28 +1527,6 @@ export type ValidateAccessTokenResponseDto = {
     /** Authentication status */
     authStatus: boolean;
 };
-export type BurstAssetDto = {
-    /** Photo ID */
-    id: string;
-    /** Local time the photo was taken */
-    localDateTime: string;
-    /** How sharp the photo is compared to the other photos of the burst; null without a preview */
-    sharpness: number | null;
-};
-export type BurstDto = {
-    /** Photos of the burst, oldest first */
-    assets: BurstAssetDto[];
-    /** Duplicate group ID */
-    duplicateId: string;
-    /** The sharpest photo, suggested to keep */
-    recommendedAssetId: string;
-};
-export type BurstsResponseDto = {
-    /** Bursts of this page */
-    bursts: BurstDto[];
-    /** Number of bursts left */
-    total: number;
-};
 export type ClusterGroupRequestResponseDto = {
     /** Cluster group the user is invited to join */
     clusterGroupId: string;
@@ -1770,6 +1728,8 @@ export type AssetFaceCreateDto = {
     imageWidth: number;
     /** Person ID */
     personId: string;
+    /** User ID */
+    userId?: string;
     /** Face bounding box width */
     width: number;
     /** Face bounding box X coordinate */
@@ -1784,78 +1744,6 @@ export type AssetFaceDeleteDto = {
 export type FaceDto = {
     /** Face ID */
     id: string;
-};
-export type FootprintCountry = {
-    /** ISO 3166-1 alpha-2 code; Hong Kong, Macau and Taiwan are CN */
-    code: string;
-    /** Region ID */
-    id: string;
-    /** Local name */
-    name: string;
-    /** Chinese name, when there is one */
-    nameZh: string | null;
-};
-export type FootprintPlace = {
-    /** Region ID */
-    id: string;
-    /** Local name */
-    name: string;
-    /** Chinese name, when there is one */
-    nameZh: string | null;
-};
-export type FootprintRegion = {
-    /** Number of photos taken there */
-    assetCount: number;
-    country: FootprintCountry;
-    /** Number of local calendar days with photos taken there */
-    dayCount: number;
-    /** Local time of the earliest photo taken there */
-    firstVisitAt: string;
-    /** Whether the user left the region off the footprint map */
-    hidden: boolean;
-    /** Region ID */
-    id: string;
-    /** Local time of the latest photo taken there */
-    lastVisitAt: string;
-    /** Latitude of a point inside the region */
-    latitude: number;
-    /** Longitude of a point inside the region */
-    longitude: number;
-    /** Local name */
-    name: string;
-    /** Chinese name, when there is one */
-    nameZh: string | null;
-    /** Province; null abroad when the region is itself first-level */
-    province: (FootprintPlace) | null;
-};
-export type FootprintsResponseDto = {
-    /** Located photos whose regions have not been found yet */
-    pendingCount: number;
-    /** Every region the user took camera photos in, oldest visit first */
-    regions: FootprintRegion[];
-};
-export type FootprintRegionDetailResponseDto = {
-    /** Some photos taken there, spread evenly over time, oldest first */
-    assetIds: string[];
-    region: FootprintRegion;
-};
-export type FootprintShape = {
-    /** Simplified outline */
-    geometry: {
-        /** GeoJSON coordinates */
-        coordinates: any[];
-        "type": FootprintGeometryType;
-    };
-    properties: {
-        /** Region ID */
-        id: string;
-    };
-    "type": FootprintShapeType;
-};
-export type FootprintShapesResponseDto = {
-    /** Outlines of the regions the user visited, hidden ones included */
-    features: FootprintShape[];
-    "type": FootprintShapesType;
 };
 export type QueueStatisticsDto = {
     /** Number of active jobs */
@@ -1976,64 +1864,6 @@ export type ValidateLibraryResponseDto = {
     /** Validation results for import paths */
     importPaths?: ValidateLibraryImportPathResponseDto[];
 };
-export type LocateGroupDto = {
-    /** Photos of the group, oldest first */
-    assetIds: string[];
-    /** Local time of the last photo */
-    endAt: string;
-    /** Key of the group in the list: its first photo */
-    id: string;
-    /** Local time of the first photo */
-    startAt: string;
-};
-export type LocateGroupsResponseDto = {
-    /** Photos taken close together, largest group first */
-    groups: LocateGroupDto[];
-    /** Photos too few to form a group, oldest first */
-    scattered: string[];
-};
-export type LocateAssetIdsDto = {
-    /** Photos */
-    assetIds: string[];
-};
-export type LocateSuggestionDto = {
-    /** Latitude */
-    latitude: number;
-    /** Longitude */
-    longitude: number;
-    /** Where it comes from: located photos in the same folder, or the located photo nearest in time */
-    source: Source;
-};
-export type LocateSuggestionResponseDto = {
-    /** Suggested position; null without any clue */
-    suggestion: (LocateSuggestionDto) | null;
-};
-export type LocateSuspectDto = {
-    /** The photo whose location is in doubt */
-    assetId: string;
-    /** Latitude of the photo */
-    latitude: number;
-    /** Local time of the photo */
-    localDateTime: string;
-    /** Longitude of the photo */
-    longitude: number;
-    /** A photo taken at the same moment that it contradicts */
-    otherAssetId: string;
-    /** Latitude of the other photo */
-    otherLatitude: number;
-    /** Local time of the other photo */
-    otherLocalDateTime: string;
-    /** Longitude of the other photo */
-    otherLongitude: number;
-    /** Place name of the other photo */
-    otherPlace: string | null;
-    /** Place name of the photo */
-    place: string | null;
-};
-export type LocateSuspectsResponseDto = {
-    /** Photos with a suspect location, oldest first */
-    suspects: LocateSuspectDto[];
-};
 export type MapReverseGeocodeResponseDto = {
     /** City name */
     city: string | null;
@@ -2042,15 +1872,19 @@ export type MapReverseGeocodeResponseDto = {
     /** State/Province name */
     state: string | null;
 };
-export type OnThisDayDto = {
-    /** Year for on this day memory */
+export type MemoryDataDto = {
+    /** Person ID (birthday memories) */
+    personId?: string;
+    /** Name of the person when the memory was created (birthday memories) */
+    personName?: string;
+    /** Year of the memory */
     year: number;
 };
 export type MemoryResponseDto = {
     assets: AssetResponseDto[];
     /** Creation date */
     createdAt: string;
-    data: OnThisDayDto;
+    data: MemoryDataDto;
     /** Deletion date */
     deletedAt?: string;
     /** Date when memory should be hidden */
@@ -2074,7 +1908,7 @@ export type MemoryResponseDto = {
 export type MemoryCreateDto = {
     /** Asset IDs to associate with memory */
     assetIds?: string[];
-    data: OnThisDayDto;
+    data: MemoryDataDto;
     /** Date when memory should be hidden */
     hideAt?: string;
     /** Is memory saved */
@@ -2160,6 +1994,11 @@ export type PartnerUpdateDto = {
     /** Show partner assets in timeline */
     inTimeline: boolean;
 };
+export type PeopleDeleteDto = {
+    /** IDs to process */
+    ids: string[];
+    userId?: string;
+};
 export type PeopleResponseDto = {
     /** Whether there are more pages */
     hasNextPage?: boolean;
@@ -2196,6 +2035,8 @@ export type PeopleUpdateItem = {
     isHidden?: boolean;
     /** Person name */
     name?: string;
+    /** Restrict the update to the person record of this User ID */
+    userId?: string;
 };
 export type PeopleUpdateDto = {
     /** People to update */
@@ -2204,6 +2045,40 @@ export type PeopleUpdateDto = {
 export type MergePersonDto = {
     /** Person IDs to merge */
     ids: string[];
+};
+export type PersonUsersDeleteDto = {
+    /** Person ID */
+    personId: string;
+    /** User ID of the user that gave access to the person */
+    sharedById?: string;
+    /** User ID of the user that was given access to the person */
+    sharedWithId: string;
+}[];
+export type PersonUsersResponseDto = {
+    /** Person ID */
+    personId: string;
+    /** Access role */
+    role: PersonUserRole;
+    /** The user that gave access to this person */
+    sharedBy: UserResponseDto;
+    /** User ID of the user that gave access to this person */
+    sharedById: string;
+    /** The user that was given access to this person */
+    sharedWith: UserResponseDto;
+    /** User ID of the user that was given access to this person */
+    sharedWithId: string;
+}[];
+export type PeopleUsersUpsertDto = {
+    /** Person IDs, required when type is omitted */
+    personIds?: string[];
+    /** Role that should be applied */
+    role: PersonUserRole;
+    /** User IDs that should be given access to the person */
+    sharedWithIds: string[];
+    "type"?: PeopleUsersUpsertType;
+};
+export type PersonDeleteDto = {
+    userId?: string;
 };
 export type PersonUpdateDto = {
     /** Person date of birth */
@@ -2218,12 +2093,16 @@ export type PersonUpdateDto = {
     isHidden?: boolean;
     /** Person name */
     name?: string;
+    /** Restrict the update to the person record of this User ID */
+    userId?: string;
 };
 export type AssetFaceUpdateItem = {
     /** Asset ID */
     assetId: string;
     /** Person ID */
     personId: string;
+    /** User ID */
+    userId?: string;
 };
 export type AssetFaceUpdateDto = {
     /** Face update items */
@@ -2343,214 +2222,6 @@ export type QueueJobResponseDto = {
     name: JobName;
     /** Job creation timestamp */
     timestamp: number;
-};
-export type ReorganizeAlbumDto = {
-    /** Album name */
-    albumName: string;
-    /** Album ID */
-    id: string;
-};
-export type ReorganizationResponseDto = {
-    /** Album the moved photos are added to, if it still exists */
-    album: (ReorganizeAlbumDto) | null;
-    /** Whether photos whose name was taken moved under a new name */
-    autoRename: boolean;
-    /** When it was started */
-    createdAt: string;
-    /** Why the whole run stopped */
-    error: string | null;
-    /** Photos that could not be moved, or moved back */
-    failedCount: number;
-    /** When it last stopped running */
-    finishedAt: string | null;
-    /** Reorganization ID */
-    id: string;
-    /** Photos that were already in their folder */
-    inPlaceCount: number;
-    /** Whether the status is about undoing it rather than carrying it out */
-    isUndo: boolean;
-    /** Photos in their date folder */
-    movedCount: number;
-    /** Photos not moved yet */
-    pendingCount: number;
-    preset: ReorganizePreset;
-    /** Source subfolders removed because they ended up empty */
-    removedFolderCount: number;
-    /** The source folder, or the name of the source album */
-    sourceName: string;
-    sourceType: ReorganizeSourceType;
-    status: ReorganizationStatus;
-    /** Photos that were left where they were */
-    stayedCount: number;
-    /** Folder the date folders were created in */
-    targetPath: string;
-    /** Photos an undo left in place because they or their old place had changed */
-    undoSkippedCount: number;
-    /** Photos moved back by an undo */
-    undoneCount: number;
-};
-export type ReorganizeDto = {
-    /** Album to add the photos that move to */
-    albumId?: string;
-    /** Move photos whose name is taken under a new name */
-    autoRename?: boolean;
-    /** Source libraries to leave out, for an album */
-    excludedLibraryIds?: string[];
-    /** Whether a folder source includes its subfolders */
-    includeSubfolders?: boolean;
-    /** Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder */
-    labels?: {
-        [key: string]: string;
-    };
-    preset: ReorganizePreset;
-    /** Album to reorganize, for an album source */
-    sourceAlbumId?: string;
-    /** Folder to reorganize, for a folder source */
-    sourcePath?: string;
-    sourceType: ReorganizeSourceType;
-    /** Folder the date folders are created in */
-    targetPath: string;
-};
-export type ReorganizeFoldersResponseDto = {
-    /** Full paths of the folders inside */
-    folders: string[];
-    /** Library the folder is in */
-    libraryId: string | null;
-    /** Its parent, when that can be listed too */
-    parent: string | null;
-    /** The listed folder, null for the list of import paths */
-    path: string | null;
-};
-export type ReorganizeFolderDto = {
-    /** Day of the folder (YYYY-MM-DD), null for a month folder */
-    day: string | null;
-    /** Labels of the folders of this day that already exist */
-    existingLabels: string[];
-    /** Whether the folder already exists */
-    exists: boolean;
-    /** Folder, relative to the target */
-    folder: string;
-    /** Photos already in the folder */
-    inPlaceCount: number;
-    /** Label in the folder name */
-    label: string;
-    /** Photos moving into the folder */
-    moveCount: number;
-    /** Photos among them that get a new name */
-    renameCount: number;
-};
-export type ReorganizeLibraryDto = {
-    /** Photos of the source in this library */
-    count: number;
-    /** Library ID */
-    id: string;
-    /** Whether its photos are left out */
-    isExcluded: boolean;
-    /** Whether the target folder is in this library */
-    isTarget: boolean;
-    /** Library name */
-    name: string;
-};
-export type ReorganizeStayingDto = {
-    action: ReorganizeAction;
-    count: number;
-    reason: ReorganizeReason;
-};
-export type ReorganizePreviewResponseDto = {
-    /** Photos that stay because their name is taken */
-    conflictCount: number;
-    /** Subfolders of a source folder that end up empty and are removed */
-    emptyFolderCount: number;
-    /** Date folders after the reorganization, oldest first */
-    folders: ReorganizeFolderDto[];
-    /** Photos already in their folder */
-    inPlaceCount: number;
-    /** Libraries the photos of the source are in */
-    libraries: ReorganizeLibraryDto[];
-    /** Photos that move */
-    moveCount: number;
-    /** Date folders to create */
-    newFolderCount: number;
-    /** Files of a source folder that are not photos of the library and stay */
-    otherFileCount: number;
-    /** Photos among them that get a new name */
-    renameCount: number;
-    /** Sidecar files that move along */
-    sidecarCount: number;
-    /** Photos that are left out */
-    skipCount: number;
-    /** Photos that stay, by reason */
-    staying: ReorganizeStayingDto[];
-    /** The album the last reorganization into this target added its photos to */
-    suggestedAlbum: (ReorganizeAlbumDto) | null;
-    /** Library the target folder belongs to */
-    targetLibraryId: string;
-    /** Photos of the source */
-    total: number;
-};
-export type ReorganizeItemsDto = {
-    action?: ReorganizeAction;
-    /** Album to add the photos that move to */
-    albumId?: string;
-    /** Move photos whose name is taken under a new name */
-    autoRename?: boolean;
-    /** Source libraries to leave out, for an album */
-    excludedLibraryIds?: string[];
-    /** Only photos going to (or already in) this date folder, relative to the target */
-    folder?: string;
-    /** Whether a folder source includes its subfolders */
-    includeSubfolders?: boolean;
-    /** Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder */
-    labels?: {
-        [key: string]: string;
-    };
-    /** Number of photos to return */
-    limit?: number;
-    preset: ReorganizePreset;
-    reason?: ReorganizeReason;
-    /** Album to reorganize, for an album source */
-    sourceAlbumId?: string;
-    /** Folder to reorganize, for a folder source */
-    sourcePath?: string;
-    sourceType: ReorganizeSourceType;
-    /** Folder the date folders are created in */
-    targetPath: string;
-};
-export type ReorganizeItemDto = {
-    action: ReorganizeAction;
-    /** Photo ID */
-    assetId: string;
-    /** Where the photo is */
-    fromPath: string;
-    /** Whether a sidecar moves along */
-    hasSidecar: boolean;
-    /** Whether it gets a new name */
-    isRenamed: boolean;
-    reason: (ReorganizeReason) | null;
-    /** Where it goes, null when it stays */
-    toPath: string | null;
-};
-export type ReorganizeItemsResponseDto = {
-    items: ReorganizeItemDto[];
-    /** Number of matching photos */
-    total: number;
-};
-export type ReorganizationItemDto = {
-    /** Photo ID, null once the photo is deleted */
-    assetId: string | null;
-    /** What went wrong */
-    error: string | null;
-    /** Where the photo was */
-    fromPath: string;
-    /** Whether a sidecar moved along */
-    hasSidecar: boolean;
-    /** Item ID */
-    id: string;
-    /** Why the photo stayed, or why it was renamed */
-    reason: string | null;
-    status: ReorganizationItemStatus;
-    /** Where it went, null for a photo that stayed */
-    toPath: string | null;
 };
 export type SearchExploreItem = {
     data: AssetResponseDto;
@@ -2968,7 +2639,6 @@ export type SmartSearchDto = {
     queryAssetId?: string;
     /** Filter by rating [1-5], or null for unrated */
     rating?: number | null;
-    searchModel?: SearchModel;
     /** Number of results to return */
     size?: number;
     /** Filter by state/province name */
@@ -3168,8 +2838,6 @@ export type ServerFeaturesDto = {
     sidecar: boolean;
     /** Whether smart search is enabled */
     smartSearch: boolean;
-    /** Whether smart search can use the Gemma model */
-    smartSearchGemma: boolean;
     /** Whether trash feature is enabled */
     trash: boolean;
 };
@@ -3515,127 +3183,6 @@ export type TrashResponseDto = {
     /** Number of items in trash */
     count: number;
 };
-export type TripPoint = {
-    /** Latitude */
-    latitude: number;
-    /** Longitude */
-    longitude: number;
-};
-export type TripResponseDto = {
-    /** ID of the trip album */
-    albumId: string;
-    /** Number of photos */
-    assetCount: number;
-    /** Number of calendar days with photos */
-    dayCount: number;
-    /** Local time of the last photo */
-    endAt: string;
-    /** Trip ID */
-    id: string;
-    /** Album name */
-    name: string;
-    /** Where the trip is shown on a map; null without located photos */
-    point: (TripPoint) | null;
-    source: TripSource;
-    /** Local time of the first photo */
-    startAt: string;
-    /** Album cover */
-    thumbnailAssetId: string | null;
-};
-export type TripCreateDto = {
-    /** The album to mark as a trip */
-    albumId: string;
-    /** Detected trips overlapping the album that it replaces; they are dismissed and keep their albums */
-    replaceTripIds?: string[];
-};
-export type TripPreviewDto = {
-    /** Places that are home; being away from all of them is a trip */
-    homes: TripHome[];
-    /** Whether trips within a single day count */
-    includeDayTrips: boolean;
-    /** Minimum number of located photos for a trip */
-    minAssets: number;
-};
-export type TripPreviewResponseDto = {
-    /** Number of photos in the trip */
-    assetCount: number;
-    /** Number of calendar days with located photos */
-    days: number;
-    /** Local time of the last photo */
-    endAt: string;
-    /** Name the trip album would get */
-    name: string;
-    /** Local time of the first photo */
-    startAt: string;
-};
-export type TripDayDto = {
-    /** Number of photos */
-    assetCount: number;
-    /** Local date (YYYY-MM-DD) */
-    date: string;
-    /** First photo of the day */
-    firstAssetId: string;
-    /** 1 for the first day of the trip */
-    index: number;
-    /** Where the day was spent, e.g. "丽江 → 大理"; empty without located photos */
-    place: string;
-    /** Indexes of the day's stops */
-    stops: number[];
-};
-export type TripLegDto = {
-    /** Index of the stop the leg starts at */
-    "from": number;
-    /** Whether the leg is long enough to be a flight or train ride */
-    isLongJump: boolean;
-    /** Index of the stop the leg ends at */
-    to: number;
-};
-export type TripStopDto = {
-    /** Number of photos taken at the stop */
-    assetCount: number;
-    /** Local date (YYYY-MM-DD) */
-    date: string;
-    /** Latitude */
-    latitude: number;
-    /** Longitude */
-    longitude: number;
-    /** City of the stop */
-    place: string | null;
-};
-export type TripDetailResponseDto = {
-    /** ID of the trip album */
-    albumId: string;
-    /** Number of photos */
-    assetCount: number;
-    /** Other trips at the same time, e.g. of family members travelling separately */
-    concurrentTrips: TripResponseDto[];
-    /** Number of calendar days with photos */
-    dayCount: number;
-    days: TripDayDto[];
-    /** Local time of the last photo */
-    endAt: string;
-    /** Largest distance from home in kilometres */
-    farthestKm: number | null;
-    /** Trip ID */
-    id: string;
-    legs: TripLegDto[];
-    /** Album name */
-    name: string;
-    /** Places visited, in order */
-    places: string[];
-    /** Where the trip is shown on a map; null without located photos */
-    point: (TripPoint) | null;
-    source: TripSource;
-    /** Local time of the first photo */
-    startAt: string;
-    stops: TripStopDto[];
-    /** Album cover */
-    thumbnailAssetId: string | null;
-};
-export type TripMergeDto = {
-    /** The trip at the same time to merge into this one; its album is deleted */
-    tripId: string;
-};
 export type UserUpdateMeDto = {
     avatarColor?: (UserAvatarColor) | null;
     /** User email */
@@ -3939,7 +3486,7 @@ export type SyncAssetFaceV1 = {
     /** Source type */
     sourceType: string;
 };
-export type SyncAssetFaceV2 = {
+export type SyncAssetFaceV3 = {
     /** Asset ID */
     assetId: string;
     /** Bounding box X1 */
@@ -4126,6 +3673,33 @@ export type SyncAuthUserV1 = {
     /** User storage label */
     storageLabel: string | null;
 };
+export type SyncAuthUserV2 = {
+    avatarColor?: (UserAvatarColor) | null;
+    /** User deleted at */
+    deletedAt: string | null;
+    /** User email */
+    email: string;
+    /** User has profile image */
+    hasProfileImage: boolean;
+    /** User ID */
+    id: string;
+    /** User is admin */
+    isAdmin: boolean;
+    /** User name */
+    name: string;
+    /** User OAuth ID */
+    oauthId: string | null;
+    /** User pin code */
+    pinCode: string | null;
+    /** User profile changed at */
+    profileChangedAt: string;
+    /** Quota size in bytes */
+    quotaSizeInBytes: number | null;
+    /** Quota usage in bytes */
+    quotaUsageInBytes: number;
+    /** User storage label */
+    storageLabel: string | null;
+};
 export type SyncCompleteV1 = {};
 export type SyncMemoryAssetDeleteV1 = {
     /** Asset ID */
@@ -4144,6 +3718,33 @@ export type SyncMemoryDeleteV1 = {
     memoryId: string;
 };
 export type SyncMemoryV1 = {
+    /** Created at */
+    createdAt: string;
+    /** Data */
+    data: {
+        [key: string]: any;
+    };
+    /** Deleted at */
+    deletedAt: string | null;
+    /** Hide at */
+    hideAt: string | null;
+    /** Memory ID */
+    id: string;
+    /** Is saved */
+    isSaved: boolean;
+    /** Memory at */
+    memoryAt: string;
+    /** Owner ID */
+    ownerId: string;
+    /** Seen at */
+    seenAt: string | null;
+    /** Show at */
+    showAt: string | null;
+    "type": MemoryTypeV1;
+    /** Updated at */
+    updatedAt: string;
+};
+export type SyncMemoryV2 = {
     /** Created at */
     createdAt: string;
     /** Data */
@@ -5676,25 +5277,6 @@ export function validateAccessToken(opts?: Oazapfts.RequestOpts) {
     }));
 }
 /**
- * Get bursts
- */
-export function getBursts({ limit, offset, order }: {
-    limit?: number;
-    offset?: number;
-    order?: BurstOrder;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: BurstsResponseDto;
-    }>(`/bursts${QS.query(QS.explode({
-        limit,
-        offset,
-        order
-    }))}`, {
-        ...opts
-    }));
-}
-/**
  * Retrieve cluster group requests
  */
 export function getClusterGroupRequests(opts?: Oazapfts.RequestOpts) {
@@ -5959,41 +5541,6 @@ export function reassignFacesById({ id, faceDto }: {
     })));
 }
 /**
- * List footprint regions
- */
-export function getFootprints(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: FootprintsResponseDto;
-    }>("/footprints", {
-        ...opts
-    }));
-}
-/**
- * Get a footprint region
- */
-export function getFootprintRegion({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: FootprintRegionDetailResponseDto;
-    }>(`/footprints/regions/${encodeURIComponent(id)}`, {
-        ...opts
-    }));
-}
-/**
- * Get footprint outlines
- */
-export function getFootprintShapes(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: FootprintShapesResponseDto;
-    }>("/footprints/shapes", {
-        ...opts
-    }));
-}
-/**
  * Retrieve queue counts and status
  */
 export function getQueuesLegacy(opts?: Oazapfts.RequestOpts) {
@@ -6136,67 +5683,6 @@ export function validate({ id, validateLibraryDto }: {
         ...opts,
         method: "POST",
         body: validateLibraryDto
-    })));
-}
-/**
- * Get photos to locate
- */
-export function getLocateGroups(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: LocateGroupsResponseDto;
-    }>("/locate/groups", {
-        ...opts
-    }));
-}
-/**
- * Ignore photos to locate
- */
-export function ignoreLocateAssets({ locateAssetIdsDto }: {
-    locateAssetIdsDto: LocateAssetIdsDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText("/locate/ignore", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: locateAssetIdsDto
-    })));
-}
-/**
- * Suggest a location
- */
-export function getLocateSuggestion({ locateAssetIdsDto }: {
-    locateAssetIdsDto: LocateAssetIdsDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: LocateSuggestionResponseDto;
-    }>("/locate/suggestion", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: locateAssetIdsDto
-    })));
-}
-/**
- * Get photos with a suspect location
- */
-export function getLocateSuspects(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: LocateSuspectsResponseDto;
-    }>("/locate/suspects", {
-        ...opts
-    }));
-}
-/**
- * Confirm suspect locations
- */
-export function confirmLocateSuspects({ locateAssetIdsDto }: {
-    locateAssetIdsDto: LocateAssetIdsDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText("/locate/suspects/confirm", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: locateAssetIdsDto
     })));
 }
 /**
@@ -6626,22 +6112,27 @@ export function updatePartner({ id, partnerUpdateDto }: {
 /**
  * Delete people
  */
-export function deletePeople({ bulkIdsDto }: {
-    bulkIdsDto: BulkIdsDto;
+export function deletePeople({ peopleDeleteDto }: {
+    peopleDeleteDto: PeopleDeleteDto;
 }, opts?: Oazapfts.RequestOpts) {
     return oazapfts.ok(oazapfts.fetchText("/people", oazapfts.json({
         ...opts,
         method: "DELETE",
-        body: bulkIdsDto
+        body: peopleDeleteDto
     })));
 }
 /**
  * Get all people
  */
-export function getAllPeople({ closestAssetId, closestPersonId, page, size, withHidden }: {
+export function getAllPeople({ closestAssetId, closestPersonId, isFavorite, isHidden, name, page, sharedById, sharedWithId, size, withHidden }: {
     closestAssetId?: string;
     closestPersonId?: string;
+    isFavorite?: boolean;
+    isHidden?: boolean;
+    name?: string;
     page?: number;
+    sharedById?: string;
+    sharedWithId?: string;
     size?: number;
     withHidden?: boolean;
 }, opts?: Oazapfts.RequestOpts) {
@@ -6651,7 +6142,12 @@ export function getAllPeople({ closestAssetId, closestPersonId, page, size, with
     }>(`/people${QS.query(QS.explode({
         closestAssetId,
         closestPersonId,
+        isFavorite,
+        isHidden,
+        name,
         page,
+        sharedById,
+        sharedWithId,
         size,
         withHidden
     }))}`, {
@@ -6704,15 +6200,64 @@ export function mergePeople({ mergePersonDto }: {
     })));
 }
 /**
+ * Remove users from people
+ */
+export function removeUsersFromPeople({ personUsersDeleteDto }: {
+    personUsersDeleteDto: PersonUsersDeleteDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/people/users", oazapfts.json({
+        ...opts,
+        method: "DELETE",
+        body: personUsersDeleteDto
+    })));
+}
+/**
+ * Get people access
+ */
+export function getUsersForPeople({ direction, personId, role, sharedById, sharedWithId }: {
+    direction?: SharingDirection;
+    personId?: string;
+    role?: PersonUserRole;
+    sharedById?: string;
+    sharedWithId?: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: PersonUsersResponseDto;
+    }>(`/people/users${QS.query(QS.explode({
+        direction,
+        personId,
+        role,
+        sharedById,
+        sharedWithId
+    }))}`, {
+        ...opts
+    }));
+}
+/**
+ * Upsert user access
+ */
+export function upsertPeopleUsers({ peopleUsersUpsertDto }: {
+    peopleUsersUpsertDto: PeopleUsersUpsertDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText("/people/users", oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: peopleUsersUpsertDto
+    })));
+}
+/**
  * Delete person
  */
-export function deletePerson({ id }: {
+export function deletePerson({ id, personDeleteDto }: {
     id: string;
+    personDeleteDto: PersonDeleteDto;
 }, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/people/${encodeURIComponent(id)}`, {
+    return oazapfts.ok(oazapfts.fetchText(`/people/${encodeURIComponent(id)}`, oazapfts.json({
         ...opts,
-        method: "DELETE"
-    }));
+        method: "DELETE",
+        body: personDeleteDto
+    })));
 }
 /**
  * Get a person
@@ -6970,161 +6515,6 @@ export function getQueueJobs({ name, status }: {
         status
     }))}`, {
         ...opts
-    }));
-}
-/**
- * List reorganizations
- */
-export function getReorganizations(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizationResponseDto[];
-    }>("/reorganizations", {
-        ...opts
-    }));
-}
-/**
- * Start a reorganization
- */
-export function createReorganization({ reorganizeDto }: {
-    reorganizeDto: ReorganizeDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 201;
-        data: ReorganizationResponseDto;
-    }>("/reorganizations", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: reorganizeDto
-    })));
-}
-/**
- * List folders to reorganize
- */
-export function getReorganizeFolders({ path }: {
-    path?: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizeFoldersResponseDto;
-    }>(`/reorganizations/folders${QS.query(QS.explode({
-        path
-    }))}`, {
-        ...opts
-    }));
-}
-/**
- * Preview a reorganization
- */
-export function previewReorganization({ reorganizeDto }: {
-    reorganizeDto: ReorganizeDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizePreviewResponseDto;
-    }>("/reorganizations/preview", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: reorganizeDto
-    })));
-}
-/**
- * List the photos of a reorganization preview
- */
-export function previewReorganizationItems({ reorganizeItemsDto }: {
-    reorganizeItemsDto: ReorganizeItemsDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizeItemsResponseDto;
-    }>("/reorganizations/preview/items", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: reorganizeItemsDto
-    })));
-}
-/**
- * Delete a reorganization record
- */
-export function deleteReorganization({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/reorganizations/${encodeURIComponent(id)}`, {
-        ...opts,
-        method: "DELETE"
-    }));
-}
-/**
- * Get a reorganization
- */
-export function getReorganization({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizationResponseDto;
-    }>(`/reorganizations/${encodeURIComponent(id)}`, {
-        ...opts
-    }));
-}
-/**
- * Cancel a reorganization
- */
-export function cancelReorganization({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizationResponseDto;
-    }>(`/reorganizations/${encodeURIComponent(id)}/cancel`, {
-        ...opts,
-        method: "POST"
-    }));
-}
-/**
- * List the photos of a reorganization
- */
-export function getReorganizationItems({ id, limit, status }: {
-    id: string;
-    limit?: number;
-    status?: ReorganizationItemStatus;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizationItemDto[];
-    }>(`/reorganizations/${encodeURIComponent(id)}/items${QS.query(QS.explode({
-        limit,
-        status
-    }))}`, {
-        ...opts
-    }));
-}
-/**
- * Continue a reorganization
- */
-export function resumeReorganization({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizationResponseDto;
-    }>(`/reorganizations/${encodeURIComponent(id)}/resume`, {
-        ...opts,
-        method: "POST"
-    }));
-}
-/**
- * Undo a reorganization
- */
-export function undoReorganization({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: ReorganizationResponseDto;
-    }>(`/reorganizations/${encodeURIComponent(id)}/undo`, {
-        ...opts,
-        method: "POST"
     }));
 }
 /**
@@ -8086,7 +7476,7 @@ export function tagAssets({ id, bulkIdsDto }: {
 /**
  * Get time bucket
  */
-export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, regionId, slug, tagId, timeBucket, userId, visibility, withCoordinates, withPartners, withStacked }: {
+export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, timeBucket, userId, visibility, withCoordinates, withPartners, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -8095,7 +7485,6 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
     order?: AssetOrder;
     orderBy?: AssetOrderBy;
     personId?: string;
-    regionId?: string;
     slug?: string;
     tagId?: string;
     timeBucket: string;
@@ -8117,7 +7506,6 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
         order,
         orderBy,
         personId,
-        regionId,
         slug,
         tagId,
         timeBucket,
@@ -8133,7 +7521,7 @@ export function getTimeBucket({ albumId, bbox, isFavorite, isTrashed, key, order
 /**
  * Get time buckets
  */
-export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, regionId, slug, tagId, userId, visibility, withCoordinates, withPartners, withStacked }: {
+export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, order, orderBy, personId, slug, tagId, userId, visibility, withCoordinates, withPartners, withStacked }: {
     albumId?: string;
     bbox?: string;
     isFavorite?: boolean;
@@ -8142,7 +7530,6 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
     order?: AssetOrder;
     orderBy?: AssetOrderBy;
     personId?: string;
-    regionId?: string;
     slug?: string;
     tagId?: string;
     userId?: string;
@@ -8163,7 +7550,6 @@ export function getTimeBuckets({ albumId, bbox, isFavorite, isTrashed, key, orde
         order,
         orderBy,
         personId,
-        regionId,
         slug,
         tagId,
         userId,
@@ -8212,100 +7598,6 @@ export function restoreAssets({ bulkIdsDto }: {
         ...opts,
         method: "POST",
         body: bulkIdsDto
-    })));
-}
-/**
- * List trips
- */
-export function getTrips({ albumId }: {
-    albumId?: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: TripResponseDto[];
-    }>(`/trips${QS.query(QS.explode({
-        albumId
-    }))}`, {
-        ...opts
-    }));
-}
-/**
- * Mark an album as a trip
- */
-export function createTrip({ tripCreateDto }: {
-    tripCreateDto: TripCreateDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 201;
-        data: TripResponseDto;
-    }>("/trips", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: tripCreateDto
-    })));
-}
-/**
- * Detect trips
- */
-export function detectTrips(opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText("/trips/detect", {
-        ...opts,
-        method: "POST"
-    }));
-}
-/**
- * Preview trips
- */
-export function previewTrips({ tripPreviewDto }: {
-    tripPreviewDto: TripPreviewDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: TripPreviewResponseDto[];
-    }>("/trips/preview", oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: tripPreviewDto
-    })));
-}
-/**
- * Unmark a trip
- */
-export function removeTrip({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchText(`/trips/${encodeURIComponent(id)}`, {
-        ...opts,
-        method: "DELETE"
-    }));
-}
-/**
- * Get a trip
- */
-export function getTrip({ id }: {
-    id: string;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: TripDetailResponseDto;
-    }>(`/trips/${encodeURIComponent(id)}`, {
-        ...opts
-    }));
-}
-/**
- * Merge trips
- */
-export function mergeTrip({ id, tripMergeDto }: {
-    id: string;
-    tripMergeDto: TripMergeDto;
-}, opts?: Oazapfts.RequestOpts) {
-    return oazapfts.ok(oazapfts.fetchJson<{
-        status: 200;
-        data: TripResponseDto;
-    }>(`/trips/${encodeURIComponent(id)}/merge`, oazapfts.json({
-        ...opts,
-        method: "POST",
-        body: tripMergeDto
     })));
 }
 /**
@@ -8801,6 +8093,10 @@ export enum AssetOrder {
     Asc = "asc",
     Desc = "desc"
 }
+export enum PersonUpdateStrategy {
+    Self = "self",
+    Everyone = "everyone"
+}
 export enum AssetVisibility {
     Archive = "archive",
     Timeline = "timeline",
@@ -9014,6 +8310,11 @@ export enum AssetJobName {
     RegenerateThumbnail = "regenerate-thumbnail",
     TranscodeVideo = "transcode-video"
 }
+export enum PersonUserRole {
+    Read = "read",
+    Write = "write",
+    Admin = "admin"
+}
 export enum AssetTypeEnum {
     Image = "IMAGE",
     Video = "VIDEO",
@@ -9035,24 +8336,10 @@ export enum AssetMediaSize {
     Preview = "preview",
     Thumbnail = "thumbnail"
 }
-export enum BurstOrder {
-    Size = "size",
-    Time = "time"
-}
 export enum SourceType {
     MachineLearning = "machine-learning",
     Exif = "exif",
     Manual = "manual"
-}
-export enum FootprintGeometryType {
-    Polygon = "Polygon",
-    MultiPolygon = "MultiPolygon"
-}
-export enum FootprintShapeType {
-    Feature = "Feature"
-}
-export enum FootprintShapesType {
-    FeatureCollection = "FeatureCollection"
 }
 export enum ManualJobName {
     PersonCleanup = "person-cleanup",
@@ -9060,7 +8347,6 @@ export enum ManualJobName {
     UserCleanup = "user-cleanup",
     MemoryCleanup = "memory-cleanup",
     MemoryCreate = "memory-create",
-    TripDetection = "trip-detection",
     BackupDatabase = "backup-database",
     IntegrityMissingFiles = "integrity-missing-files",
     IntegrityUntrackedFiles = "integrity-untracked-files",
@@ -9100,21 +8386,25 @@ export enum QueueCommand {
     Empty = "empty",
     ClearFailed = "clear-failed"
 }
-export enum Source {
-    Directory = "directory",
-    Time = "time"
-}
 export enum MemorySearchOrder {
     Asc = "asc",
     Desc = "desc",
     Random = "random"
 }
 export enum MemoryType {
-    OnThisDay = "on_this_day"
+    OnThisDay = "on_this_day",
+    Birthday = "birthday"
 }
 export enum PartnerDirection {
     SharedBy = "shared-by",
     SharedWith = "shared-with"
+}
+export enum SharingDirection {
+    SharedBy = "shared-by",
+    SharedWith = "shared-with"
+}
+export enum PeopleUsersUpsertType {
+    Everyone = "everyone"
 }
 export enum WorkflowType {
     AssetV1 = "AssetV1"
@@ -9165,9 +8455,6 @@ export enum JobName {
     HlsSessionCleanup = "HlsSessionCleanup",
     MemoryCleanup = "MemoryCleanup",
     MemoryGenerate = "MemoryGenerate",
-    TripDetection = "TripDetection",
-    FootprintAssign = "FootprintAssign",
-    Reorganize = "Reorganize",
     NotificationsCleanup = "NotificationsCleanup",
     NotifyUserSignup = "NotifyUserSignup",
     NotifyAlbumInvite = "NotifyAlbumInvite",
@@ -9185,7 +8472,6 @@ export enum JobName {
     SidecarWrite = "SidecarWrite",
     SmartSearchQueueAll = "SmartSearchQueueAll",
     SmartSearch = "SmartSearch",
-    SmartSearchGemma = "SmartSearchGemma",
     StorageTemplateMigration = "StorageTemplateMigration",
     StorageTemplateMigrationSingle = "StorageTemplateMigrationSingle",
     TagCleanup = "TagCleanup",
@@ -9204,62 +8490,11 @@ export enum JobName {
     IntegrityDeleteReportType = "IntegrityDeleteReportType",
     IntegrityDeleteReports = "IntegrityDeleteReports"
 }
-export enum ReorganizePreset {
-    YearMonth = "year-month",
-    Day = "day",
-    YearDay = "year-day"
-}
-export enum ReorganizeSourceType {
-    Folder = "folder",
-    Album = "album"
-}
-export enum ReorganizationStatus {
-    Queued = "queued",
-    Running = "running",
-    Completed = "completed",
-    Cancelled = "cancelled",
-    Interrupted = "interrupted",
-    Paused = "paused"
-}
-export enum ReorganizeAction {
-    Move = "move",
-    InPlace = "in-place",
-    Conflict = "conflict",
-    Skip = "skip"
-}
-export enum ReorganizeReason {
-    Internal = "internal",
-    NotOwner = "not-owner",
-    Offline = "offline",
-    Trashed = "trashed",
-    UnreliableDate = "unreliable-date",
-    LibraryExcluded = "library-excluded",
-    OtherOwnerLibrary = "other-owner-library",
-    Identical = "identical",
-    SharedSidecar = "shared-sidecar",
-    TargetExists = "target-exists",
-    SameTarget = "same-target"
-}
-export enum ReorganizationItemStatus {
-    Pending = "pending",
-    Moving = "moving",
-    Moved = "moved",
-    Failed = "failed",
-    Stayed = "stayed",
-    Undoing = "undoing",
-    Undone = "undone",
-    UndoFailed = "undo-failed",
-    UndoSkipped = "undo-skipped"
-}
 export enum SearchOrderField {
     FileCreatedAt = "fileCreatedAt",
     LocalDateTime = "localDateTime",
     FileSizeInBytes = "fileSizeInBytes",
     Rating = "rating"
-}
-export enum SearchModel {
-    Default = "default",
-    Gemma = "gemma"
 }
 export enum SearchSuggestionType {
     Country = "country",
@@ -9280,6 +8515,7 @@ export enum AssetIdErrorReason {
 }
 export enum SyncEntityType {
     AuthUserV1 = "AuthUserV1",
+    AuthUserV2 = "AuthUserV2",
     UserV1 = "UserV1",
     UserDeleteV1 = "UserDeleteV1",
     AssetV1 = "AssetV1",
@@ -9323,8 +8559,10 @@ export enum SyncEntityType {
     AlbumToAssetDeleteV1 = "AlbumToAssetDeleteV1",
     AlbumToAssetBackfillV1 = "AlbumToAssetBackfillV1",
     MemoryV1 = "MemoryV1",
+    MemoryV2 = "MemoryV2",
     MemoryDeleteV1 = "MemoryDeleteV1",
     MemoryToAssetV1 = "MemoryToAssetV1",
+    MemoryToAssetV2 = "MemoryToAssetV2",
     MemoryToAssetDeleteV1 = "MemoryToAssetDeleteV1",
     StackV1 = "StackV1",
     StackDeleteV1 = "StackDeleteV1",
@@ -9332,6 +8570,7 @@ export enum SyncEntityType {
     PersonDeleteV1 = "PersonDeleteV1",
     AssetFaceV1 = "AssetFaceV1",
     AssetFaceV2 = "AssetFaceV2",
+    AssetFaceV3 = "AssetFaceV3",
     AssetFaceDeleteV1 = "AssetFaceDeleteV1",
     UserMetadataV1 = "UserMetadataV1",
     UserMetadataDeleteV1 = "UserMetadataDeleteV1",
@@ -9354,8 +8593,11 @@ export enum SyncRequestType {
     AssetMetadataV1 = "AssetMetadataV1",
     AssetOcrV1 = "AssetOcrV1",
     AuthUsersV1 = "AuthUsersV1",
+    AuthUsersV2 = "AuthUsersV2",
     MemoriesV1 = "MemoriesV1",
+    MemoriesV2 = "MemoriesV2",
     MemoryToAssetsV1 = "MemoryToAssetsV1",
+    MemoryToAssetsV2 = "MemoryToAssetsV2",
     PartnersV1 = "PartnersV1",
     PartnerAssetsV1 = "PartnerAssetsV1",
     PartnerAssetsV2 = "PartnerAssetsV2",
@@ -9366,20 +8608,20 @@ export enum SyncRequestType {
     PeopleV1 = "PeopleV1",
     AssetFacesV1 = "AssetFacesV1",
     AssetFacesV2 = "AssetFacesV2",
+    AssetFacesV3 = "AssetFacesV3",
     UserMetadataV1 = "UserMetadataV1"
 }
 export enum AssetOrderBy {
     TakenAt = "takenAt",
     CreatedAt = "createdAt"
 }
-export enum TripSource {
-    Auto = "auto",
-    Manual = "manual"
-}
 export enum WorkflowResult {
     Completed = "completed",
     Halted = "halted",
     Error = "error"
+}
+export enum MemoryTypeV1 {
+    OnThisDay = "on_this_day"
 }
 export enum ReleaseType {
     Major = "major",

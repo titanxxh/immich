@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Duration } from 'luxon';
 import { readFile } from 'node:fs/promises';
-import { GEMMA_MODEL } from 'src/constants';
-import { MachineLearningConfig } from 'src/dtos/config.dto';
-import { LoggingRepository } from 'src/repositories/logging.repository';
+import { GEMMA_MODEL } from 'src/constants.js';
+import { MachineLearningConfig } from 'src/dtos/config.dto.js';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
 
 export interface BoundingBox {
   x1: number;

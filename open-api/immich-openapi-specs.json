@@ -6119,81 +6119,6 @@
         "x-immich-state": "Stable"
       }
     },
-    "/bursts": {
-      "get": {
-        "description": "Get a page of duplicate groups of photos, largest or oldest first, with how sharp each photo is and the sharpest one suggested to keep.",
-        "operationId": "getBursts",
-        "parameters": [
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of bursts to return",
-            "schema": {
-              "minimum": 1,
-              "maximum": 200,
-              "default": 40,
-              "type": "integer"
-            }
-          },
-          {
-            "name": "offset",
-            "required": false,
-            "in": "query",
-            "description": "Number of bursts to skip",
-            "schema": {
-              "minimum": 0,
-              "maximum": 9007199254740991,
-              "default": 0,
-              "type": "integer"
-            }
-          },
-          {
-            "name": "order",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": "size",
-              "$ref": "#/components/schemas/BurstOrder"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BurstsResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Get bursts",
-        "tags": [
-          "Duplicates"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "duplicate.read"
-      }
-    },
     "/cluster-groups/requests": {
       "get": {
         "description": "Retrieve the pending requests for the current user to join a cluster group.",
@@ -7301,139 +7226,6 @@
         "x-immich-state": "Stable"
       }
     },
-    "/footprints": {
-      "get": {
-        "description": "List every region the current user took camera photos in, with the first and last visit, hidden ones included.",
-        "operationId": "getFootprints",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FootprintsResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "List footprint regions",
-        "tags": [
-          "Map"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "map.read"
-      }
-    },
-    "/footprints/regions/{id}": {
-      "get": {
-        "description": "Get a region, province or country the current user took camera photos in, with some of those photos.",
-        "operationId": "getFootprintRegion",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "description": "Region, province or country ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FootprintRegionDetailResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Get a footprint region",
-        "tags": [
-          "Map"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "map.read"
-      }
-    },
-    "/footprints/shapes": {
-      "get": {
-        "description": "Get simplified outlines of the regions the current user visited, as GeoJSON.",
-        "operationId": "getFootprintShapes",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FootprintShapesResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Get footprint outlines",
-        "tags": [
-          "Map"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "map.read"
-      }
-    },
     "/jobs": {
       "get": {
         "deprecated": true,
@@ -8110,227 +7902,6 @@
           }
         ],
         "x-immich-state": "Stable"
-      }
-    },
-    "/locate/groups": {
-      "get": {
-        "description": "Group the camera photos of the current user that have no location by when they were taken.",
-        "operationId": "getLocateGroups",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LocateGroupsResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Get photos to locate",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      }
-    },
-    "/locate/ignore": {
-      "post": {
-        "description": "Stop offering the photos for locating. They can still be located from the photo itself.",
-        "operationId": "ignoreLocateAssets",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LocateAssetIdsDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Ignore photos to locate",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.update"
-      }
-    },
-    "/locate/suggestion": {
-      "post": {
-        "description": "Suggest where the photos were taken, from located photos in the same folders or nearby in time.",
-        "operationId": "getLocateSuggestion",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LocateAssetIdsDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LocateSuggestionResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Suggest a location",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      }
-    },
-    "/locate/suspects": {
-      "get": {
-        "description": "List the photos whose location contradicts a photo taken at the same moment, found by trip detection.",
-        "operationId": "getLocateSuspects",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LocateSuspectsResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Get photos with a suspect location",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      }
-    },
-    "/locate/suspects/confirm": {
-      "post": {
-        "description": "Say the photos are placed right, so they are no longer flagged.",
-        "operationId": "confirmLocateSuspects",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LocateAssetIdsDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Confirm suspect locations",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.update"
       }
     },
     "/map/markers": {
@@ -10146,7 +9717,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BulkIdsDto"
+                "$ref": "#/components/schemas/PeopleDeleteDto"
               }
             }
           },
@@ -10216,6 +9787,33 @@
             }
           },
           {
+            "name": "isFavorite",
+            "required": false,
+            "in": "query",
+            "description": "Filter by favorite status",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "isHidden",
+            "required": false,
+            "in": "query",
+            "description": "Filter by hidden status",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "description": "Filter by person name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "required": false,
             "in": "query",
@@ -10225,6 +9823,28 @@
               "maximum": 9007199254740991,
               "default": 1,
               "type": "integer"
+            }
+          },
+          {
+            "name": "sharedById",
+            "required": false,
+            "in": "query",
+            "description": "Only include people to which the user gave access",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sharedWithId",
+            "required": false,
+            "in": "query",
+            "description": "Only include people to which the user was given access",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
             }
           },
           {
@@ -10472,6 +10092,197 @@
         "x-immich-state": "Stable"
       }
     },
+    "/people/users": {
+      "delete": {
+        "description": "Remove user access to people",
+        "operationId": "removeUsersFromPeople",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonUsersDeleteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Remove users from people",
+        "tags": [
+          "People"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.3.0",
+            "state": "Added"
+          },
+          {
+            "version": "v3.3.0",
+            "state": "Beta"
+          }
+        ],
+        "x-immich-permission": "person.update",
+        "x-immich-state": "Beta"
+      },
+      "get": {
+        "description": "Retrieve a list of users and the people to which they have been given access",
+        "operationId": "getUsersForPeople",
+        "parameters": [
+          {
+            "name": "direction",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SharingDirection"
+            }
+          },
+          {
+            "name": "personId",
+            "required": false,
+            "in": "query",
+            "description": "Person ID",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "Role of user",
+            "schema": {
+              "$ref": "#/components/schemas/PersonUserRole"
+            }
+          },
+          {
+            "name": "sharedById",
+            "required": false,
+            "in": "query",
+            "description": "User ID of the user that gave access",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sharedWithId",
+            "required": false,
+            "in": "query",
+            "description": "User ID of the user that was given access",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonUsersResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get people access",
+        "tags": [
+          "People"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.3.0",
+            "state": "Added"
+          },
+          {
+            "version": "v3.3.0",
+            "state": "Beta"
+          }
+        ],
+        "x-immich-permission": "person.read",
+        "x-immich-state": "Beta"
+      },
+      "put": {
+        "description": "Give users access to people",
+        "operationId": "upsertPeopleUsers",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeopleUsersUpsertDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Upsert user access",
+        "tags": [
+          "People"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3.3.0",
+            "state": "Added"
+          },
+          {
+            "version": "v3.3.0",
+            "state": "Beta"
+          }
+        ],
+        "x-immich-permission": "person.update",
+        "x-immich-state": "Beta"
+      }
+    },
     "/people/{id}": {
       "delete": {
         "description": "Delete an individual person.",
@@ -10488,6 +10299,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonDeleteDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
             "description": ""
@@ -11621,578 +11442,6 @@
         ],
         "x-immich-permission": "queueJob.read",
         "x-immich-state": "Alpha"
-      }
-    },
-    "/reorganizations": {
-      "get": {
-        "description": "List the reorganizations of the current user, newest first, with how far each got.",
-        "operationId": "getReorganizations",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ReorganizationResponseDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "List reorganizations",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      },
-      "post": {
-        "description": "Move the photos of a folder or album into date folders in the background, keeping each photo the same asset.",
-        "operationId": "createReorganization",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReorganizeDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizationResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Start a reorganization",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.update"
-      }
-    },
-    "/reorganizations/folders": {
-      "get": {
-        "description": "List the folders inside a folder of one of the external libraries of the current user, or their import paths.",
-        "operationId": "getReorganizeFolders",
-        "parameters": [
-          {
-            "name": "path",
-            "required": false,
-            "in": "query",
-            "description": "Folder to list; left out, the import paths of the libraries are listed",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizeFoldersResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "List folders to reorganize",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "folder.read"
-      }
-    },
-    "/reorganizations/preview": {
-      "post": {
-        "description": "Work out where the photos of a folder or album would go when moved into date folders, without moving anything.",
-        "operationId": "previewReorganization",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReorganizeDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizePreviewResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Preview a reorganization",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      }
-    },
-    "/reorganizations/preview/items": {
-      "post": {
-        "description": "List where each photo would go, for one date folder or for the photos that stay for one reason.",
-        "operationId": "previewReorganizationItems",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReorganizeItemsDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizeItemsResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "List the photos of a reorganization preview",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      }
-    },
-    "/reorganizations/{id}": {
-      "delete": {
-        "description": "Forget a reorganization. The photos stay where they are and it can no longer be undone.",
-        "operationId": "deleteReorganization",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Delete a reorganization record",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.update"
-      },
-      "get": {
-        "description": "Get how far a reorganization got.",
-        "operationId": "getReorganization",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizationResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Get a reorganization",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      }
-    },
-    "/reorganizations/{id}/cancel": {
-      "post": {
-        "description": "Stop a running reorganization after the photo it is busy with. Photos already moved stay moved.",
-        "operationId": "cancelReorganization",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizationResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Cancel a reorganization",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.update"
-      }
-    },
-    "/reorganizations/{id}/items": {
-      "get": {
-        "description": "List where each photo of a reorganization was and went, optionally only the ones in one state.",
-        "operationId": "getReorganizationItems",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Number of photos to return",
-            "schema": {
-              "minimum": 1,
-              "maximum": 1000,
-              "default": 200,
-              "type": "integer"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/ReorganizationItemStatus"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ReorganizationItemDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "List the photos of a reorganization",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.read"
-      }
-    },
-    "/reorganizations/{id}/resume": {
-      "post": {
-        "description": "Continue a reorganization, or its undo, that stopped early, and retry the photos that failed.",
-        "operationId": "resumeReorganization",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizationResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Continue a reorganization",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.update"
-      }
-    },
-    "/reorganizations/{id}/undo": {
-      "post": {
-        "description": "Move the photos of a reorganization back to where they were. A photo stays when it was moved again or deleted since, or when its old place is taken.",
-        "operationId": "undoReorganization",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReorganizationResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Undo a reorganization",
-        "tags": [
-          "Assets"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "asset.update"
       }
     },
     "/search/cities": {
@@ -16991,15 +16240,6 @@
             }
           },
           {
-            "name": "regionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter assets taken in a footprint region, province or country",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "name": "slug",
             "required": false,
             "in": "query",
@@ -17022,9 +16262,9 @@
             "name": "timeBucket",
             "required": true,
             "in": "query",
-            "description": "Time bucket identifier in YYYY-MM-DD format",
+            "description": "Time bucket identifier in YYYY-MM-DDT00:00:00.000Z format",
             "schema": {
-              "example": "2024-01-01",
+              "example": "2024-01-01T00:00:00.000Z",
               "type": "string"
             }
           },
@@ -17195,15 +16435,6 @@
             "schema": {
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          },
-          {
-            "name": "regionId",
-            "required": false,
-            "in": "query",
-            "description": "Filter assets taken in a footprint region, province or country",
-            "schema": {
               "type": "string"
             }
           },
@@ -17476,356 +16707,6 @@
         ],
         "x-immich-permission": "asset.delete",
         "x-immich-state": "Stable"
-      }
-    },
-    "/trips": {
-      "get": {
-        "description": "List the trips of the current user, optionally only the trip of one album.",
-        "operationId": "getTrips",
-        "parameters": [
-          {
-            "name": "albumId",
-            "required": false,
-            "in": "query",
-            "description": "Only the trip of this album",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/TripResponseDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "List trips",
-        "tags": [
-          "Users"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "album.read"
-      },
-      "post": {
-        "description": "Turn an album of the current user into a trip. Fails with 409 when it overlaps other trips that are not listed in replaceTripIds.",
-        "operationId": "createTrip",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TripCreateDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TripResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Mark an album as a trip",
-        "tags": [
-          "Users"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "album.update"
-      }
-    },
-    "/trips/detect": {
-      "post": {
-        "description": "Queue trip detection for the current user, creating albums for new trips.",
-        "operationId": "detectTrips",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Detect trips",
-        "tags": [
-          "Users"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "userPreference.update"
-      }
-    },
-    "/trips/preview": {
-      "post": {
-        "description": "List the trips that trip detection would find in the photos of the current user with these settings.",
-        "operationId": "previewTrips",
-        "parameters": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TripPreviewDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/TripPreviewResponseDto"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Preview trips",
-        "tags": [
-          "Users"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "userPreference.read"
-      }
-    },
-    "/trips/{id}": {
-      "delete": {
-        "description": "Stop treating an album as a trip. A detected trip is dismissed so it is not found again; the album stays.",
-        "operationId": "removeTrip",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Unmark a trip",
-        "tags": [
-          "Users"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "album.update"
-      },
-      "get": {
-        "description": "Get a trip with its days, stops and route, computed from the photos in its album.",
-        "operationId": "getTrip",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TripDetailResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Get a trip",
-        "tags": [
-          "Users"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.2",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "album.read"
-      }
-    },
-    "/trips/{id}/merge": {
-      "post": {
-        "description": "Merge a trip at the same time into this one: its photos are added to this album and its album is deleted.",
-        "operationId": "mergeTrip",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TripMergeDto"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TripResponseDto"
-                }
-              }
-            },
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          },
-          {
-            "cookie": []
-          },
-          {
-            "api_key": []
-          }
-        ],
-        "summary": "Merge trips",
-        "tags": [
-          "Users"
-        ],
-        "x-immich-history": [
-          {
-            "version": "v3.2.4",
-            "state": "Added"
-          }
-        ],
-        "x-immich-permission": "album.update"
       }
     },
     "/users": {
@@ -19330,7 +18211,7 @@
   "info": {
     "title": "Immich",
     "description": "Immich API",
-    "version": "3.2.4",
+    "version": "3.3.1",
     "contact": {}
   },
   "tags": [
@@ -20440,10 +19321,6 @@
             "description": "Database cleanup",
             "type": "boolean"
           },
-          "detectTrips": {
-            "description": "Detect trips and create their albums",
-            "type": "boolean"
-          },
           "generateMemories": {
             "description": "Generate memories",
             "type": "boolean"
@@ -20465,7 +19342,6 @@
         "required": [
           "clusterNewFaces",
           "databaseCleanup",
-          "detectTrips",
           "generateMemories",
           "missingThumbnails",
           "startTime",
@@ -21637,6 +20513,12 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             "type": "string"
           },
+          "userId": {
+            "description": "User ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
           "width": {
             "description": "Face bounding box width",
             "maximum": 9007199254740991,
@@ -21774,6 +20656,12 @@
           },
           "personId": {
             "description": "Person ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "userId": {
+            "description": "User ID",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             "type": "string"
@@ -22716,88 +21604,6 @@
         },
         "required": [
           "ids"
-        ],
-        "type": "object"
-      },
-      "BurstAssetDto": {
-        "properties": {
-          "id": {
-            "description": "Photo ID",
-            "type": "string"
-          },
-          "localDateTime": {
-            "description": "Local time the photo was taken",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "sharpness": {
-            "description": "How sharp the photo is compared to the other photos of the burst; null without a preview",
-            "format": "double",
-            "nullable": true,
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "localDateTime",
-          "sharpness"
-        ],
-        "type": "object"
-      },
-      "BurstDto": {
-        "properties": {
-          "assets": {
-            "description": "Photos of the burst, oldest first",
-            "items": {
-              "$ref": "#/components/schemas/BurstAssetDto"
-            },
-            "type": "array"
-          },
-          "duplicateId": {
-            "description": "Duplicate group ID",
-            "type": "string"
-          },
-          "recommendedAssetId": {
-            "description": "The sharpest photo, suggested to keep",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assets",
-          "duplicateId",
-          "recommendedAssetId"
-        ],
-        "type": "object"
-      },
-      "BurstOrder": {
-        "description": "Largest burst first, or oldest first",
-        "enum": [
-          "size",
-          "time"
-        ],
-        "type": "string"
-      },
-      "BurstsResponseDto": {
-        "properties": {
-          "bursts": {
-            "description": "Bursts of this page",
-            "items": {
-              "$ref": "#/components/schemas/BurstDto"
-            },
-            "type": "array"
-          },
-          "total": {
-            "description": "Number of bursts left",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "bursts",
-          "total"
         ],
         "type": "object"
       },
@@ -23800,290 +22606,6 @@
         },
         "type": "object"
       },
-      "FootprintCountry": {
-        "properties": {
-          "code": {
-            "description": "ISO 3166-1 alpha-2 code; Hong Kong, Macau and Taiwan are CN",
-            "type": "string"
-          },
-          "id": {
-            "description": "Region ID",
-            "type": "string"
-          },
-          "name": {
-            "description": "Local name",
-            "type": "string"
-          },
-          "nameZh": {
-            "description": "Chinese name, when there is one",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "id",
-          "name",
-          "nameZh"
-        ],
-        "type": "object"
-      },
-      "FootprintGeometryType": {
-        "enum": [
-          "Polygon",
-          "MultiPolygon"
-        ],
-        "type": "string"
-      },
-      "FootprintPlace": {
-        "properties": {
-          "id": {
-            "description": "Region ID",
-            "type": "string"
-          },
-          "name": {
-            "description": "Local name",
-            "type": "string"
-          },
-          "nameZh": {
-            "description": "Chinese name, when there is one",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "nameZh"
-        ],
-        "type": "object"
-      },
-      "FootprintRegion": {
-        "properties": {
-          "assetCount": {
-            "description": "Number of photos taken there",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "country": {
-            "$ref": "#/components/schemas/FootprintCountry"
-          },
-          "dayCount": {
-            "description": "Number of local calendar days with photos taken there",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "firstVisitAt": {
-            "description": "Local time of the earliest photo taken there",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "hidden": {
-            "description": "Whether the user left the region off the footprint map",
-            "type": "boolean"
-          },
-          "id": {
-            "description": "Region ID",
-            "type": "string"
-          },
-          "lastVisitAt": {
-            "description": "Local time of the latest photo taken there",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "latitude": {
-            "description": "Latitude of a point inside the region",
-            "format": "double",
-            "type": "number"
-          },
-          "longitude": {
-            "description": "Longitude of a point inside the region",
-            "format": "double",
-            "type": "number"
-          },
-          "name": {
-            "description": "Local name",
-            "type": "string"
-          },
-          "nameZh": {
-            "description": "Chinese name, when there is one",
-            "nullable": true,
-            "type": "string"
-          },
-          "province": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/FootprintPlace"
-              }
-            ],
-            "description": "Province; null abroad when the region is itself first-level",
-            "nullable": true
-          }
-        },
-        "required": [
-          "assetCount",
-          "country",
-          "dayCount",
-          "firstVisitAt",
-          "hidden",
-          "id",
-          "lastVisitAt",
-          "latitude",
-          "longitude",
-          "name",
-          "nameZh",
-          "province"
-        ],
-        "type": "object"
-      },
-      "FootprintRegionDetailResponseDto": {
-        "properties": {
-          "assetIds": {
-            "description": "Some photos taken there, spread evenly over time, oldest first",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "region": {
-            "$ref": "#/components/schemas/FootprintRegion"
-          }
-        },
-        "required": [
-          "assetIds",
-          "region"
-        ],
-        "type": "object"
-      },
-      "FootprintShape": {
-        "properties": {
-          "geometry": {
-            "description": "Simplified outline",
-            "properties": {
-              "coordinates": {
-                "description": "GeoJSON coordinates",
-                "items": {},
-                "type": "array"
-              },
-              "type": {
-                "$ref": "#/components/schemas/FootprintGeometryType"
-              }
-            },
-            "required": [
-              "type",
-              "coordinates"
-            ],
-            "type": "object"
-          },
-          "properties": {
-            "properties": {
-              "id": {
-                "description": "Region ID",
-                "type": "string"
-              }
-            },
-            "required": [
-              "id"
-            ],
-            "type": "object"
-          },
-          "type": {
-            "$ref": "#/components/schemas/FootprintShapeType"
-          }
-        },
-        "required": [
-          "geometry",
-          "properties",
-          "type"
-        ],
-        "type": "object"
-      },
-      "FootprintShapeType": {
-        "enum": [
-          "Feature"
-        ],
-        "type": "string"
-      },
-      "FootprintShapesResponseDto": {
-        "properties": {
-          "features": {
-            "description": "Outlines of the regions the user visited, hidden ones included",
-            "items": {
-              "$ref": "#/components/schemas/FootprintShape"
-            },
-            "type": "array"
-          },
-          "type": {
-            "$ref": "#/components/schemas/FootprintShapesType"
-          }
-        },
-        "required": [
-          "features",
-          "type"
-        ],
-        "type": "object"
-      },
-      "FootprintShapesType": {
-        "enum": [
-          "FeatureCollection"
-        ],
-        "type": "string"
-      },
-      "FootprintsResponse": {
-        "properties": {
-          "hiddenRegionIds": {
-            "description": "Regions left off the footprint map because their photos were placed there by mistake",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "hiddenRegionIds"
-        ],
-        "type": "object"
-      },
-      "FootprintsResponseDto": {
-        "properties": {
-          "pendingCount": {
-            "description": "Located photos whose regions have not been found yet",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "regions": {
-            "description": "Every region the user took camera photos in, oldest visit first",
-            "items": {
-              "$ref": "#/components/schemas/FootprintRegion"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "pendingCount",
-          "regions"
-        ],
-        "type": "object"
-      },
-      "FootprintsUpdate": {
-        "properties": {
-          "hiddenRegionIds": {
-            "description": "Regions left off the footprint map because their photos were placed there by mistake",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "type": "object"
-      },
       "HlsVideoResolution": {
         "description": "HLS video resolution",
         "enum": [
@@ -24284,9 +22806,6 @@
           "HlsSessionCleanup",
           "MemoryCleanup",
           "MemoryGenerate",
-          "TripDetection",
-          "FootprintAssign",
-          "Reorganize",
           "NotificationsCleanup",
           "NotifyUserSignup",
           "NotifyAlbumInvite",
@@ -24304,7 +22823,6 @@
           "SidecarWrite",
           "SmartSearchQueueAll",
           "SmartSearch",
-          "SmartSearchGemma",
           "StorageTemplateMigration",
           "StorageTemplateMigrationSingle",
           "TagCleanup",
@@ -24454,212 +22972,6 @@
       },
       "LicenseResponseDto": {
         "$ref": "#/components/schemas/UserLicense"
-      },
-      "LocateAssetIdsDto": {
-        "properties": {
-          "assetIds": {
-            "description": "Photos",
-            "items": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            },
-            "minItems": 1,
-            "type": "array"
-          }
-        },
-        "required": [
-          "assetIds"
-        ],
-        "type": "object"
-      },
-      "LocateGroupDto": {
-        "properties": {
-          "assetIds": {
-            "description": "Photos of the group, oldest first",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "endAt": {
-            "description": "Local time of the last photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "id": {
-            "description": "Key of the group in the list: its first photo",
-            "type": "string"
-          },
-          "startAt": {
-            "description": "Local time of the first photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetIds",
-          "endAt",
-          "id",
-          "startAt"
-        ],
-        "type": "object"
-      },
-      "LocateGroupsResponseDto": {
-        "properties": {
-          "groups": {
-            "description": "Photos taken close together, largest group first",
-            "items": {
-              "$ref": "#/components/schemas/LocateGroupDto"
-            },
-            "type": "array"
-          },
-          "scattered": {
-            "description": "Photos too few to form a group, oldest first",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "groups",
-          "scattered"
-        ],
-        "type": "object"
-      },
-      "LocateSuggestionDto": {
-        "properties": {
-          "latitude": {
-            "description": "Latitude",
-            "format": "double",
-            "type": "number"
-          },
-          "longitude": {
-            "description": "Longitude",
-            "format": "double",
-            "type": "number"
-          },
-          "source": {
-            "description": "Where it comes from: located photos in the same folder, or the located photo nearest in time",
-            "enum": [
-              "directory",
-              "time"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "latitude",
-          "longitude",
-          "source"
-        ],
-        "type": "object"
-      },
-      "LocateSuggestionResponseDto": {
-        "properties": {
-          "suggestion": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/LocateSuggestionDto"
-              }
-            ],
-            "description": "Suggested position; null without any clue",
-            "nullable": true
-          }
-        },
-        "required": [
-          "suggestion"
-        ],
-        "type": "object"
-      },
-      "LocateSuspectDto": {
-        "properties": {
-          "assetId": {
-            "description": "The photo whose location is in doubt",
-            "type": "string"
-          },
-          "latitude": {
-            "description": "Latitude of the photo",
-            "format": "double",
-            "type": "number"
-          },
-          "localDateTime": {
-            "description": "Local time of the photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "longitude": {
-            "description": "Longitude of the photo",
-            "format": "double",
-            "type": "number"
-          },
-          "otherAssetId": {
-            "description": "A photo taken at the same moment that it contradicts",
-            "type": "string"
-          },
-          "otherLatitude": {
-            "description": "Latitude of the other photo",
-            "format": "double",
-            "type": "number"
-          },
-          "otherLocalDateTime": {
-            "description": "Local time of the other photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "otherLongitude": {
-            "description": "Longitude of the other photo",
-            "format": "double",
-            "type": "number"
-          },
-          "otherPlace": {
-            "description": "Place name of the other photo",
-            "nullable": true,
-            "type": "string"
-          },
-          "place": {
-            "description": "Place name of the photo",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetId",
-          "latitude",
-          "localDateTime",
-          "longitude",
-          "otherAssetId",
-          "otherLatitude",
-          "otherLocalDateTime",
-          "otherLongitude",
-          "otherPlace",
-          "place"
-        ],
-        "type": "object"
-      },
-      "LocateSuspectsResponseDto": {
-        "properties": {
-          "suspects": {
-            "description": "Photos with a suspect location, oldest first",
-            "items": {
-              "$ref": "#/components/schemas/LocateSuspectDto"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "suspects"
-        ],
-        "type": "object"
       },
       "LogLevel": {
         "description": "Log level",
@@ -24869,7 +23181,6 @@
           "user-cleanup",
           "memory-cleanup",
           "memory-create",
-          "trip-detection",
           "backup-database",
           "integrity-missing-files",
           "integrity-untracked-files",
@@ -25007,7 +23318,7 @@
             "type": "array"
           },
           "data": {
-            "$ref": "#/components/schemas/OnThisDayDto"
+            "$ref": "#/components/schemas/MemoryDataDto"
           },
           "hideAt": {
             "description": "Date when memory should be hidden",
@@ -25074,6 +23385,30 @@
         ],
         "type": "object"
       },
+      "MemoryDataDto": {
+        "properties": {
+          "personId": {
+            "description": "Person ID (birthday memories)",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "personName": {
+            "description": "Name of the person when the memory was created (birthday memories)",
+            "type": "string"
+          },
+          "year": {
+            "description": "Year of the memory",
+            "maximum": 9999,
+            "minimum": 1000,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year"
+        ],
+        "type": "object"
+      },
       "MemoryResponseDto": {
         "properties": {
           "assets": {
@@ -25090,7 +23425,7 @@
             "type": "string"
           },
           "data": {
-            "$ref": "#/components/schemas/OnThisDayDto"
+            "$ref": "#/components/schemas/MemoryDataDto"
           },
           "deletedAt": {
             "description": "Deletion date",
@@ -25192,6 +23527,13 @@
       },
       "MemoryType": {
         "description": "Memory type",
+        "enum": [
+          "on_this_day",
+          "birthday"
+        ],
+        "type": "string"
+      },
+      "MemoryTypeV1": {
         "enum": [
           "on_this_day"
         ],
@@ -26472,20 +24814,6 @@
         ],
         "type": "string"
       },
-      "OnThisDayDto": {
-        "properties": {
-          "year": {
-            "description": "Year for on this day memory",
-            "maximum": 9999,
-            "minimum": 1000,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "year"
-        ],
-        "type": "object"
-      },
       "OnboardingDto": {
         "properties": {
           "isOnboarded": {
@@ -26590,6 +24918,32 @@
         ],
         "type": "object"
       },
+      "PeopleDeleteDto": {
+        "properties": {
+          "ids": {
+            "description": "IDs to process",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "type": "object",
+        "x-immich-history": [
+          {
+            "version": "v3.3",
+            "state": "Added"
+          }
+        ]
+      },
       "PeopleResponse": {
         "properties": {
           "enabled": {
@@ -26605,11 +24959,15 @@
           "sidebarWeb": {
             "description": "Whether people appear in web sidebar",
             "type": "boolean"
+          },
+          "updateStrategy": {
+            "$ref": "#/components/schemas/PersonUpdateStrategy"
           }
         },
         "required": [
           "enabled",
-          "sidebarWeb"
+          "sidebarWeb",
+          "updateStrategy"
         ],
         "type": "object"
       },
@@ -26672,6 +25030,9 @@
           "sidebarWeb": {
             "description": "Whether people appear in web sidebar",
             "type": "boolean"
+          },
+          "updateStrategy": {
+            "$ref": "#/components/schemas/PersonUpdateStrategy"
           }
         },
         "type": "object"
@@ -26728,12 +25089,105 @@
           "name": {
             "description": "Person name",
             "type": "string"
+          },
+          "userId": {
+            "description": "Restrict the update to the person record of this User ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
           }
         },
         "required": [
           "id"
         ],
         "type": "object"
+      },
+      "PeopleUserResponseDto": {
+        "properties": {
+          "avatarColor": {
+            "$ref": "#/components/schemas/UserAvatarColor"
+          },
+          "email": {
+            "description": "User email",
+            "format": "email",
+            "pattern": "^[\\p{L}\\p{M}\\p{N}.!#$%&'*+/=?^_`{|}~-]+@[\\p{L}\\p{N}](?:[\\p{L}\\p{M}\\p{N}-]{0,61}[\\p{L}\\p{M}\\p{N}])?(?:\\.[\\p{L}\\p{N}](?:[\\p{L}\\p{M}\\p{N}-]{0,61}[\\p{L}\\p{M}\\p{N}])?)*$",
+            "type": "string"
+          },
+          "id": {
+            "description": "User ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "name": {
+            "description": "User name",
+            "type": "string"
+          },
+          "profileChangedAt": {
+            "description": "Profile change date",
+            "format": "date-time",
+            "type": "string"
+          },
+          "profileImagePath": {
+            "description": "Profile image path",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PersonUserRole",
+            "description": "Access role"
+          }
+        },
+        "required": [
+          "avatarColor",
+          "email",
+          "id",
+          "name",
+          "profileChangedAt",
+          "profileImagePath",
+          "role"
+        ],
+        "type": "object"
+      },
+      "PeopleUsersUpsertDto": {
+        "properties": {
+          "personIds": {
+            "description": "Person IDs, required when type is omitted",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PersonUserRole",
+            "description": "Role that should be applied"
+          },
+          "sharedWithIds": {
+            "description": "User IDs that should be given access to the person",
+            "items": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PeopleUsersUpsertType"
+          }
+        },
+        "required": [
+          "role",
+          "sharedWithIds"
+        ],
+        "type": "object"
+      },
+      "PeopleUsersUpsertType": {
+        "description": "Which people to update when personIds is omitted",
+        "enum": [
+          "everyone"
+        ],
+        "type": "string"
       },
       "Permission": {
         "description": "List of permissions",
@@ -26938,6 +25392,52 @@
         },
         "type": "object"
       },
+      "PersonDeleteDto": {
+        "default": {},
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "x-immich-history": [
+          {
+            "version": "v3.3",
+            "state": "Added"
+          },
+          {
+            "version": "v3.3",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-state": "Stable"
+      },
+      "PersonOtherResponseDto": {
+        "properties": {
+          "birthDate": {
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PersonUserRole"
+          },
+          "sharedById": {
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "birthDate",
+          "name",
+          "role",
+          "sharedById"
+        ],
+        "type": "object"
+      },
       "PersonResponseDto": {
         "properties": {
           "birthDate": {
@@ -26990,6 +25490,26 @@
             "description": "Person name",
             "type": "string"
           },
+          "otherPeople": {
+            "items": {
+              "$ref": "#/components/schemas/PersonOtherResponseDto"
+            },
+            "type": "array"
+          },
+          "sharedBy": {
+            "description": "Users that gave the current user access to this person",
+            "items": {
+              "$ref": "#/components/schemas/PeopleUserResponseDto"
+            },
+            "type": "array"
+          },
+          "sharedWith": {
+            "description": "Users the current user gave access to this person",
+            "items": {
+              "$ref": "#/components/schemas/PeopleUserResponseDto"
+            },
+            "type": "array"
+          },
           "thumbnailPath": {
             "description": "Thumbnail path",
             "type": "string"
@@ -27016,6 +25536,9 @@
           "id",
           "isHidden",
           "name",
+          "otherPeople",
+          "sharedBy",
+          "sharedWith",
           "thumbnailPath"
         ],
         "type": "object"
@@ -27065,9 +25588,108 @@
           "name": {
             "description": "Person name",
             "type": "string"
+          },
+          "userId": {
+            "description": "Restrict the update to the person record of this User ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
           }
         },
         "type": "object"
+      },
+      "PersonUpdateStrategy": {
+        "description": "Which person records to update when editing a person",
+        "enum": [
+          "self",
+          "everyone"
+        ],
+        "type": "string"
+      },
+      "PersonUserRole": {
+        "description": "Levels of access for managing people resources on behalf of another user.",
+        "enum": [
+          "read",
+          "write",
+          "admin"
+        ],
+        "type": "string"
+      },
+      "PersonUsersDeleteDto": {
+        "items": {
+          "properties": {
+            "personId": {
+              "description": "Person ID",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "sharedById": {
+              "description": "User ID of the user that gave access to the person",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "sharedWithId": {
+              "description": "User ID of the user that was given access to the person",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "personId",
+            "sharedWithId"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "PersonUsersResponseDto": {
+        "items": {
+          "properties": {
+            "personId": {
+              "description": "Person ID",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "role": {
+              "$ref": "#/components/schemas/PersonUserRole",
+              "description": "Access role"
+            },
+            "sharedBy": {
+              "$ref": "#/components/schemas/UserResponseDto",
+              "description": "The user that gave access to this person"
+            },
+            "sharedById": {
+              "description": "User ID of the user that gave access to this person",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "sharedWith": {
+              "$ref": "#/components/schemas/UserResponseDto",
+              "description": "The user that was given access to this person"
+            },
+            "sharedWithId": {
+              "description": "User ID of the user that was given access to this person",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "personId",
+            "sharedById",
+            "sharedWithId",
+            "sharedBy",
+            "sharedWith",
+            "role"
+          ],
+          "type": "object"
+        },
+        "type": "array"
       },
       "PinCodeChangeDto": {
         "properties": {
@@ -28507,754 +27129,6 @@
         ],
         "type": "string"
       },
-      "ReorganizationItemDto": {
-        "properties": {
-          "assetId": {
-            "description": "Photo ID, null once the photo is deleted",
-            "nullable": true,
-            "type": "string"
-          },
-          "error": {
-            "description": "What went wrong",
-            "nullable": true,
-            "type": "string"
-          },
-          "fromPath": {
-            "description": "Where the photo was",
-            "type": "string"
-          },
-          "hasSidecar": {
-            "description": "Whether a sidecar moved along",
-            "type": "boolean"
-          },
-          "id": {
-            "description": "Item ID",
-            "type": "string"
-          },
-          "reason": {
-            "description": "Why the photo stayed, or why it was renamed",
-            "nullable": true,
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/ReorganizationItemStatus"
-          },
-          "toPath": {
-            "description": "Where it went, null for a photo that stayed",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetId",
-          "error",
-          "fromPath",
-          "hasSidecar",
-          "id",
-          "reason",
-          "status",
-          "toPath"
-        ],
-        "type": "object"
-      },
-      "ReorganizationItemStatus": {
-        "description": "How far one photo of a reorganization got",
-        "enum": [
-          "pending",
-          "moving",
-          "moved",
-          "failed",
-          "stayed",
-          "undoing",
-          "undone",
-          "undo-failed",
-          "undo-skipped"
-        ],
-        "type": "string"
-      },
-      "ReorganizationResponseDto": {
-        "properties": {
-          "album": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ReorganizeAlbumDto"
-              }
-            ],
-            "description": "Album the moved photos are added to, if it still exists",
-            "nullable": true
-          },
-          "autoRename": {
-            "description": "Whether photos whose name was taken moved under a new name",
-            "type": "boolean"
-          },
-          "createdAt": {
-            "description": "When it was started",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "error": {
-            "description": "Why the whole run stopped",
-            "nullable": true,
-            "type": "string"
-          },
-          "failedCount": {
-            "description": "Photos that could not be moved, or moved back",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "finishedAt": {
-            "description": "When it last stopped running",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "nullable": true,
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "id": {
-            "description": "Reorganization ID",
-            "type": "string"
-          },
-          "inPlaceCount": {
-            "description": "Photos that were already in their folder",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "isUndo": {
-            "description": "Whether the status is about undoing it rather than carrying it out",
-            "type": "boolean"
-          },
-          "movedCount": {
-            "description": "Photos in their date folder",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "pendingCount": {
-            "description": "Photos not moved yet",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "preset": {
-            "$ref": "#/components/schemas/ReorganizePreset"
-          },
-          "removedFolderCount": {
-            "description": "Source subfolders removed because they ended up empty",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "sourceName": {
-            "description": "The source folder, or the name of the source album",
-            "type": "string"
-          },
-          "sourceType": {
-            "$ref": "#/components/schemas/ReorganizeSourceType"
-          },
-          "status": {
-            "$ref": "#/components/schemas/ReorganizationStatus"
-          },
-          "stayedCount": {
-            "description": "Photos that were left where they were",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "targetPath": {
-            "description": "Folder the date folders were created in",
-            "type": "string"
-          },
-          "undoSkippedCount": {
-            "description": "Photos an undo left in place because they or their old place had changed",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "undoneCount": {
-            "description": "Photos moved back by an undo",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "album",
-          "autoRename",
-          "createdAt",
-          "error",
-          "failedCount",
-          "finishedAt",
-          "id",
-          "inPlaceCount",
-          "isUndo",
-          "movedCount",
-          "pendingCount",
-          "preset",
-          "removedFolderCount",
-          "sourceName",
-          "sourceType",
-          "status",
-          "stayedCount",
-          "targetPath",
-          "undoSkippedCount",
-          "undoneCount"
-        ],
-        "type": "object"
-      },
-      "ReorganizationStatus": {
-        "description": "How far a reorganization got: interrupted by a restart and paused by the storage going away both wait for the user",
-        "enum": [
-          "queued",
-          "running",
-          "completed",
-          "cancelled",
-          "interrupted",
-          "paused"
-        ],
-        "type": "string"
-      },
-      "ReorganizeAction": {
-        "description": "What happens to a photo",
-        "enum": [
-          "move",
-          "in-place",
-          "conflict",
-          "skip"
-        ],
-        "type": "string"
-      },
-      "ReorganizeAlbumDto": {
-        "properties": {
-          "albumName": {
-            "description": "Album name",
-            "type": "string"
-          },
-          "id": {
-            "description": "Album ID",
-            "type": "string"
-          }
-        },
-        "required": [
-          "albumName",
-          "id"
-        ],
-        "type": "object"
-      },
-      "ReorganizeDto": {
-        "properties": {
-          "albumId": {
-            "description": "Album to add the photos that move to",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "autoRename": {
-            "default": false,
-            "description": "Move photos whose name is taken under a new name",
-            "type": "boolean"
-          },
-          "excludedLibraryIds": {
-            "default": [],
-            "description": "Source libraries to leave out, for an album",
-            "items": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "includeSubfolders": {
-            "default": true,
-            "description": "Whether a folder source includes its subfolders",
-            "type": "boolean"
-          },
-          "labels": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "default": {},
-            "description": "Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder",
-            "type": "object"
-          },
-          "preset": {
-            "$ref": "#/components/schemas/ReorganizePreset"
-          },
-          "sourceAlbumId": {
-            "description": "Album to reorganize, for an album source",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "sourcePath": {
-            "description": "Folder to reorganize, for a folder source",
-            "minLength": 1,
-            "type": "string"
-          },
-          "sourceType": {
-            "$ref": "#/components/schemas/ReorganizeSourceType"
-          },
-          "targetPath": {
-            "description": "Folder the date folders are created in",
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "preset",
-          "sourceType",
-          "targetPath"
-        ],
-        "type": "object"
-      },
-      "ReorganizeFolderDto": {
-        "properties": {
-          "day": {
-            "description": "Day of the folder (YYYY-MM-DD), null for a month folder",
-            "nullable": true,
-            "type": "string"
-          },
-          "existingLabels": {
-            "description": "Labels of the folders of this day that already exist",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "exists": {
-            "description": "Whether the folder already exists",
-            "type": "boolean"
-          },
-          "folder": {
-            "description": "Folder, relative to the target",
-            "type": "string"
-          },
-          "inPlaceCount": {
-            "description": "Photos already in the folder",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "label": {
-            "description": "Label in the folder name",
-            "type": "string"
-          },
-          "moveCount": {
-            "description": "Photos moving into the folder",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "renameCount": {
-            "description": "Photos among them that get a new name",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "day",
-          "existingLabels",
-          "exists",
-          "folder",
-          "inPlaceCount",
-          "label",
-          "moveCount",
-          "renameCount"
-        ],
-        "type": "object"
-      },
-      "ReorganizeFoldersResponseDto": {
-        "properties": {
-          "folders": {
-            "description": "Full paths of the folders inside",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "libraryId": {
-            "description": "Library the folder is in",
-            "nullable": true,
-            "type": "string"
-          },
-          "parent": {
-            "description": "Its parent, when that can be listed too",
-            "nullable": true,
-            "type": "string"
-          },
-          "path": {
-            "description": "The listed folder, null for the list of import paths",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "folders",
-          "libraryId",
-          "parent",
-          "path"
-        ],
-        "type": "object"
-      },
-      "ReorganizeItemDto": {
-        "properties": {
-          "action": {
-            "$ref": "#/components/schemas/ReorganizeAction"
-          },
-          "assetId": {
-            "description": "Photo ID",
-            "type": "string"
-          },
-          "fromPath": {
-            "description": "Where the photo is",
-            "type": "string"
-          },
-          "hasSidecar": {
-            "description": "Whether a sidecar moves along",
-            "type": "boolean"
-          },
-          "isRenamed": {
-            "description": "Whether it gets a new name",
-            "type": "boolean"
-          },
-          "reason": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ReorganizeReason"
-              }
-            ],
-            "nullable": true
-          },
-          "toPath": {
-            "description": "Where it goes, null when it stays",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "action",
-          "assetId",
-          "fromPath",
-          "hasSidecar",
-          "isRenamed",
-          "reason",
-          "toPath"
-        ],
-        "type": "object"
-      },
-      "ReorganizeItemsDto": {
-        "properties": {
-          "action": {
-            "$ref": "#/components/schemas/ReorganizeAction"
-          },
-          "albumId": {
-            "description": "Album to add the photos that move to",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "autoRename": {
-            "default": false,
-            "description": "Move photos whose name is taken under a new name",
-            "type": "boolean"
-          },
-          "excludedLibraryIds": {
-            "default": [],
-            "description": "Source libraries to leave out, for an album",
-            "items": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "folder": {
-            "description": "Only photos going to (or already in) this date folder, relative to the target",
-            "type": "string"
-          },
-          "includeSubfolders": {
-            "default": true,
-            "description": "Whether a folder source includes its subfolders",
-            "type": "boolean"
-          },
-          "labels": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "default": {},
-            "description": "Label per day (YYYY-MM-DD) for the day presets; a day left out joins its existing folder",
-            "type": "object"
-          },
-          "limit": {
-            "default": 200,
-            "description": "Number of photos to return",
-            "maximum": 1000,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "preset": {
-            "$ref": "#/components/schemas/ReorganizePreset"
-          },
-          "reason": {
-            "$ref": "#/components/schemas/ReorganizeReason"
-          },
-          "sourceAlbumId": {
-            "description": "Album to reorganize, for an album source",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "sourcePath": {
-            "description": "Folder to reorganize, for a folder source",
-            "minLength": 1,
-            "type": "string"
-          },
-          "sourceType": {
-            "$ref": "#/components/schemas/ReorganizeSourceType"
-          },
-          "targetPath": {
-            "description": "Folder the date folders are created in",
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "preset",
-          "sourceType",
-          "targetPath"
-        ],
-        "type": "object"
-      },
-      "ReorganizeItemsResponseDto": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ReorganizeItemDto"
-            },
-            "type": "array"
-          },
-          "total": {
-            "description": "Number of matching photos",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total"
-        ],
-        "type": "object"
-      },
-      "ReorganizeLibraryDto": {
-        "properties": {
-          "count": {
-            "description": "Photos of the source in this library",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "id": {
-            "description": "Library ID",
-            "type": "string"
-          },
-          "isExcluded": {
-            "description": "Whether its photos are left out",
-            "type": "boolean"
-          },
-          "isTarget": {
-            "description": "Whether the target folder is in this library",
-            "type": "boolean"
-          },
-          "name": {
-            "description": "Library name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "count",
-          "id",
-          "isExcluded",
-          "isTarget",
-          "name"
-        ],
-        "type": "object"
-      },
-      "ReorganizePreset": {
-        "description": "Folder structure: `2026/09`, `2026-09-27` or `2026/2026-09-27`",
-        "enum": [
-          "year-month",
-          "day",
-          "year-day"
-        ],
-        "type": "string"
-      },
-      "ReorganizePreviewResponseDto": {
-        "properties": {
-          "conflictCount": {
-            "description": "Photos that stay because their name is taken",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "emptyFolderCount": {
-            "description": "Subfolders of a source folder that end up empty and are removed",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "folders": {
-            "description": "Date folders after the reorganization, oldest first",
-            "items": {
-              "$ref": "#/components/schemas/ReorganizeFolderDto"
-            },
-            "type": "array"
-          },
-          "inPlaceCount": {
-            "description": "Photos already in their folder",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "libraries": {
-            "description": "Libraries the photos of the source are in",
-            "items": {
-              "$ref": "#/components/schemas/ReorganizeLibraryDto"
-            },
-            "type": "array"
-          },
-          "moveCount": {
-            "description": "Photos that move",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "newFolderCount": {
-            "description": "Date folders to create",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "otherFileCount": {
-            "description": "Files of a source folder that are not photos of the library and stay",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "renameCount": {
-            "description": "Photos among them that get a new name",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "sidecarCount": {
-            "description": "Sidecar files that move along",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "skipCount": {
-            "description": "Photos that are left out",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "staying": {
-            "description": "Photos that stay, by reason",
-            "items": {
-              "$ref": "#/components/schemas/ReorganizeStayingDto"
-            },
-            "type": "array"
-          },
-          "suggestedAlbum": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ReorganizeAlbumDto"
-              }
-            ],
-            "description": "The album the last reorganization into this target added its photos to",
-            "nullable": true
-          },
-          "targetLibraryId": {
-            "description": "Library the target folder belongs to",
-            "type": "string"
-          },
-          "total": {
-            "description": "Photos of the source",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "conflictCount",
-          "emptyFolderCount",
-          "folders",
-          "inPlaceCount",
-          "libraries",
-          "moveCount",
-          "newFolderCount",
-          "otherFileCount",
-          "renameCount",
-          "sidecarCount",
-          "skipCount",
-          "staying",
-          "suggestedAlbum",
-          "targetLibraryId",
-          "total"
-        ],
-        "type": "object"
-      },
-      "ReorganizeReason": {
-        "description": "Why a photo stays where it is, or why it was renamed",
-        "enum": [
-          "internal",
-          "not-owner",
-          "offline",
-          "trashed",
-          "unreliable-date",
-          "library-excluded",
-          "other-owner-library",
-          "identical",
-          "shared-sidecar",
-          "target-exists",
-          "same-target"
-        ],
-        "type": "string"
-      },
-      "ReorganizeSourceType": {
-        "description": "What is reorganized: a folder of an external library, or an album",
-        "enum": [
-          "folder",
-          "album"
-        ],
-        "type": "string"
-      },
-      "ReorganizeStayingDto": {
-        "properties": {
-          "action": {
-            "$ref": "#/components/schemas/ReorganizeAction"
-          },
-          "count": {
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "reason": {
-            "$ref": "#/components/schemas/ReorganizeReason"
-          }
-        },
-        "required": [
-          "action",
-          "count",
-          "reason"
-        ],
-        "type": "object"
-      },
       "ReverseGeocodingStateResponseDto": {
         "properties": {
           "lastImportFileName": {
@@ -29683,14 +27557,6 @@
         },
         "type": "object"
       },
-      "SearchModel": {
-        "description": "Model whose embeddings a smart search compares",
-        "enum": [
-          "default",
-          "gemma"
-        ],
-        "type": "string"
-      },
       "SearchOrder": {
         "properties": {
           "direction": {
@@ -30015,10 +27881,6 @@
             "description": "Whether smart search is enabled",
             "type": "boolean"
           },
-          "smartSearchGemma": {
-            "description": "Whether smart search can use the Gemma model",
-            "type": "boolean"
-          },
           "trash": {
             "description": "Whether trash feature is enabled",
             "type": "boolean"
@@ -30040,7 +27902,6 @@
           "search",
           "sidecar",
           "smartSearch",
-          "smartSearchGemma",
           "trash"
         ],
         "type": "object"
@@ -30673,6 +28534,14 @@
         },
         "type": "object"
       },
+      "SharingDirection": {
+        "description": "Sharing direction",
+        "enum": [
+          "shared-by",
+          "shared-with"
+        ],
+        "type": "string"
+      },
       "SignUpDto": {
         "properties": {
           "email": {
@@ -31123,9 +28992,6 @@
               }
             ],
             "x-immich-state": "Deprecated"
-          },
-          "searchModel": {
-            "$ref": "#/components/schemas/SearchModel"
           },
           "size": {
             "default": 100,
@@ -32804,7 +30670,7 @@
         ],
         "type": "object"
       },
-      "SyncAssetFaceV2": {
+      "SyncAssetFaceV3": {
         "properties": {
           "assetId": {
             "description": "Asset ID",
@@ -33425,6 +31291,98 @@
         ],
         "type": "object"
       },
+      "SyncAuthUserV2": {
+        "properties": {
+          "avatarColor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserAvatarColor"
+              }
+            ],
+            "nullable": true
+          },
+          "deletedAt": {
+            "description": "User deleted at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "email": {
+            "description": "User email",
+            "type": "string"
+          },
+          "hasProfileImage": {
+            "description": "User has profile image",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "User ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "isAdmin": {
+            "description": "User is admin",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "User name",
+            "type": "string"
+          },
+          "oauthId": {
+            "description": "User OAuth ID",
+            "nullable": true,
+            "type": "string"
+          },
+          "pinCode": {
+            "description": "User pin code",
+            "nullable": true,
+            "type": "string"
+          },
+          "profileChangedAt": {
+            "description": "User profile changed at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "quotaSizeInBytes": {
+            "description": "Quota size in bytes",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "nullable": true,
+            "type": "integer"
+          },
+          "quotaUsageInBytes": {
+            "description": "Quota usage in bytes",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "storageLabel": {
+            "description": "User storage label",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "deletedAt",
+          "email",
+          "hasProfileImage",
+          "id",
+          "isAdmin",
+          "name",
+          "oauthId",
+          "pinCode",
+          "profileChangedAt",
+          "quotaSizeInBytes",
+          "quotaUsageInBytes",
+          "storageLabel"
+        ],
+        "type": "object"
+      },
       "SyncCompleteV1": {
         "properties": {},
         "type": "object"
@@ -33433,6 +31391,7 @@
         "description": "Sync entity type",
         "enum": [
           "AuthUserV1",
+          "AuthUserV2",
           "UserV1",
           "UserDeleteV1",
           "AssetV1",
@@ -33476,8 +31435,10 @@
           "AlbumToAssetDeleteV1",
           "AlbumToAssetBackfillV1",
           "MemoryV1",
+          "MemoryV2",
           "MemoryDeleteV1",
           "MemoryToAssetV1",
+          "MemoryToAssetV2",
           "MemoryToAssetDeleteV1",
           "StackV1",
           "StackDeleteV1",
@@ -33485,6 +31446,7 @@
           "PersonDeleteV1",
           "AssetFaceV1",
           "AssetFaceV2",
+          "AssetFaceV3",
           "AssetFaceDeleteV1",
           "UserMetadataV1",
           "UserMetadataDeleteV1",
@@ -33551,6 +31513,102 @@
         "type": "object"
       },
       "SyncMemoryV1": {
+        "properties": {
+          "createdAt": {
+            "description": "Created at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "data": {
+            "additionalProperties": {},
+            "description": "Data",
+            "type": "object"
+          },
+          "deletedAt": {
+            "description": "Deleted at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "hideAt": {
+            "description": "Hide at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Memory ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "isSaved": {
+            "description": "Is saved",
+            "type": "boolean"
+          },
+          "memoryAt": {
+            "description": "Memory at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "ownerId": {
+            "description": "Owner ID",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+            "type": "string"
+          },
+          "seenAt": {
+            "description": "Seen at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "showAt": {
+            "description": "Show at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "nullable": true,
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MemoryTypeV1"
+          },
+          "updatedAt": {
+            "description": "Updated at",
+            "example": "2024-01-01T00:00:00.000Z",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "data",
+          "deletedAt",
+          "hideAt",
+          "id",
+          "isSaved",
+          "memoryAt",
+          "ownerId",
+          "seenAt",
+          "showAt",
+          "type",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "SyncMemoryV2": {
         "properties": {
           "createdAt": {
             "description": "Created at",
@@ -33797,8 +31855,11 @@
           "AssetMetadataV1",
           "AssetOcrV1",
           "AuthUsersV1",
+          "AuthUsersV2",
           "MemoriesV1",
+          "MemoriesV2",
           "MemoryToAssetsV1",
+          "MemoryToAssetsV2",
           "PartnersV1",
           "PartnerAssetsV1",
           "PartnerAssetsV2",
@@ -33809,6 +31870,7 @@
           "PeopleV1",
           "AssetFacesV1",
           "AssetFacesV2",
+          "AssetFacesV3",
           "UserMetadataV1"
         ],
         "type": "string"
@@ -34527,544 +32589,6 @@
         "required": [
           "count"
         ],
-        "type": "object"
-      },
-      "TripCreateDto": {
-        "properties": {
-          "albumId": {
-            "description": "The album to mark as a trip",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          },
-          "replaceTripIds": {
-            "description": "Detected trips overlapping the album that it replaces; they are dismissed and keep their albums",
-            "items": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "albumId"
-        ],
-        "type": "object"
-      },
-      "TripDayDto": {
-        "properties": {
-          "assetCount": {
-            "description": "Number of photos",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "date": {
-            "description": "Local date (YYYY-MM-DD)",
-            "type": "string"
-          },
-          "firstAssetId": {
-            "description": "First photo of the day",
-            "type": "string"
-          },
-          "index": {
-            "description": "1 for the first day of the trip",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "place": {
-            "description": "Where the day was spent, e.g. \"丽江 → 大理\"; empty without located photos",
-            "type": "string"
-          },
-          "stops": {
-            "description": "Indexes of the day's stops",
-            "items": {
-              "maximum": 9007199254740991,
-              "minimum": -9007199254740991,
-              "type": "integer"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "assetCount",
-          "date",
-          "firstAssetId",
-          "index",
-          "place",
-          "stops"
-        ],
-        "type": "object"
-      },
-      "TripDetailResponseDto": {
-        "properties": {
-          "albumId": {
-            "description": "ID of the trip album",
-            "type": "string"
-          },
-          "assetCount": {
-            "description": "Number of photos",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "concurrentTrips": {
-            "description": "Other trips at the same time, e.g. of family members travelling separately",
-            "items": {
-              "$ref": "#/components/schemas/TripResponseDto"
-            },
-            "type": "array"
-          },
-          "dayCount": {
-            "description": "Number of calendar days with photos",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "days": {
-            "items": {
-              "$ref": "#/components/schemas/TripDayDto"
-            },
-            "type": "array"
-          },
-          "endAt": {
-            "description": "Local time of the last photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "farthestKm": {
-            "description": "Largest distance from home in kilometres",
-            "format": "double",
-            "nullable": true,
-            "type": "number"
-          },
-          "id": {
-            "description": "Trip ID",
-            "type": "string"
-          },
-          "legs": {
-            "items": {
-              "$ref": "#/components/schemas/TripLegDto"
-            },
-            "type": "array"
-          },
-          "name": {
-            "description": "Album name",
-            "type": "string"
-          },
-          "places": {
-            "description": "Places visited, in order",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "point": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TripPoint"
-              }
-            ],
-            "description": "Where the trip is shown on a map; null without located photos",
-            "nullable": true
-          },
-          "source": {
-            "$ref": "#/components/schemas/TripSource"
-          },
-          "startAt": {
-            "description": "Local time of the first photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "stops": {
-            "items": {
-              "$ref": "#/components/schemas/TripStopDto"
-            },
-            "type": "array"
-          },
-          "thumbnailAssetId": {
-            "description": "Album cover",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "albumId",
-          "assetCount",
-          "concurrentTrips",
-          "dayCount",
-          "days",
-          "endAt",
-          "farthestKm",
-          "id",
-          "legs",
-          "name",
-          "places",
-          "point",
-          "source",
-          "startAt",
-          "stops",
-          "thumbnailAssetId"
-        ],
-        "type": "object"
-      },
-      "TripHome": {
-        "properties": {
-          "from": {
-            "description": "First day this home applies to (YYYY-MM-DD, inclusive)",
-            "format": "date",
-            "nullable": true,
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-            "type": "string"
-          },
-          "latitude": {
-            "description": "Home latitude",
-            "format": "double",
-            "maximum": 90,
-            "minimum": -90,
-            "type": "number"
-          },
-          "longitude": {
-            "description": "Home longitude",
-            "format": "double",
-            "maximum": 180,
-            "minimum": -180,
-            "type": "number"
-          },
-          "name": {
-            "description": "Home name",
-            "type": "string"
-          },
-          "radiusKm": {
-            "description": "Photos within this distance (km) are taken at home",
-            "exclusiveMinimum": true,
-            "format": "double",
-            "minimum": 0,
-            "type": "number"
-          },
-          "to": {
-            "description": "Last day this home applies to (YYYY-MM-DD, inclusive)",
-            "format": "date",
-            "nullable": true,
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "latitude",
-          "longitude",
-          "name",
-          "radiusKm"
-        ],
-        "type": "object"
-      },
-      "TripLegDto": {
-        "properties": {
-          "from": {
-            "description": "Index of the stop the leg starts at",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "isLongJump": {
-            "description": "Whether the leg is long enough to be a flight or train ride",
-            "type": "boolean"
-          },
-          "to": {
-            "description": "Index of the stop the leg ends at",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "from",
-          "isLongJump",
-          "to"
-        ],
-        "type": "object"
-      },
-      "TripMergeDto": {
-        "properties": {
-          "tripId": {
-            "description": "The trip at the same time to merge into this one; its album is deleted",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "tripId"
-        ],
-        "type": "object"
-      },
-      "TripPoint": {
-        "properties": {
-          "latitude": {
-            "description": "Latitude",
-            "format": "double",
-            "type": "number"
-          },
-          "longitude": {
-            "description": "Longitude",
-            "format": "double",
-            "type": "number"
-          }
-        },
-        "required": [
-          "latitude",
-          "longitude"
-        ],
-        "type": "object"
-      },
-      "TripPreviewDto": {
-        "properties": {
-          "homes": {
-            "description": "Places that are home; being away from all of them is a trip",
-            "items": {
-              "$ref": "#/components/schemas/TripHome"
-            },
-            "type": "array"
-          },
-          "includeDayTrips": {
-            "description": "Whether trips within a single day count",
-            "type": "boolean"
-          },
-          "minAssets": {
-            "description": "Minimum number of located photos for a trip",
-            "maximum": 9007199254740991,
-            "minimum": 1,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "homes",
-          "includeDayTrips",
-          "minAssets"
-        ],
-        "type": "object"
-      },
-      "TripPreviewResponseDto": {
-        "properties": {
-          "assetCount": {
-            "description": "Number of photos in the trip",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "days": {
-            "description": "Number of calendar days with located photos",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "endAt": {
-            "description": "Local time of the last photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "name": {
-            "description": "Name the trip album would get",
-            "type": "string"
-          },
-          "startAt": {
-            "description": "Local time of the first photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetCount",
-          "days",
-          "endAt",
-          "name",
-          "startAt"
-        ],
-        "type": "object"
-      },
-      "TripResponseDto": {
-        "properties": {
-          "albumId": {
-            "description": "ID of the trip album",
-            "type": "string"
-          },
-          "assetCount": {
-            "description": "Number of photos",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "dayCount": {
-            "description": "Number of calendar days with photos",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "endAt": {
-            "description": "Local time of the last photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "id": {
-            "description": "Trip ID",
-            "type": "string"
-          },
-          "name": {
-            "description": "Album name",
-            "type": "string"
-          },
-          "point": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TripPoint"
-              }
-            ],
-            "description": "Where the trip is shown on a map; null without located photos",
-            "nullable": true
-          },
-          "source": {
-            "$ref": "#/components/schemas/TripSource"
-          },
-          "startAt": {
-            "description": "Local time of the first photo",
-            "example": "2024-01-01T00:00:00.000Z",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
-            "type": "string"
-          },
-          "thumbnailAssetId": {
-            "description": "Album cover",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "albumId",
-          "assetCount",
-          "dayCount",
-          "endAt",
-          "id",
-          "name",
-          "point",
-          "source",
-          "startAt",
-          "thumbnailAssetId"
-        ],
-        "type": "object"
-      },
-      "TripSource": {
-        "description": "How the trip came about",
-        "enum": [
-          "auto",
-          "manual"
-        ],
-        "type": "string"
-      },
-      "TripStopDto": {
-        "properties": {
-          "assetCount": {
-            "description": "Number of photos taken at the stop",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          },
-          "date": {
-            "description": "Local date (YYYY-MM-DD)",
-            "type": "string"
-          },
-          "latitude": {
-            "description": "Latitude",
-            "format": "double",
-            "type": "number"
-          },
-          "longitude": {
-            "description": "Longitude",
-            "format": "double",
-            "type": "number"
-          },
-          "place": {
-            "description": "City of the stop",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": [
-          "assetCount",
-          "date",
-          "latitude",
-          "longitude",
-          "place"
-        ],
-        "type": "object"
-      },
-      "TripsResponse": {
-        "properties": {
-          "enabled": {
-            "description": "Whether trips are detected and turned into albums",
-            "type": "boolean"
-          },
-          "homes": {
-            "description": "Places that are home; being away from all of them is a trip",
-            "items": {
-              "$ref": "#/components/schemas/TripHome"
-            },
-            "type": "array"
-          },
-          "includeDayTrips": {
-            "description": "Whether trips within a single day get an album",
-            "type": "boolean"
-          },
-          "minAssets": {
-            "description": "Minimum number of located photos for a trip",
-            "maximum": 9007199254740991,
-            "minimum": -9007199254740991,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "enabled",
-          "homes",
-          "includeDayTrips",
-          "minAssets"
-        ],
-        "type": "object"
-      },
-      "TripsUpdate": {
-        "properties": {
-          "enabled": {
-            "description": "Whether trips are detected and turned into albums",
-            "type": "boolean"
-          },
-          "homes": {
-            "description": "Places that are home; being away from all of them is a trip",
-            "items": {
-              "$ref": "#/components/schemas/TripHome"
-            },
-            "type": "array"
-          },
-          "includeDayTrips": {
-            "description": "Whether trips within a single day get an album",
-            "type": "boolean"
-          },
-          "minAssets": {
-            "description": "Minimum number of located photos for a trip",
-            "maximum": 9007199254740991,
-            "minimum": 1,
-            "type": "integer"
-          }
-        },
         "type": "object"
       },
       "UpdateAlbumDto": {
@@ -35947,9 +33471,6 @@
           "folders": {
             "$ref": "#/components/schemas/FoldersResponse"
           },
-          "footprints": {
-            "$ref": "#/components/schemas/FootprintsResponse"
-          },
           "memories": {
             "$ref": "#/components/schemas/MemoriesResponse"
           },
@@ -35970,9 +33491,6 @@
           },
           "tags": {
             "$ref": "#/components/schemas/TagsResponse"
-          },
-          "trips": {
-            "$ref": "#/components/schemas/TripsResponse"
           }
         },
         "required": [
@@ -35981,15 +33499,13 @@
           "download",
           "emailNotifications",
           "folders",
-          "footprints",
           "memories",
           "people",
           "purchase",
           "ratings",
           "recentlyAdded",
           "sharedLinks",
-          "tags",
-          "trips"
+          "tags"
         ],
         "type": "object"
       },
@@ -36013,9 +33529,6 @@
           "folders": {
             "$ref": "#/components/schemas/FoldersUpdate"
           },
-          "footprints": {
-            "$ref": "#/components/schemas/FootprintsUpdate"
-          },
           "memories": {
             "$ref": "#/components/schemas/MemoriesUpdate"
           },
@@ -36036,9 +33549,6 @@
           },
           "tags": {
             "$ref": "#/components/schemas/TagsUpdate"
-          },
-          "trips": {
-            "$ref": "#/components/schemas/TripsUpdate"
           }
         },
         "type": "object"
