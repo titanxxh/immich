@@ -3,22 +3,22 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
-import { AssetVisibility, SystemMetadataKey, UserMetadataKey } from 'src/enum';
-import { AssetRepository } from 'src/repositories/asset.repository';
-import { ConfigRepository } from 'src/repositories/config.repository';
-import { DatabaseRepository } from 'src/repositories/database.repository';
-import { FootprintRepository } from 'src/repositories/footprint.repository';
-import { JobRepository } from 'src/repositories/job.repository';
-import { LoggingRepository } from 'src/repositories/logging.repository';
-import { StorageRepository } from 'src/repositories/storage.repository';
-import { SystemMetadataRepository } from 'src/repositories/system-metadata.repository';
-import { UserRepository } from 'src/repositories/user.repository';
-import { DB } from 'src/schema';
-import { FootprintService } from 'src/services/footprint.service';
-import { newMediumService } from 'test/medium.factory';
-import { mockEnvData } from 'test/repositories/config.repository.mock';
-import { factory } from 'test/small.factory';
-import { getKyselyDB } from 'test/utils';
+import { AssetVisibility, SystemMetadataKey, UserMetadataKey } from 'src/enum.js';
+import { AssetRepository } from 'src/repositories/asset.repository.js';
+import { ConfigRepository } from 'src/repositories/config.repository.js';
+import { DatabaseRepository } from 'src/repositories/database.repository.js';
+import { FootprintRepository } from 'src/repositories/footprint.repository.js';
+import { JobRepository } from 'src/repositories/job.repository.js';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { StorageRepository } from 'src/repositories/storage.repository.js';
+import { SystemMetadataRepository } from 'src/repositories/system-metadata.repository.js';
+import { UserRepository } from 'src/repositories/user.repository.js';
+import { DB } from 'src/schema/index.js';
+import { FootprintService } from 'src/services/footprint.service.js';
+import { newMediumService } from 'test/medium.factory.js';
+import { mockEnvData } from 'test/repositories/config.repository.mock.js';
+import { factory } from 'test/small.factory.js';
+import { getKyselyDB } from 'test/utils.js';
 
 const square = (minX: number, minY: number, maxX: number, maxY: number) => [
   [

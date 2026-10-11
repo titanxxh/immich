@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Endpoint, HistoryBuilder } from 'src/decorators';
-import { AuthDto } from 'src/dtos/auth.dto';
+import type { AuthDto } from 'src/dtos/auth.dto.js';
+import { Endpoint, HistoryBuilder } from 'src/decorators.js';
 import {
   TripCreateDto,
   TripDetailResponseDto,
@@ -10,11 +10,11 @@ import {
   TripPreviewResponseDto,
   TripResponseDto,
   TripSearchDto,
-} from 'src/dtos/trip.dto';
-import { ApiTag, Permission } from 'src/enum';
-import { Auth, Authenticated } from 'src/middleware/auth.guard';
-import { TripService } from 'src/services/trip.service';
-import { UUIDParamDto } from 'src/validation';
+} from 'src/dtos/trip.dto.js';
+import { ApiTag, Permission } from 'src/enum.js';
+import { Auth, Authenticated } from 'src/middleware/auth.guard.js';
+import { TripService } from 'src/services/trip.service.js';
+import { UUIDParamDto } from 'src/validation.js';
 
 @ApiTags(ApiTag.Users)
 @Controller('trips')

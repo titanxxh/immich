@@ -2,17 +2,16 @@ import {
   Column,
   CreateDateColumn,
   ForeignKeyColumn,
-  Generated,
   PrimaryGeneratedColumn,
   Table,
-  Timestamp,
   UpdateDateColumn,
 } from '@immich/sql-tools';
-import { UpdatedAtTrigger, UpdateIdColumn } from 'src/decorators';
-import { TripSource } from 'src/enum';
-import { AlbumTable } from 'src/schema/tables/album.table';
-import { AssetTable } from 'src/schema/tables/asset.table';
-import { UserTable } from 'src/schema/tables/user.table';
+import type { Generated, Timestamp } from '@immich/sql-tools';
+import { UpdateIdColumn, UpdatedAtTrigger } from 'src/decorators.js';
+import { TripSource } from 'src/enum.js';
+import { AlbumTable } from 'src/schema/tables/album.table.js';
+import { AssetTable } from 'src/schema/tables/asset.table.js';
+import { UserTable } from 'src/schema/tables/user.table.js';
 
 @Table('trip')
 @UpdatedAtTrigger('trip_updatedAt')

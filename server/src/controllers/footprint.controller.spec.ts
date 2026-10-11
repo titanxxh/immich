@@ -1,7 +1,7 @@
-import { FootprintController } from 'src/controllers/footprint.controller';
-import { FootprintService } from 'src/services/footprint.service';
 import request from 'supertest';
-import { ControllerContext, controllerSetup, mockBaseService } from 'test/utils';
+import { FootprintController } from 'src/controllers/footprint.controller.js';
+import { FootprintService } from 'src/services/footprint.service.js';
+import { ControllerContext, controllerSetup, mockBaseService } from 'test/utils.js';
 
 describe(FootprintController.name, () => {
   let ctx: ControllerContext;

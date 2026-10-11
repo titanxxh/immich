@@ -1,16 +1,16 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Endpoint, HistoryBuilder } from 'src/decorators';
-import { AuthDto } from 'src/dtos/auth.dto';
+import type { AuthDto } from 'src/dtos/auth.dto.js';
+import { Endpoint, HistoryBuilder } from 'src/decorators.js';
 import {
   FootprintRegionDetailResponseDto,
   FootprintRegionParamDto,
   FootprintShapesResponseDto,
   FootprintsResponseDto,
-} from 'src/dtos/footprint.dto';
-import { ApiTag, Permission } from 'src/enum';
-import { Auth, Authenticated } from 'src/middleware/auth.guard';
-import { FootprintService } from 'src/services/footprint.service';
+} from 'src/dtos/footprint.dto.js';
+import { ApiTag, Permission } from 'src/enum.js';
+import { Auth, Authenticated } from 'src/middleware/auth.guard.js';
+import { FootprintService } from 'src/services/footprint.service.js';
 
 @ApiTags(ApiTag.Map)
 @Controller('footprints')

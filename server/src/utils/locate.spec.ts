@@ -1,5 +1,5 @@
-import { findDensestPoint, getDirectory, groupUnlocated } from 'src/utils/locate';
 import { describe, expect, it } from 'vitest';
+import { findDensestPoint, getDirectory, groupUnlocated } from 'src/utils/locate.js';
 
 const asset = (id: string, time: string) => ({ id, localDateTime: new Date(`${time}Z`) });
 

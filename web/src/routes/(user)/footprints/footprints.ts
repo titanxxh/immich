@@ -37,7 +37,8 @@ export const newRegionsByYear = (regions: FootprintRegion[]) => {
 export type SortKey = 'firstVisit' | 'assetCount' | 'name';
 
 export const sortRegions = (regions: FootprintRegion[], key: SortKey, locale: string | undefined) =>
-  regions.toSorted((a, b) => {
+  // not toSorted, which older browsers lack
+  [...regions].sort((a, b) => {
     switch (key) {
       case 'assetCount': {
         return b.assetCount - a.assetCount;

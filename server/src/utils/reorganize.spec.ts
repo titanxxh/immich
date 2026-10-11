@@ -1,14 +1,14 @@
+import { describe, expect, it } from 'vitest';
 import {
+  ReorganizeAsset,
+  ReorganizeOptions,
   getContentChecks,
   getDateFolder,
   getDayFolderParent,
   normalizeLabel,
   parseDayFolder,
   planReorganization,
-  ReorganizeAsset,
-  ReorganizeOptions,
-} from 'src/utils/reorganize';
-import { describe, expect, it } from 'vitest';
+} from 'src/utils/reorganize.js';
 
 const USER = 'user-1';
 const LIBRARY = 'library-1';

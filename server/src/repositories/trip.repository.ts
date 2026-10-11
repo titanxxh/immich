@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Insertable, Kysely, sql, Updateable } from 'kysely';
+import { Kysely, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
-import { reverseGeocodeMaxDistance } from 'src/constants';
-import { DummyValue, GenerateSql } from 'src/decorators';
-import { AssetVisibility } from 'src/enum';
-import { DB } from 'src/schema';
-import { TripTable } from 'src/schema/tables/trip.table';
+import type { Insertable, Updateable } from 'kysely';
+import { reverseGeocodeMaxDistance } from 'src/constants.js';
+import { DummyValue, GenerateSql } from 'src/decorators.js';
+import { AssetVisibility } from 'src/enum.js';
+import { DB } from 'src/schema/index.js';
+import { TripTable } from 'src/schema/tables/trip.table.js';
 
 export type TripPoint = { latitude: number; longitude: number };
 export type TripPointPlace = {

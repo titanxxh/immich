@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Kysely, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
-import { DummyValue, GenerateSql } from 'src/decorators';
-import { AssetVisibility } from 'src/enum';
-import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY } from 'src/repositories/trip.repository';
-import { DB } from 'src/schema';
+import { DummyValue, GenerateSql } from 'src/decorators.js';
+import { AssetVisibility } from 'src/enum.js';
+import { TRIP_SUSPECT_KEY, TRIP_SUSPECT_OK_KEY } from 'src/repositories/trip.repository.js';
+import { DB } from 'src/schema/index.js';
 
 /** Marks a photo the user chose not to locate, so it is no longer offered. */
 export const LOCATE_IGNORED_KEY = 'locate-ignored';

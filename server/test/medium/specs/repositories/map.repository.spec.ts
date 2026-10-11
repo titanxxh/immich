@@ -1,11 +1,11 @@
 import { Kysely } from 'kysely';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { LoggingRepository } from 'src/repositories/logging.repository';
-import { MapRepository } from 'src/repositories/map.repository';
-import { DB } from 'src/schema/index';
-import { BaseService } from 'src/services/base.service';
-import { newMediumService } from 'test/medium.factory';
-import { getKyselyDB } from 'test/utils';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LoggingRepository } from 'src/repositories/logging.repository.js';
+import { MapRepository } from 'src/repositories/map.repository.js';
+import { DB } from 'src/schema/index.js';
+import { BaseService } from 'src/services/base.service.js';
+import { newMediumService } from 'test/medium.factory.js';
+import { getKyselyDB } from 'test/utils.js';
 
 let database: Kysely<DB>;
 
@@ -15,7 +15,19 @@ const setup = () => {
     real: [],
     mock: [LoggingRepository],
   });
-  return { ctx, sut: ctx.get(MapRepository) };
+  const sut = ctx.get(MapRepository);
+  // the names come from the GeoNames file of the server image, which is not there in a test
+  vi.spyOn(sut as any, 'readCountryNames').mockResolvedValue({
+    byAlpha2: new Map([
+      ['CN', 'China'],
+      ['NP', 'Nepal'],
+    ]),
+    byAlpha3: new Map([
+      ['CHN', 'China'],
+      ['NPL', 'Nepal'],
+    ]),
+  });
+  return { ctx, sut };
 };
 
 // Everest base camp on the Tibetan side. The nearest populated place by straight-line distance is
@@ -64,7 +76,7 @@ describe(MapRepository.name, () => {
       await addBoundary('CHN', chinaBoundary);
 
       await expect(sut.reverseGeocode(everestBaseCamp)).resolves.toEqual({
-        country: "People's Republic of China",
+        country: 'China',
         state: 'Tibet',
         city: 'Zuobude',
       });
@@ -78,7 +90,7 @@ describe(MapRepository.name, () => {
       // Lobuche is the only place inside the search radius, but the point is inside the Chinese
       // boundary, so the country must come from the boundary and no city may be reported.
       await expect(sut.reverseGeocode(everestBaseCamp)).resolves.toEqual({
-        country: "People's Republic of China",
+        country: 'China',
         state: null,
         city: null,
       });
@@ -101,7 +113,7 @@ describe(MapRepository.name, () => {
       await addBoundary('CHN', chinaBoundary);
 
       await expect(sut.reverseGeocode(everestBaseCamp)).resolves.toEqual({
-        country: "People's Republic of China",
+        country: 'China',
         state: null,
         city: null,
       });

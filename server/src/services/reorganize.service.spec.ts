@@ -1,10 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { Dirent, Stats } from 'node:fs';
-import { ReorganizeDto } from 'src/dtos/reorganize.dto';
-import { ReorganizeService } from 'src/services/reorganize.service';
-import { authStub } from 'test/fixtures/auth.stub';
-import { newTestService, ServiceMocks } from 'test/utils';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { ReorganizeDto } from 'src/dtos/reorganize.dto.js';
+import { ReorganizeService } from 'src/services/reorganize.service.js';
+import { authStub } from 'test/fixtures/auth.stub.js';
+import { ServiceMocks, newTestService } from 'test/utils.js';
 
 const USER = authStub.admin.user.id;
 const ROOT = '/external/photos';

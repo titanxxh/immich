@@ -1,22 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { OnEvent, OnJob } from 'src/decorators';
-import { AuthDto } from 'src/dtos/auth.dto';
+import { OnEvent, OnJob } from 'src/decorators.js';
+import { AuthDto } from 'src/dtos/auth.dto.js';
 import {
   FootprintRegionDetailResponseDto,
   FootprintRegionDto,
   FootprintShapesResponseDto,
   FootprintsResponseDto,
-} from 'src/dtos/footprint.dto';
-import { DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName, SystemMetadataKey } from 'src/enum';
-import { BaseService } from 'src/services/base.service';
+} from 'src/dtos/footprint.dto.js';
+import { DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName, SystemMetadataKey } from 'src/enum.js';
+import { BaseService } from 'src/services/base.service.js';
 import {
   FootprintCountry,
   FootprintFeature,
   FootprintIndex,
   FootprintRegions,
   findFootprintRegions,
-} from 'src/utils/footprint';
-import { getPreferences } from 'src/utils/preferences';
+} from 'src/utils/footprint.js';
+import { getPreferences } from 'src/utils/preferences.js';
 
 type RegionFileRow = {
   id: string;

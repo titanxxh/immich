@@ -1,7 +1,7 @@
-import { StorageCore } from 'src/cores/storage.core';
 import { vitest } from 'vitest';
+import { StorageCore } from 'src/cores/storage.core.js';
 
-vitest.mock('src/constants', () => ({
+vitest.mock('src/constants.js', () => ({
   IWorker: 'IWorker',
 }));
 

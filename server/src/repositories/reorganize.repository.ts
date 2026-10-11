@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { Insertable, Kysely, sql, Updateable } from 'kysely';
+import { Insertable, Kysely, Updateable, sql } from 'kysely';
 import { InjectKysely } from 'nestjs-kysely';
-import { DummyValue, GenerateSql } from 'src/decorators';
-import { AssetFileType } from 'src/enum';
-import { DB } from 'src/schema';
-import { ReorganizationItemTable } from 'src/schema/tables/reorganization-item.table';
-import { ReorganizationTable } from 'src/schema/tables/reorganization.table';
-import { asUuid } from 'src/utils/database';
-import { ReorganizationItemStatus, ReorganizationStatus } from 'src/utils/reorganize';
+import type { ReorganizationItemStatus, ReorganizationStatus } from 'src/utils/reorganize.js';
+import { DummyValue, GenerateSql } from 'src/decorators.js';
+import { AssetFileType } from 'src/enum.js';
+import { DB } from 'src/schema/index.js';
+import { ReorganizationItemTable } from 'src/schema/tables/reorganization-item.table.js';
+import { ReorganizationTable } from 'src/schema/tables/reorganization.table.js';
+import { asUuid } from 'src/utils/database.js';
 
 /** One file of a photo changing place in the database. */
 export interface ReorganizeAssetMove {

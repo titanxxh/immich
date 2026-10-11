@@ -1,5 +1,5 @@
-import { gcj02ToWgs84, isInChina, wgs84ToGcj02 } from 'src/utils/coordinates';
 import { describe, expect, it } from 'vitest';
+import { gcj02ToWgs84, isInChina, wgs84ToGcj02 } from 'src/utils/coordinates.js';
 
 describe(wgs84ToGcj02.name, () => {
   it('should offset points in China by a few hundred metres', () => {

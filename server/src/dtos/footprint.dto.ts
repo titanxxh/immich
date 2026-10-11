@@ -1,6 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
-import { isoDatetimeToDate } from 'src/validation';
 import z from 'zod';
+import { isoDatetimeToDate } from 'src/validation.js';
 
 const FootprintPlaceSchema = z
   .object({

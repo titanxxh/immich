@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { getName } from 'i18n-iso-countries';
-import { OnJob } from 'src/decorators';
-import { AuthDto } from 'src/dtos/auth.dto';
+import countries from 'i18n-iso-countries';
+import type { JobOf } from 'src/types.js';
+import { OnJob } from 'src/decorators.js';
+import { AuthDto } from 'src/dtos/auth.dto.js';
 import {
   TripCreateDto,
   TripDetailResponseDto,
@@ -10,7 +11,7 @@ import {
   TripPreviewResponseDto,
   TripResponseDto,
   TripSearchDto,
-} from 'src/dtos/trip.dto';
+} from 'src/dtos/trip.dto.js';
 import {
   AlbumUserRole,
   AssetOrder,
@@ -20,11 +21,15 @@ import {
   Permission,
   QueueName,
   TripSource,
-} from 'src/enum';
-import { BaseService } from 'src/services/base.service';
-import { JobOf, UserPreferences } from 'src/types';
-import { getPreferences } from 'src/utils/preferences';
+} from 'src/enum.js';
+import { BaseService } from 'src/services/base.service.js';
+import { UserPreferences } from 'src/types.js';
+import { getPreferences } from 'src/utils/preferences.js';
 import {
+  PlannedTrip,
+  TripAsset,
+  TripHome,
+  TripPoint,
   buildDays,
   buildLegs,
   buildStops,
@@ -38,15 +43,11 @@ import {
   getMainStop,
   isHomeActive,
   pickChineseName,
-  PlannedTrip,
   planTrips,
   stripAdmin2Suffix,
-  TripAsset,
-  TripHome,
-  TripPoint,
   wereTogether,
   widenToAlbum,
-} from 'src/utils/trip';
+} from 'src/utils/trip.js';
 
 /** How many located photos of a trip are geocoded to name it. */
 const NAMING_SAMPLE_SIZE = 200;
@@ -154,7 +155,8 @@ export class TripService extends BaseService {
       describeDay(day.stops.map((index) => ({ place: stopPlaces[index], count: stops[index].assetIds.length }))),
     );
     const farthestKm = getFarthestKm(stops, preferences.trips.homes);
-    const concurrentTrips = (await this.tripRepository.getByOwnerId(auth.user.id)).filter(
+    const ownTrips = await this.tripRepository.getByOwnerId(auth.user.id);
+    const concurrentTrips = ownTrips.filter(
       (other) =>
         other.id !== trip.id &&
         other.albumId !== null &&
@@ -455,7 +457,9 @@ export class TripService extends BaseService {
       trip.startAt,
       places.filter((place) => place !== undefined),
       homePlace?.countryCode,
-      (countryCode) => getName(countryCode, NAME_LANGUAGE) ?? countryCode,
+      // the package is CommonJS, whose functions ES modules only reach through the default export
+      // eslint-disable-next-line import-x/no-named-as-default-member
+      (countryCode) => countries.getName(countryCode, NAME_LANGUAGE) ?? countryCode,
     );
   }
 

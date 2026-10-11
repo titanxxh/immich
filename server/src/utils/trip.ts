@@ -296,11 +296,12 @@ export const splitIntoGroups = (run: Located[]): { groups: Located[][]; suspects
     ]) {
       const device = getDevice(asset)!;
       const otherColor = color.get(getDevice(other)!);
-      if (!neighbours.has(device) && otherColor !== undefined && distanceKm(asset, other) <= TRIP_APART_KM) {
-        const vote = votes.get(device) ?? [0, 0];
-        vote[otherColor]++;
-        votes.set(device, vote);
+      if (neighbours.has(device) || otherColor === undefined || distanceKm(asset, other) > TRIP_APART_KM) {
+        continue;
       }
+      const vote = votes.get(device) ?? [0, 0];
+      vote[otherColor]++;
+      votes.set(device, vote);
     }
   });
   for (const [device, [zero, one]] of votes) {

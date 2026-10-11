@@ -1,11 +1,11 @@
+import { describe, expect, it } from 'vitest';
 import {
   FootprintCountry,
   FootprintFeature,
   FootprintIndex,
   FootprintRegions,
   findFootprintRegions,
-} from 'src/utils/footprint';
-import { describe, expect, it } from 'vitest';
+} from 'src/utils/footprint.js';
 
 const square = (minX: number, minY: number, maxX: number, maxY: number) => [
   [minX, minY],

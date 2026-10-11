@@ -1,8 +1,8 @@
 import { createZodDto } from 'nestjs-zod';
-import { BBoxSchema } from 'src/dtos/bbox.dto';
-import { AssetOrderBySchema, AssetOrderSchema, AssetVisibilitySchema } from 'src/enum';
-import { stringToBool } from 'src/validation';
 import z from 'zod';
+import { BBoxSchema } from 'src/dtos/bbox.dto.js';
+import { AssetOrderBySchema, AssetOrderSchema, AssetVisibilitySchema } from 'src/enum.js';
+import { stringToBool } from 'src/validation.js';
 
 const TimeBucketQueryBaseSchema = z
   .object({
@@ -10,10 +10,7 @@ const TimeBucketQueryBaseSchema = z
     albumId: z.uuidv4().optional().describe('Filter assets belonging to a specific album'),
     personId: z.uuidv4().optional().describe('Filter assets containing a specific person (face recognition)'),
     tagId: z.uuidv4().optional().describe('Filter assets with a specific tag'),
-    regionId: z
-      .string()
-      .optional()
-      .describe('Filter assets taken in a footprint region, province or country'),
+    regionId: z.string().optional().describe('Filter assets taken in a footprint region, province or country'),
     isFavorite: stringToBool
       .optional()
       .describe('Filter by favorite status (true for favorites only, false for non-favorites only)'),
@@ -70,7 +67,10 @@ const TimeBucketQueryBaseSchema = z
 
 const TimeBucketSchema = TimeBucketQueryBaseSchema;
 const TimeBucketAssetSchema = TimeBucketQueryBaseSchema.extend({
-  timeBucket: z.string().describe('Time bucket identifier in YYYY-MM-DD format').meta({ example: '2024-01-01' }),
+  timeBucket: z
+    .string()
+    .describe('Time bucket identifier in YYYY-MM-DDT00:00:00.000Z format')
+    .meta({ example: '2024-01-01T00:00:00.000Z' }),
 }).meta({ id: 'TimeBucketAssetDto' });
 
 const stackTupleSchema = z.array(z.string()).length(2).nullable();
