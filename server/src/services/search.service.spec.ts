@@ -1,7 +1,7 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { mapAsset } from 'src/dtos/asset-response.dto';
 import { SearchSuggestionType } from 'src/dtos/search.dto';
-import { AssetVisibility, UserMetadataKey } from 'src/enum';
+import { AssetVisibility, SearchModel, UserMetadataKey } from 'src/enum';
 import { SearchService } from 'src/services/search.service';
 import { AssetFactory } from 'test/factories/asset.factory';
 import { AuthFactory } from 'test/factories/auth.factory';
@@ -459,6 +459,73 @@ describe(SearchService.name, () => {
         'test',
         expect.objectContaining({ language: 'de' }),
       );
+    });
+
+    describe('with the Gemma model', () => {
+      beforeEach(() => {
+        mocks.machineLearning.isGemmaEnabled.mockReturnValue(true);
+        mocks.machineLearning.encodeTextGemma.mockResolvedValue('[4, 5, 6]');
+      });
+
+      it('should raise a BadRequestException if the Gemma service is not configured', async () => {
+        mocks.machineLearning.isGemmaEnabled.mockReturnValue(false);
+
+        await expect(
+          sut.searchSmart(authStub.user1, { size: 100, query: 'test', searchModel: SearchModel.Gemma }),
+        ).rejects.toThrowError(new BadRequestException('The Gemma search model is not enabled'));
+      });
+
+      it('should encode the query with Gemma and compare it with the Gemma embeddings', async () => {
+        await sut.searchSmart(authStub.user1, { size: 100, query: 'test', searchModel: SearchModel.Gemma });
+
+        expect(mocks.machineLearning.encodeTextGemma).toHaveBeenCalledWith('test');
+        expect(mocks.machineLearning.encodeText).not.toHaveBeenCalled();
+        expect(mocks.search.searchSmart).toHaveBeenCalledWith(
+          { page: 1, size: 100 },
+          expect.objectContaining({ embedding: '[4, 5, 6]', searchModel: SearchModel.Gemma }),
+        );
+      });
+
+      it('should not answer a query with the embedding the other model gave for it', async () => {
+        await sut.searchSmart(authStub.user1, { size: 100, query: 'test' });
+        await sut.searchSmart(authStub.user1, { size: 100, query: 'test', searchModel: SearchModel.Gemma });
+
+        expect(mocks.search.searchSmart).toHaveBeenLastCalledWith(
+          expect.anything(),
+          expect.objectContaining({ embedding: '[4, 5, 6]' }),
+        );
+      });
+
+      it('should take the Gemma embedding of the asset to find similar ones', async () => {
+        const assetId = newUuid();
+        mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([assetId]));
+        mocks.search.getEmbedding.mockResolvedValue({ assetId, embedding: '[7, 8, 9]' });
+
+        await sut.searchSmart(authStub.user1, { size: 100, queryAssetId: assetId, searchModel: SearchModel.Gemma });
+
+        expect(mocks.search.getEmbedding).toHaveBeenCalledWith(assetId, SearchModel.Gemma);
+        expect(mocks.search.searchSmart).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ embedding: '[7, 8, 9]', searchModel: SearchModel.Gemma }),
+        );
+      });
+
+      it('should pass the model on with the structured filter', async () => {
+        mocks.search.searchSmartV3.mockResolvedValue({ hasNextPage: false, items: [] });
+
+        await sut.searchSmart(authStub.user1, {
+          size: 100,
+          query: 'test',
+          filter: {},
+          searchModel: SearchModel.Gemma,
+        });
+
+        expect(mocks.search.searchSmartV3).toHaveBeenCalledWith(
+          { take: 100 },
+          expect.objectContaining({ embedding: '[4, 5, 6]', searchModel: SearchModel.Gemma }),
+          expect.anything(),
+        );
+      });
     });
   });
 });

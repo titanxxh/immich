@@ -185,6 +185,10 @@ export class JobService extends BaseService {
           { name: JobName.Ocr, data: item.data },
         ];
 
+        if (this.machineLearningRepository.isGemmaEnabled()) {
+          jobs.push({ name: JobName.SmartSearchGemma, data: item.data });
+        }
+
         if (asset.type === AssetType.Video) {
           jobs.push({ name: JobName.AssetEncodeVideo, data: item.data });
         }

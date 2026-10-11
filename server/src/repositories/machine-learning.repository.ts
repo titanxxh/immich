@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Duration } from 'luxon';
 import { readFile } from 'node:fs/promises';
+import { GEMMA_MODEL } from 'src/constants';
 import { MachineLearningConfig } from 'src/dtos/config.dto';
 import { LoggingRepository } from 'src/repositories/logging.repository';
 
@@ -80,6 +81,8 @@ export class MachineLearningRepository {
   private healthyMap: Record<string, boolean> = {};
   private interval?: ReturnType<typeof setInterval>;
   private _config?: MachineLearningConfig;
+  /** Where the Gemma service is; without it there is no Gemma search model. */
+  private gemmaUrl = process.env.IMMICH_GEMMA_URL;
 
   private get config(): MachineLearningConfig {
     if (!this._config) {
@@ -159,13 +162,17 @@ export class MachineLearningRepository {
     return this.healthyMap[url];
   }
 
-  private async predict<T>(payload: ModelPayload, config: MachineLearningRequest): Promise<T> {
+  private async predict<T>(
+    payload: ModelPayload,
+    config: MachineLearningRequest,
+    urls: string[] = this.config.urls,
+  ): Promise<T> {
     const formData = await this.getFormData(payload, config);
 
     for (const url of [
       // try healthy servers first
-      ...this.config.urls.filter((url) => this.isHealthy(url)),
-      ...this.config.urls.filter((url) => !this.isHealthy(url)),
+      ...urls.filter((url) => this.isHealthy(url)),
+      ...urls.filter((url) => !this.isHealthy(url)),
     ]) {
       try {
         const response = await fetch(new URL('predict', url), { method: 'POST', body: formData });
@@ -212,6 +219,29 @@ export class MachineLearningRepository {
     const request = { [ModelTask.SEARCH]: { [ModelType.TEXTUAL]: { modelName, options: { language } } } };
     const response = await this.predict<ClipTextualResponse>({ text }, request);
     return response[ModelTask.SEARCH];
+  }
+
+  isGemmaEnabled() {
+    return !!this.gemmaUrl;
+  }
+
+  async encodeImageGemma(imagePath: string) {
+    const request = { [ModelTask.SEARCH]: { [ModelType.VISUAL]: { modelName: GEMMA_MODEL.name } } };
+    const response = await this.predict<ClipVisualResponse>({ imagePath }, request, this.getGemmaUrls());
+    return response[ModelTask.SEARCH];
+  }
+
+  async encodeTextGemma(text: string) {
+    const request = { [ModelTask.SEARCH]: { [ModelType.TEXTUAL]: { modelName: GEMMA_MODEL.name } } };
+    const response = await this.predict<ClipTextualResponse>({ text }, request, this.getGemmaUrls());
+    return response[ModelTask.SEARCH];
+  }
+
+  private getGemmaUrls() {
+    if (!this.gemmaUrl) {
+      throw new Error('The Gemma service is not configured');
+    }
+    return [this.gemmaUrl];
   }
 
   async ocr(imagePath: string, { modelName, minDetectionScore, minRecognitionScore, maxResolution }: OcrOptions) {

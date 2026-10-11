@@ -1,5 +1,5 @@
 import { SystemConfig } from 'src/dtos/config.dto';
-import { AssetFileType, AssetVisibility, ImmichWorker, JobName, JobStatus } from 'src/enum';
+import { AssetFileType, AssetVisibility, ImmichWorker, JobName, JobStatus, SearchModel } from 'src/enum';
 import { SmartInfoService } from 'src/services/smart-info.service';
 import { getCLIPModelInfo } from 'src/utils/misc';
 import { AssetFactory } from 'test/factories/asset.factory';
@@ -175,6 +175,26 @@ describe(SmartInfoService.name, () => {
       expect(mocks.assetJob.streamForEncodeClip).toHaveBeenCalledWith(true);
       expect(mocks.database.setDimensionSize).toHaveBeenCalledExactlyOnceWith(512);
     });
+
+    it('should leave Gemma alone when its service is not configured', async () => {
+      mocks.assetJob.streamForEncodeClip.mockReturnValue(makeStream([]));
+
+      await sut.handleQueueEncodeClip({ force: false });
+
+      expect(mocks.assetJob.streamForEncodeGemma).not.toHaveBeenCalled();
+    });
+
+    it('should queue the assets without Gemma embeddings too', async () => {
+      const asset = AssetFactory.create();
+      mocks.machineLearning.isGemmaEnabled.mockReturnValue(true);
+      mocks.assetJob.streamForEncodeClip.mockReturnValue(makeStream([]));
+      mocks.assetJob.streamForEncodeGemma.mockReturnValue(makeStream([asset]));
+
+      await sut.handleQueueEncodeClip({ force: false });
+
+      expect(mocks.job.queueAll).toHaveBeenCalledWith([{ name: JobName.SmartSearchGemma, data: { id: asset.id } }]);
+      expect(mocks.assetJob.streamForEncodeGemma).toHaveBeenCalledWith(false);
+    });
   });
 
   describe('handleEncodeClip', () => {
@@ -246,6 +266,59 @@ describe(SmartInfoService.name, () => {
         expect.objectContaining({ modelName: 'ViT-B-32__openai' }),
       );
       expect(mocks.search.upsert).toHaveBeenCalledWith(asset.id, '[0.01, 0.02, 0.03]');
+    });
+  });
+
+  describe('handleEncodeGemma', () => {
+    beforeEach(() => {
+      mocks.machineLearning.isGemmaEnabled.mockReturnValue(true);
+    });
+
+    it('should do nothing if the Gemma service is not configured', async () => {
+      mocks.machineLearning.isGemmaEnabled.mockReturnValue(false);
+
+      expect(await sut.handleEncodeGemma({ id: '123' })).toEqual(JobStatus.Skipped);
+
+      expect(mocks.machineLearning.encodeImageGemma).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing if machine learning is disabled', async () => {
+      mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.machineLearningDisabled);
+
+      expect(await sut.handleEncodeGemma({ id: '123' })).toEqual(JobStatus.Skipped);
+
+      expect(mocks.machineLearning.encodeImageGemma).not.toHaveBeenCalled();
+    });
+
+    it('should save the embedding with the Gemma ones', async () => {
+      const asset = AssetFactory.from().file({ type: AssetFileType.Preview }).build();
+      mocks.machineLearning.encodeImageGemma.mockResolvedValue('[0.01, 0.02, 0.03]');
+      mocks.assetJob.getForClipEncoding.mockResolvedValue(asset);
+
+      expect(await sut.handleEncodeGemma({ id: asset.id })).toEqual(JobStatus.Success);
+
+      expect(mocks.machineLearning.encodeImageGemma).toHaveBeenCalledWith(asset.files[0].path);
+      expect(mocks.search.upsert).toHaveBeenCalledWith(asset.id, '[0.01, 0.02, 0.03]', SearchModel.Gemma);
+    });
+
+    it('should fail for an asset without a preview', async () => {
+      mocks.assetJob.getForClipEncoding.mockResolvedValue(AssetFactory.create());
+
+      expect(await sut.handleEncodeGemma({ id: '123' })).toEqual(JobStatus.Failed);
+
+      expect(mocks.machineLearning.encodeImageGemma).not.toHaveBeenCalled();
+    });
+
+    it('should skip invisible assets', async () => {
+      const asset = AssetFactory.from({ visibility: AssetVisibility.Hidden })
+        .file({ type: AssetFileType.Preview })
+        .build();
+      mocks.assetJob.getForClipEncoding.mockResolvedValue(asset);
+
+      expect(await sut.handleEncodeGemma({ id: asset.id })).toEqual(JobStatus.Skipped);
+
+      expect(mocks.machineLearning.encodeImageGemma).not.toHaveBeenCalled();
+      expect(mocks.search.upsert).not.toHaveBeenCalled();
     });
   });
 

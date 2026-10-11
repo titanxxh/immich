@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SystemConfig } from 'src/dtos/config.dto';
 
 import { OnEvent, OnJob } from 'src/decorators';
-import { AssetVisibility, DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName } from 'src/enum';
+import { AssetVisibility, DatabaseLock, ImmichWorker, JobName, JobStatus, QueueName, SearchModel } from 'src/enum';
 import { ArgOf } from 'src/repositories/event.repository';
 import { BaseService } from 'src/services/base.service';
 import { JobOf } from 'src/types';
@@ -81,6 +81,14 @@ export class SmartInfoService extends BaseService {
       await this.jobRepository.queueAll(assets.map((asset) => ({ name: JobName.SmartSearch, data: { id: asset.id } })));
     }
 
+    if (this.machineLearningRepository.isGemmaEnabled()) {
+      for await (const assets of batched(this.assetJobRepository.streamForEncodeGemma(force))) {
+        await this.jobRepository.queueAll(
+          assets.map((asset) => ({ name: JobName.SmartSearchGemma, data: { id: asset.id } })),
+        );
+      }
+    }
+
     return JobStatus.Success;
   }
 
@@ -114,6 +122,28 @@ export class SmartInfoService extends BaseService {
     }
 
     await this.searchRepository.upsert(asset.id, embedding);
+
+    return JobStatus.Success;
+  }
+
+  @OnJob({ name: JobName.SmartSearchGemma, queue: QueueName.SmartSearch })
+  async handleEncodeGemma({ id }: JobOf<JobName.SmartSearchGemma>): Promise<JobStatus> {
+    const { machineLearning } = await this.getConfig({ withCache: true });
+    if (!isSmartSearchEnabled(machineLearning) || !this.machineLearningRepository.isGemmaEnabled()) {
+      return JobStatus.Skipped;
+    }
+
+    const asset = await this.assetJobRepository.getForClipEncoding(id);
+    if (!asset || asset.files.length !== 1) {
+      return JobStatus.Failed;
+    }
+
+    if (asset.visibility === AssetVisibility.Hidden) {
+      return JobStatus.Skipped;
+    }
+
+    const embedding = await this.machineLearningRepository.encodeImageGemma(asset.files[0].path);
+    await this.searchRepository.upsert(asset.id, embedding, SearchModel.Gemma);
 
     return JobStatus.Success;
   }

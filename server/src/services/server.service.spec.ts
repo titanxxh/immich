@@ -133,8 +133,11 @@ describe(ServerService.name, () => {
 
   describe('getFeatures', () => {
     it('should respond the server features', async () => {
+      mocks.machineLearning.isGemmaEnabled.mockReturnValue(false);
+
       await expect(sut.getFeatures()).resolves.toEqual({
         smartSearch: true,
+        smartSearchGemma: false,
         duplicateDetection: true,
         facialRecognition: true,
         importFaces: false,
@@ -152,6 +155,19 @@ describe(ServerService.name, () => {
         realtimeTranscoding: false,
       });
       expect(mocks.systemMetadata.get).toHaveBeenCalled();
+    });
+
+    it('should offer the Gemma search model when its service is configured', async () => {
+      mocks.machineLearning.isGemmaEnabled.mockReturnValue(true);
+
+      await expect(sut.getFeatures()).resolves.toMatchObject({ smartSearch: true, smartSearchGemma: true });
+    });
+
+    it('should not offer the Gemma search model without smart search', async () => {
+      mocks.machineLearning.isGemmaEnabled.mockReturnValue(true);
+      mocks.systemMetadata.get.mockResolvedValue({ machineLearning: { clip: { enabled: false } } });
+
+      await expect(sut.getFeatures()).resolves.toMatchObject({ smartSearch: false, smartSearchGemma: false });
     });
   });
 

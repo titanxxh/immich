@@ -32,7 +32,7 @@ describe(JobService.name, () => {
       expect(mocks.logger.error).not.toHaveBeenCalled();
     });
 
-    const tests: Array<{ item: JobItem; jobs: JobName[]; stub?: any }> = [
+    const tests: Array<{ item: JobItem; jobs: JobName[]; stub?: any; gemma?: boolean }> = [
       {
         item: { name: JobName.SidecarCheck, data: { id: 'asset-1' } },
         jobs: [JobName.AssetExtractMetadata],
@@ -74,6 +74,12 @@ describe(JobService.name, () => {
         stub: [AssetFactory.create({ id: 'asset-1', type: AssetType.Video })],
       },
       {
+        item: { name: JobName.AssetGenerateThumbnails, data: { id: 'asset-1', source: 'upload' } },
+        jobs: [JobName.SmartSearch, JobName.AssetDetectFaces, JobName.Ocr, JobName.SmartSearchGemma],
+        stub: [AssetFactory.create({ id: 'asset-1' })],
+        gemma: true,
+      },
+      {
         item: { name: JobName.SmartSearch, data: { id: 'asset-1' } },
         jobs: [],
       },
@@ -87,8 +93,9 @@ describe(JobService.name, () => {
       },
     ];
 
-    for (const { item, jobs, stub } of tests) {
+    for (const { item, jobs, stub, gemma } of tests) {
       it(`should queue ${jobs.length} jobs when a ${item.name} job finishes successfully`, async () => {
+        mocks.machineLearning.isGemmaEnabled.mockReturnValue(!!gemma);
         if (stub) {
           mocks.asset.getById.mockResolvedValue(stub[0]);
           mocks.asset.getByIdsWithAllRelationsButStacks.mockResolvedValue(stub);

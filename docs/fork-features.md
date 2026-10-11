@@ -57,6 +57,17 @@ Moves the photos of a folder of an external library, or of an album, into date f
 - **Page** (Utilities → Reorganize): settings on the left (source, target, structure, auto rename, libraries of an album source), the target's date folders after the reorganization on the right with a label field per day, the photos that stay grouped by reason, and each expandable into the photos concerned. A second tab lists past reorganizations with continue, retry, undo, details and delete. The folder view and the album menu link to the page with the source filled in.
 - **Code**: `server/src/utils/reorganize.ts` (the plan), `reorganize.service.ts` (preview and API), `reorganize-job.service.ts` (moving files), `reorganize.controller.ts` (`/reorganizations`), `reorganize.repository.ts`; web `routes/(user)/utilities/reorganize`.
 
+## Searching with Gemma
+
+Smart search can compare with the embeddings of a second _search model_, EmbeddingGemma 2, to see on one's own library how it does next to the CLIP model of the machine learning settings. Everything else keeps using the CLIP model: duplicate detection, the mobile app, and a search that does not ask for Gemma.
+
+- **Off by default**: it is on when the `IMMICH_GEMMA_URL` environment variable of the server points to the Gemma service and smart search is enabled; the server then reports the feature `smartSearchGemma`.
+- **Gemma service** (`machine-learning-gemma/`, see its README): the model behind the protocol of Immich Machine Learning, in a container of its own, since the model has no ONNX release and the upstream service only runs ONNX. It needs a GPU to be of use.
+- **Embeddings** are in table `smart_search_gemma` (768 dimensions, index `gemma_index`), next to `smart_search`. The `SmartSearchGemma` job fills it: for a new photo after its thumbnails, with the `SmartSearch` job; for the others, the smart search jobs "missing" and "all" of the admin jobs page queue both. The index is looked after with the other vector indexes.
+- **Search**: `POST /search/smart` takes `searchModel` (`default` or `gemma`), for a text query and for the photos similar to one. It is named so because `model` is the camera model.
+- **Page**: on the results of a smart search, two buttons choose the model. The choice is part of the search in the address, and a new search from the search bar keeps it.
+- **Code**: `machine-learning-gemma/`; server `machine-learning.repository.ts`, `search.repository.ts` (`EMBEDDINGS`), `search.service.ts`, `smart-info.service.ts`, table `smart_search_gemma`; web `routes/(user)/search`, `search-manager.svelte.ts`.
+
 ## Smaller fixes
 
 - **Faces before birth**: setting a person's birth date releases their machine-learning faces on photos taken before it and re-queues them for facial recognition, so look-alike siblings separate. Manually tagged faces stay. The birth-date check uses the photo's local date.

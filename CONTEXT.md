@@ -99,3 +99,9 @@ _Avoid_: Move history (an unrelated upstream table), log
 **Undo** (of a reorganization):
 Moving the photos of a reorganization back to where they were, all of them at once. A photo goes back only if it is still where the reorganization put it and its old place is free.
 _Avoid_: Revert, rollback
+
+## Searching
+
+**Search model**:
+The model whose embeddings a smart search compares: the default one, which is the CLIP model of the machine learning settings, or Gemma (EmbeddingGemma 2). Each has its own embeddings of every photo, and a search uses one of them.
+_Avoid_: Embedding model, alternative model, candidate model

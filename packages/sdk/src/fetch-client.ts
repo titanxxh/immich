@@ -2968,6 +2968,7 @@ export type SmartSearchDto = {
     queryAssetId?: string;
     /** Filter by rating [1-5], or null for unrated */
     rating?: number | null;
+    searchModel?: SearchModel;
     /** Number of results to return */
     size?: number;
     /** Filter by state/province name */
@@ -3167,6 +3168,8 @@ export type ServerFeaturesDto = {
     sidecar: boolean;
     /** Whether smart search is enabled */
     smartSearch: boolean;
+    /** Whether smart search can use the Gemma model */
+    smartSearchGemma: boolean;
     /** Whether trash feature is enabled */
     trash: boolean;
 };
@@ -9182,6 +9185,7 @@ export enum JobName {
     SidecarWrite = "SidecarWrite",
     SmartSearchQueueAll = "SmartSearchQueueAll",
     SmartSearch = "SmartSearch",
+    SmartSearchGemma = "SmartSearchGemma",
     StorageTemplateMigration = "StorageTemplateMigration",
     StorageTemplateMigrationSingle = "StorageTemplateMigrationSingle",
     TagCleanup = "TagCleanup",
@@ -9252,6 +9256,10 @@ export enum SearchOrderField {
     LocalDateTime = "localDateTime",
     FileSizeInBytes = "fileSizeInBytes",
     Rating = "rating"
+}
+export enum SearchModel {
+    Default = "default",
+    Gemma = "gemma"
 }
 export enum SearchSuggestionType {
     Country = "country",

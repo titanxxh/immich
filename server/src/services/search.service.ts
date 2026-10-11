@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { LRUMap } from 'mnemonist';
+import { GEMMA_MODEL } from 'src/constants';
 import { AssetMapOptions, AssetResponseDto, MapAsset, mapAsset } from 'src/dtos/asset-response.dto';
 import { AuthDto } from 'src/dtos/auth.dto';
 import { SystemConfig } from 'src/dtos/config.dto';
@@ -22,7 +23,7 @@ import {
   SmartSearchDto,
   StatisticsSearchDto,
 } from 'src/dtos/search.dto';
-import { AssetOrder, AssetVisibility, Permission } from 'src/enum';
+import { AssetOrder, AssetVisibility, Permission, SearchModel } from 'src/enum';
 import { AssetSearchScope } from 'src/repositories/search.repository';
 import { BaseService } from 'src/services/base.service';
 import { requireElevatedPermission } from 'src/utils/access';
@@ -343,7 +344,7 @@ export class SearchService extends BaseService {
     // no cursor until a rank-aware pagination strategy for smart search is decided
     const { items } = await this.searchRepository.searchSmartV3(
       { take: dto.size },
-      { filter, withExif: dto.withExif, embedding },
+      { filter, withExif: dto.withExif, embedding, searchModel: dto.searchModel },
       scope,
     );
 
@@ -378,14 +379,19 @@ export class SearchService extends BaseService {
     dto: SmartSearchDto,
     machineLearning: SystemConfig['machineLearning'],
   ): Promise<string> {
+    const isGemma = dto.searchModel === SearchModel.Gemma;
+    if (isGemma && !this.machineLearningRepository.isGemmaEnabled()) {
+      throw new BadRequestException('The Gemma search model is not enabled');
+    }
+
     if (dto.query) {
-      const key = machineLearning.clip.modelName + dto.query + dto.language;
+      const modelName = isGemma ? GEMMA_MODEL.name : machineLearning.clip.modelName;
+      const key = modelName + dto.query + dto.language;
       let embedding = this.embeddingCache.get(key);
       if (!embedding) {
-        embedding = await this.machineLearningRepository.encodeText(dto.query, {
-          modelName: machineLearning.clip.modelName,
-          language: dto.language,
-        });
+        embedding = isGemma
+          ? await this.machineLearningRepository.encodeTextGemma(dto.query)
+          : await this.machineLearningRepository.encodeText(dto.query, { modelName, language: dto.language });
         this.embeddingCache.set(key, embedding);
       }
       return embedding;
@@ -393,7 +399,7 @@ export class SearchService extends BaseService {
 
     if (dto.queryAssetId) {
       await this.requireAccess({ auth, permission: Permission.AssetRead, ids: [dto.queryAssetId] });
-      const getEmbeddingResponse = await this.searchRepository.getEmbedding(dto.queryAssetId);
+      const getEmbeddingResponse = await this.searchRepository.getEmbedding(dto.queryAssetId, dto.searchModel);
       const assetEmbedding = getEmbeddingResponse?.embedding;
       if (!assetEmbedding) {
         throw new BadRequestException(`Asset ${dto.queryAssetId} has no embedding`);

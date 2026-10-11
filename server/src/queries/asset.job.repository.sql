@@ -447,6 +447,31 @@ where
       "assetId" = "asset"."id"
   )
 
+-- AssetJobRepository.streamForEncodeGemma
+select
+  "asset"."id"
+from
+  "asset"
+  inner join "asset_job_status" as "job_status" on "assetId" = "asset"."id"
+where
+  "asset"."visibility" != $1
+  and "asset"."deletedAt" is null
+  and exists (
+    select
+    from
+      "asset_file"
+    where
+      "assetId" = "asset"."id"
+      and "asset_file"."type" = $2
+  )
+  and not exists (
+    select
+    from
+      "smart_search_gemma"
+    where
+      "assetId" = "asset"."id"
+  )
+
 -- AssetJobRepository.getForClipEncoding
 select
   "asset"."id",

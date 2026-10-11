@@ -917,6 +917,7 @@ export enum JobName {
 
   SmartSearchQueueAll = 'SmartSearchQueueAll',
   SmartSearch = 'SmartSearch',
+  SmartSearchGemma = 'SmartSearchGemma',
 
   StorageTemplateMigration = 'StorageTemplateMigration',
   StorageTemplateMigrationSingle = 'StorageTemplateMigrationSingle',
@@ -977,7 +978,20 @@ export enum QueueCleanType {
 export enum VectorIndex {
   Clip = 'clip_index',
   Face = 'face_index',
+  Gemma = 'gemma_index',
 }
+
+export enum SearchModel {
+  /** the CLIP model of the machine learning settings */
+  Default = 'default',
+  /** EmbeddingGemma 2, served by the Gemma service */
+  Gemma = 'gemma',
+}
+
+export const SearchModelSchema = z
+  .enum(SearchModel)
+  .describe('Model whose embeddings a smart search compares')
+  .meta({ id: 'SearchModel' });
 
 export enum TripSource {
   /** found by trip detection, which keeps its album up to date */

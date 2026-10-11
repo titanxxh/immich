@@ -7,6 +7,7 @@
   import ControlAppBar from '$lib/components/shared-components/ControlAppBar.svelte';
   import GalleryViewer from '$lib/components/shared-components/gallery-viewer/GalleryViewer.svelte';
   import SearchBar from '$lib/components/shared-components/search-bar/SearchBar.svelte';
+  import SearchButton from '$lib/components/shared-components/search-bar/SearchButton.svelte';
   import ArchiveAction from '$lib/components/timeline/actions/ArchiveAction.svelte';
   import ChangeDate from '$lib/components/timeline/actions/ChangeDateAction.svelte';
   import ChangeDescription from '$lib/components/timeline/actions/ChangeDescriptionAction.svelte';
@@ -40,6 +41,7 @@
     getTagById,
     type MetadataSearchDto,
     searchAssets,
+    SearchModel,
     searchSmart,
     type SmartSearchDto,
   } from '@immich/sdk';
@@ -63,11 +65,14 @@
   let scrollY = $state(0);
   let scrollYHistory = 0;
 
-  type SearchTerms = MetadataSearchDto & Pick<SmartSearchDto, 'query' | 'queryAssetId'>;
+  type SearchTerms = MetadataSearchDto & Pick<SmartSearchDto, 'query' | 'queryAssetId' | 'searchModel'>;
   let searchQuery = $derived(page.url.searchParams.get(QueryParameter.QUERY));
   let smartSearchEnabled = $derived(featureFlagsManager.value.smartSearch);
   let terms = $derived<SearchTerms>(searchQuery ? JSON.parse(searchQuery) : {});
-  let searchTermKeys = $derived(getObjectKeys(terms));
+  // the model has its own buttons, below the chips
+  let searchTermKeys = $derived(getObjectKeys(terms).filter((key) => key !== 'searchModel'));
+  let isSmartSearch = $derived(('query' in terms || 'queryAssetId' in terms) && smartSearchEnabled);
+  let searchModel = $derived(terms.searchModel ?? SearchModel.Default);
 
   $effect(() => {
     // we want this to *only* be reactive on `terms`
@@ -134,19 +139,19 @@
     }
     isLoading = true;
 
-    const searchDto: SearchTerms = {
+    const { searchModel, ...metadataTerms } = terms;
+    const searchDto: MetadataSearchDto = {
       page: nextPage,
       withExif: true,
-      ...terms,
+      ...metadataTerms,
     };
 
     try {
-      const { albums, assets } =
-        ('query' in searchDto || 'queryAssetId' in searchDto) && smartSearchEnabled
-          ? await searchSmart({
-              smartSearchDto: { visibility: AssetVisibility.Timeline, ...searchDto, language: $lang },
-            })
-          : await searchAssets({ metadataSearchDto: { visibility: AssetVisibility.Timeline, ...searchDto } });
+      const { albums, assets } = isSmartSearch
+        ? await searchSmart({
+            smartSearchDto: { visibility: AssetVisibility.Timeline, ...searchDto, searchModel, language: $lang },
+          })
+        : await searchAssets({ metadataSearchDto: { visibility: AssetVisibility.Timeline, ...searchDto } });
 
       searchResultAlbums.push(...albums.items);
       searchResultAssets.push(...assets.items);
@@ -248,6 +253,14 @@
     searchManager.setQuery(terms);
   }
 
+  function setSearchModel(model: SearchModel) {
+    const { searchModel: _, ...rest } = terms;
+    const newTerms: SearchTerms = model === SearchModel.Default ? rest : { ...rest, searchModel: model };
+    assetMultiSelectManager.clear();
+    void goto(Route.search(newTerms));
+    searchManager.setQuery(newTerms);
+  }
+
   onMount(() => searchManager.setQuery(terms));
 </script>
 
@@ -303,6 +316,33 @@
         </div>
       {/each}
     </div>
+  </section>
+{/if}
+
+{#if isSmartSearch && featureFlagsManager.value.smartSearchGemma}
+  <section
+    id="search-model"
+    class="mx-auto w-full max-w-7xl px-4 sm:px-8 lg:px-12 {searchTermKeys.length > 0 ? 'mt-4' : 'mt-24'}"
+  >
+    <fieldset class="flex flex-wrap place-content-center place-items-center gap-2">
+      <legend class="sr-only">{$t('search_model')}</legend>
+      <SearchButton
+        checked
+        active={searchModel === SearchModel.Default}
+        aria-pressed={searchModel === SearchModel.Default}
+        onclick={() => setSearchModel(SearchModel.Default)}
+      >
+        {$t('search_model_default')}
+      </SearchButton>
+      <SearchButton
+        checked
+        active={searchModel === SearchModel.Gemma}
+        aria-pressed={searchModel === SearchModel.Gemma}
+        onclick={() => setSearchModel(SearchModel.Gemma)}
+      >
+        {$t('search_model_gemma')}
+      </SearchButton>
+    </fieldset>
   </section>
 {/if}
 
